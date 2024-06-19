@@ -1,0 +1,78 @@
+- sensor:
+  - name: ePaper Weather Actual
+    unique_id: epaper_weather_actual_2
+    state: "{{states('weather.home_2')}};{{state_attr('weather.home_2', 'temperature') | replace('.',',') }};{{state_attr('weather.home_2', 'humidity') | replace('.',',') }};{{state_attr('weather.home_2', 'pressure') | replace('.',',') }};{{state_attr('weather.home_2', 'wind_speed') | replace('.',',') }}"
+
+  - name: ePaper Weather Forecast
+    unique_id: epaper_weather_forecast_2
+    state: "{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[0]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[0]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[0]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[0]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[1]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[1]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[1]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[1]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[2]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[2]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[2]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[2]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[3]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[3]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[3]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[3]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[4]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[4]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[4]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[4]['templow']| replace('.',',') }}"
+
+  - name: ePaper Sunrise
+    unique_id: epaper_sunrise_2
+    state: "{{ as_timestamp(state_attr('sun.sun', 'next_dawn')) | timestamp_custom('%H:%M') }}"
+
+  - name: ePaper Sunset
+    unique_id: epaper_sunset_2
+    state: "{{ as_timestamp(state_attr('sun.sun', 'next_dusk')) | timestamp_custom('%H:%M') }}"
+
+  - name: ePaper Temperature outside
+    state: "{{ states('sensor.klima_ausen_temperatur') | replace('.',',') }}"
+
+  - name: ePaper Humidity outside
+    state: "{{ states('sensor.klima_ausen_luftfeuchtigkeit') }}"
+
+  - name: ePaper Humidity Inside
+    state: "{{ states('sensor.klima_wohnzimmer_luftfeuchtigkeit') }}"
+
+  - name: ePaper Temperature Inside
+    unique_id: epaper_temperature_intside
+    icon: mdi:sun-clock-outline
+    state: "{{ states('sensor.klima_wohnzimmer_temperatur') | replace('.',',') }}"
+
+  - name: ePaper Temperature Radiator 1 LivingRoom
+    state: "{{ states('sensor.wohnzimmer_heizung_01_temperature') | replace('.',',') }}"
+
+  - name: ePaper Temperature Lea
+    state: "{{ states('sensor.lea_heizung_temperature') }}"
+
+  - name: ePaper Temperature Bathroom
+    state: "{{ states('sensor.shellytrv_60a423dcd4e0_temperature') | replace('.',',') }}"
+
+  binary_sensor:
+  - name: ePaper Fenster Badezimmer
+    state: "{{ states('binary_sensor.bad_fenster_door') }}"
+
+  - name: ePaper Fenster Lea
+    state: "{{ states('binary_sensor.fenster_lea_door') }}"
+
+- trigger:
+    - platform: time_pattern
+      hours: /2
+    - platform: homeassistant
+      event: start
+    - platform: state
+      entity_id: input_boolean.trigger_forecast_update
+      to: 'on'
+  action:
+    - service: weather.get_forecasts
+      data:
+        type: daily
+      target:
+        entity_id: weather.home_2
+      response_variable: daily
+  sensor:
+    - name: Forecast next days
+      unique_id: forecast_next_days
+      state: >
+        {% if daily is defined and 'weather.home_2' in daily %}
+          {{ daily['weather.home_2'].forecast[0].condition }}
+        {% else %}
+          unavailable
+        {% endif %}
+      attributes:
+        forecast: >
+          {% if daily is defined and 'weather.home_2' in daily %}
+            {{ daily['weather.home_2'].forecast }}
+          {% else %}
+            []
+          {% endif %}

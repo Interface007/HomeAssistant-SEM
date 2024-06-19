@@ -1,0 +1,69 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+template: !include templates.yaml
+
+rest_command:
+  # bathroom
+  shellytrv_bad_set_external_temperature:
+    # Variable "temperature": Temperatur in °C (als Float)
+    url: http://192.168.2.23/ext_t?temp={{temperature}}
+  shellytrv_bad_set_window_state:
+    # Variable "state": "open" (Fenster offen) oder "close" (Fenster geschlossen)
+    url: http://192.168.2.23/window?state={{state}}
+  # LEA
+  shellytrv_lea_set_external_temperature:
+    # Variable "temperature": Temperatur in °C (als Float)
+    url: http://192.168.2.33/ext_t?temp={{temperature}}
+  shellytrv_lea_set_window_state:
+    # Variable "state": "open" (Fenster offen) oder "close" (Fenster geschlossen)
+    url: http://192.168.2.33/window?state={{state}}
+  # ... Services für die anderen Thermostate
+
+sensor:
+  - platform: template
+    sensors:
+      teams_status: 
+        friendly_name: "Microsoft Teams status"
+        value_template: "{{states('input_text.teams_status')}}"
+        icon_template: "{{state_attr('input_text.teams_status','icon')}}"
+        unique_id: sensor.teams_status
+      teams_activity:
+        friendly_name: "Microsoft Teams activity"
+        value_template: "{{states('input_text.teams_activity')}}"
+        unique_id: sensor.teams_activity
+  - platform: sensor_history
+    entity_id: sensor.watermeter_value
+    name: "epaper_watermeter_history"
+  - platform: sensor_history
+    entity_id: sensor.power_main_total_active_power
+    name: "epaper_power_history"
+
+input_text:
+  teams_status:
+    name: Microsoft Teams status
+    icon: mdi:microsoft-teams
+  teams_activity:
+    name: Microsoft Teams activity
+    icon: mdi:phone-off
+
+input_boolean:
+  trigger_forecast_update:
+    name: Trigger Forecast Update
+    initial: off
+    icon: mdi:update
+
+logger:
+  default: info
+  logs:
+    homeassistant.components.python_script: debug
+    custom_components.sensor_history: debug
+    homeassistant.components.sensor: debug

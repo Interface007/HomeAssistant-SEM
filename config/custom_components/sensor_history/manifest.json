@@ -1,0 +1,9 @@
+{
+    "domain": "sensor_history",
+    "name": "Sensor History",
+    "version": "1.0",
+    "requirements": ["aiohttp"],
+    "dependencies": [],
+    "codeowners": []
+  }
+  

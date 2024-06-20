@@ -20,7 +20,8 @@ api:
     key: !secret api_enc_key
 
 ota:
-  password: !secret ota_password
+ - platform: esphome
+   password: !secret ota_password
 
 wifi:
   ssid: !secret wifi_ssid
@@ -204,7 +205,7 @@ display:
     busy_pin: 25
     reset_pin: 26
     model: 7.50inv2alt 
-    update_interval: 60s
+    update_interval: 600s
     lambda: |
       static const char* TAG = "ePaperLambda";
       ESP_LOGI(TAG, "starting lambda");

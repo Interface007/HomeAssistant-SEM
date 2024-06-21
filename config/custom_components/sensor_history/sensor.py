@@ -10,6 +10,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
+import json
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,31 +71,33 @@ class SensorHistory(Entity):
         _LOGGER.info(self._name + " - " + msg, *args)
 
     async def async_update(self):
-        history = await self.get_sensor_history(self._entity_id)
-        self.debug(history)
+        response = await self.get_sensor_history(self._entity_id)
+        self.debug(str(response))
 
-        if not history or len(history[0]) < 1:
+        if not response or len(response[0]) < 1:
             self.error(f"Not enough data points in history for {self._entity_id}")
             return
         
-        h = history[0]
-        self.debug("history[0] %s", h)
+        history = response[0]
+        self.debug(f"history = {history}")
+        historyItem = history[0]
+        self.debug(f"item = {historyItem}")
         
-        item = h[0]
-        self.debug("history[0][0] %s", item)
+        self.debug(f"item.state = {historyItem['state']}")
         
-        itemState = item['state']
-        self.debug("history[0][0]['state'] %s", itemState)
-        
-        values = [float(state['state']) for state in h if is_float(state['state'])][-21:]
-        if len(values) < 21:
+        values = [(float(item['state']), item['last_changed']) for item in history if is_float(item['state'])]
+        if len(values) < 2:
             self.error(f"Not enough numeric data points in history for {self._entity_id}")
             return
+        
+        self.info("Processing %d values for %s", len(values), self._entity_id)
 
-        diffs = [round(values[i + 1] - values[i], 4) * 1000 for i in range(len(values) - 1)]
+        # Group by date and find daily maxima
+        
+        diffs = [round(values[i + 1][0] - values[i][0], 4) * 1000 for i in range(len(values) - 1)][-30:]
         self._state = ";".join(f"{diff:.0f}" for diff in diffs)
         
-        self.info("State updated for %s: %s", self._name, self._state)
+        self.info("State updated: %s", self._state)
         
     async def get_sensor_history(self, entity_id):
         session = async_get_clientsession(self._hass)
@@ -119,10 +122,6 @@ class SensorHistory(Entity):
                 async with session.get(url, headers=headers, params=params) as response:
                     return await response.json()
         except Exception as e:
-            self.info(f"Problem while requesting data: {str(e)}")
-            default_states_list = []
-            for i in range(self._days):
-                day = (start_datetime + timedelta(days=i)).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "+00:00"
-                default_states_list.append(f"\"state\":\"0.0000\", \"last_changed\":\"{day}\"")
-            default_states = ", ".join(f"{{ {state} }}" for state in default_states_list)
-            return f"[[{{ {default_states} }}]]"
+            self.info("Problem while requesting data: %s", str(e))
+            
+            return None

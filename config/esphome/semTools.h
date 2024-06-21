@@ -16,6 +16,7 @@ public:
 
   void RenderDiagram(esphome::homeassistant::HomeassistantTextSensor *&sensor, int x1, int y1, int dx, int dy)
   {
+    display_.start_clipping(x1 - 2, y1 - dy - 2,x1 + dx + 2, y1 + 2);
 
     display_.line(x1, y1 - dy, x1, y1);
     display_.line(x1, y1, x1 + dx, y1);
@@ -67,6 +68,8 @@ public:
     } else {
       ESP_LOGD("render csv", "sensor has no state");
     }
+
+    display_.end_clipping();
   }
 
 private:

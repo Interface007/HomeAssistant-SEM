@@ -3,7 +3,6 @@
 import logging
 from datetime import timedelta
 from datetime import datetime
-import aiohttp
 import async_timeout
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_NAME, CONF_ENTITY_ID
@@ -14,12 +13,20 @@ import voluptuous as vol
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "Watermeter History"
-SCAN_INTERVAL = timedelta(minutes=5)
+DEFAULT_NAME = "Sensor History"
+DEFAULT_DAYS = 10
+DEFAULT_FACTOR = 1000
+
+SCAN_INTERVAL = timedelta(minutes=1)
+
+CONF_DAYS = "days"
+CONF_FACTOR = "factor"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ENTITY_ID): cv.entity_id,
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+    vol.Optional(CONF_DAYS, default=DEFAULT_DAYS): vol.All(vol.Coerce(int), vol.Range(min=1)),
+    vol.Optional(CONF_FACTOR, default=DEFAULT_FACTOR): vol.All(vol.Coerce(int), vol.Range(min=1)),
 })
 
 def is_float(value):
@@ -32,12 +39,16 @@ def is_float(value):
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     name = config.get(CONF_NAME)
     entity_id = config.get(CONF_ENTITY_ID)
-    async_add_entities([SensorHistory(hass, name, entity_id)], True)
+    days = config.get(CONF_DAYS)
+    factor = config.get(CONF_FACTOR)
+    async_add_entities([SensorHistory(hass, name, entity_id, days, factor)], True)
 
 class SensorHistory(Entity):
-    def __init__(self, hass, name, entity_id):
+    def __init__(self, hass, name, entity_id, days, factor):
         self._hass = hass
         self._name = name
+        self._days = days
+        self._factor = factor
         self._entity_id = entity_id
         self._state = None
 
@@ -48,25 +59,47 @@ class SensorHistory(Entity):
     @property
     def state(self):
         return self._state
+    
+    def debug(self, msg, *args):
+        _LOGGER.debug(self._name + " - " + msg, *args)
+
+    def error(self, msg, *args):
+        _LOGGER.error(self._name + " - " + msg, *args)
+    
+    def info(self, msg, *args):
+        _LOGGER.info(self._name + " - " + msg, *args)
 
     async def async_update(self):
         history = await self.get_sensor_history(self._entity_id)
-        if not history or len(history[0]) < 21:
-            _LOGGER.error(f"Not enough data points in history for {self._entity_id}")
+        self.debug(history)
+
+        if not history or len(history[0]) < 1:
+            self.error(f"Not enough data points in history for {self._entity_id}")
             return
         
-        last_values = [float(state['state']) for state in history[0] if is_float(state['state'])][-21:]
-        if len(last_values) < 21:
-            _LOGGER.error(f"Not enough numeric data points in history for {self._entity_id}")
+        h = history[0]
+        self.debug("history[0] %s", h)
+        
+        item = h[0]
+        self.debug("history[0][0] %s", item)
+        
+        itemState = item['state']
+        self.debug("history[0][0]['state'] %s", itemState)
+        
+        values = [float(state['state']) for state in h if is_float(state['state'])][-21:]
+        if len(values) < 21:
+            self.error(f"Not enough numeric data points in history for {self._entity_id}")
             return
 
-        diffs = [round(last_values[i + 1] - last_values[i], 4) * 1000 for i in range(len(last_values) - 1)]
+        diffs = [round(values[i + 1] - values[i], 4) * 1000 for i in range(len(values) - 1)]
         self._state = ";".join(f"{diff:.0f}" for diff in diffs)
+        
+        self.info("State updated for %s: %s", self._name, self._state)
         
     async def get_sensor_history(self, entity_id):
         session = async_get_clientsession(self._hass)
         current_datetime = datetime.now()
-        start_datetime = current_datetime - timedelta(days=10)
+        start_datetime = current_datetime - timedelta(days=self._days)
         formatted_start_datetime = start_datetime.strftime("%Y-%m-%dT%H:%M:%S")
         formatted_end_datetime = current_datetime.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -85,5 +118,11 @@ class SensorHistory(Entity):
             async with async_timeout.timeout(10):
                 async with session.get(url, headers=headers, params=params) as response:
                     return await response.json()
-        except:
-            return "[[{\"state\":\"0.0000\",\"state\":\"0.0000\",\"state\":\"0.0000\",\"state\":\"0.0000\",\"state\":\"0.0000\"}]]"
+        except Exception as e:
+            self.info(f"Problem while requesting data: {str(e)}")
+            default_states_list = []
+            for i in range(self._days):
+                day = (start_datetime + timedelta(days=i)).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "+00:00"
+                default_states_list.append(f"\"state\":\"0.0000\", \"last_changed\":\"{day}\"")
+            default_states = ", ".join(f"{{ {state} }}" for state in default_states_list)
+            return f"[[{{ {default_states} }}]]"

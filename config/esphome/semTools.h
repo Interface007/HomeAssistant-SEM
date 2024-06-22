@@ -49,12 +49,13 @@ public:
       int max_value = *std::max_element(values.begin(), values.end());
       ESP_LOGD("render csv", "max_value = %d", max_value);
 
-      auto barWidth = dx / n;
+      auto barWidth = dx / (n + 1);
+      auto distance = barWidth + (barWidth / n);
       
-      auto i = 1;
+      auto i = 0;
       for (int value : values)
       {
-        auto rx1 = x1 + i * barWidth;
+        auto rx1 = x1 + (i * distance) + 10;
         auto rdy = value * dy / max_value;
         auto ry1 = y1 - rdy - 1;
 

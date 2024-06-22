@@ -43,9 +43,13 @@ sensor:
   - platform: sensor_history
     entity_id: sensor.watermeter_value
     name: "epaper_watermeter_history"
+    bearertoken: !secret bearer_token
   - platform: sensor_history
     entity_id: sensor.power_main_total_active_power
     name: "epaper_power_history"
+    factor: 1
+    mode: "absolute"
+    bearertoken: !secret bearer_token
 
 input_text:
   teams_status:

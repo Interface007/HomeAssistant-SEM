@@ -17,17 +17,22 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_NAME = "Sensor History"
 DEFAULT_DAYS = 10
 DEFAULT_FACTOR = 1000
+DEFAULT_MODE = "difference"
 
-SCAN_INTERVAL = timedelta(minutes=1)
+SCAN_INTERVAL = timedelta(minutes=45)
 
 CONF_DAYS = "days"
 CONF_FACTOR = "factor"
+CONF_TOKEN = "bearertoken"
+CONF_MODE = "mode"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ENTITY_ID): cv.entity_id,
+    vol.Required(CONF_TOKEN): cv.string,
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_DAYS, default=DEFAULT_DAYS): vol.All(vol.Coerce(int), vol.Range(min=1)),
     vol.Optional(CONF_FACTOR, default=DEFAULT_FACTOR): vol.All(vol.Coerce(int), vol.Range(min=1)),
+    vol.Optional(CONF_MODE, default=DEFAULT_MODE): cv.string,
 })
 
 def is_float(value):
@@ -42,16 +47,20 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     entity_id = config.get(CONF_ENTITY_ID)
     days = config.get(CONF_DAYS)
     factor = config.get(CONF_FACTOR)
-    async_add_entities([SensorHistory(hass, name, entity_id, days, factor)], True)
+    mode = config.get(CONF_MODE)
+    token = config.get(CONF_TOKEN)
+    async_add_entities([SensorHistory(hass, name, entity_id, days, factor, token, mode)], True)
 
 class SensorHistory(Entity):
-    def __init__(self, hass, name, entity_id, days, factor):
+    def __init__(self, hass, name, entity_id, days, factor, token, mode):
         self._hass = hass
         self._name = name
         self._days = days
         self._factor = factor
         self._entity_id = entity_id
         self._state = None
+        self._token = token
+        self._mode = mode
 
     @property
     def name(self):
@@ -72,32 +81,37 @@ class SensorHistory(Entity):
 
     async def async_update(self):
         response = await self.get_sensor_history(self._entity_id)
-        self.debug(str(response))
-
         if not response or len(response[0]) < 1:
-            self.error(f"Not enough data points in history for {self._entity_id}")
+            self.info(f"Not enough data points in history for {self._entity_id}")
             return
         
         history = response[0]
-        self.debug(f"history = {history}")
-        historyItem = history[0]
-        self.debug(f"item = {historyItem}")
-        
-        self.debug(f"item.state = {historyItem['state']}")
-        
         values = [(float(item['state']), item['last_changed']) for item in history if is_float(item['state'])]
         if len(values) < 2:
-            self.error(f"Not enough numeric data points in history for {self._entity_id}")
+            self.info(f"Not enough numeric data points in history for {self._entity_id}")
             return
         
-        self.info("Processing %d values for %s", len(values), self._entity_id)
+        self.debug("Processing %d values for %s", len(values), self._entity_id)
 
         # Group by date and find daily maxima
+        daily_maxima = {}
+        for value, timestamp in values:
+            date = timestamp.split('T')[0] # just the date
+            if date in daily_maxima: # the date is already sortable, so we don't need to convert it to a datetime object
+                daily_maxima[date] = max(daily_maxima[date], value) 
+            else:
+                daily_maxima[date] = value
         
-        diffs = [round(values[i + 1][0] - values[i][0], 4) * 1000 for i in range(len(values) - 1)][-30:]
-        self._state = ";".join(f"{diff:.0f}" for diff in diffs)
+        maxima_values = list(daily_maxima.values())
         
-        self.info("State updated: %s", self._state)
+        match self._mode:
+            case "absolute":
+                self._state = ";".join(f"{max_value:.0f}" for max_value in maxima_values[-30:])
+            case "difference":
+                diff2 = [round(maxima_values[i + 1] - maxima_values[i], 4) * self._factor for i in range(len(maxima_values) - 1)][-30:]
+                self._state = ";".join(f"{dif2:.0f}" for dif2 in diff2)
+                
+        self.debug("State updated with mode %s: %s", self._mode, self._state)
         
     async def get_sensor_history(self, entity_id):
         session = async_get_clientsession(self._hass)
@@ -108,7 +122,7 @@ class SensorHistory(Entity):
 
         url = f"http://homeassistant:8123/api/history/period/{formatted_start_datetime}"
         headers = {
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjOWZmOGU4M2FlMDQ0YzI4OWQ3NGZmYTkxMDhjN2Y0MiIsImlhdCI6MTcxODMwMzAzMSwiZXhwIjoyMDMzNjYzMDMxfQ.7CJ8VbMAOGRECKV_3cDd1OKNtS4ViEhE33sbs3E3K_A",
+            "Authorization": f"Bearer {self._token}",
             "content-type": "application/json",
         }
         params = {
@@ -122,6 +136,5 @@ class SensorHistory(Entity):
                 async with session.get(url, headers=headers, params=params) as response:
                     return await response.json()
         except Exception as e:
-            self.info("Problem while requesting data: %s", str(e))
-            
+            self.debug("Problem while requesting data: %s - mostly not a problem, but simply the history not yet ready", str(e))
             return None

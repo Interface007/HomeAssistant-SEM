@@ -49,6 +49,7 @@ sensor:
     name: "epaper_power_history"
     factor: 1
     mode: "absolute"
+    aggregate: "sum"
     bearertoken: !secret bearer_token
 
 input_text:

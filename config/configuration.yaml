@@ -50,6 +50,7 @@ sensor:
     factor: 1
     mode: "absolute"
     aggregate: "sum"
+    aggregate_key: "hour"
     bearertoken: !secret bearer_token
 
 input_text:

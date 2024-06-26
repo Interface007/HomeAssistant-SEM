@@ -19,6 +19,7 @@ DEFAULT_DAYS = 10
 DEFAULT_FACTOR = 1000
 DEFAULT_MODE = "difference"
 DEFAULT_AGGREGATE = "max"
+DEFAULT_AGGREGATE_KEY = "day"
 DEFAULT_INTERVAL = 1
 
 SCAN_INTERVAL = timedelta(hours = 1)
@@ -28,6 +29,7 @@ CONF_FACTOR = "factor"
 CONF_TOKEN = "bearertoken"
 CONF_MODE = "mode"
 CONF_AGGREGATE = "aggregate"
+CONF_AGGREGATE_KEY = "aggregate_key"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ENTITY_ID): cv.entity_id,
@@ -35,8 +37,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_DAYS, default=DEFAULT_DAYS): vol.All(vol.Coerce(int), vol.Range(min=1)),
     vol.Optional(CONF_FACTOR, default=DEFAULT_FACTOR): vol.All(vol.Coerce(int), vol.Range(min=1)),
-    vol.Optional(CONF_MODE, default=DEFAULT_MODE): cv.string,
-    vol.Optional(CONF_AGGREGATE, default=DEFAULT_AGGREGATE): cv.string,
+    vol.Optional(CONF_MODE, default=DEFAULT_MODE): vol.In(["difference", "absolute"]),
+    vol.Optional(CONF_AGGREGATE, default=DEFAULT_AGGREGATE): vol.In(["max", "sum"]),
+    vol.Optional(CONF_AGGREGATE_KEY, default=DEFAULT_AGGREGATE_KEY): vol.In(["day", "month", "year", "week", "hour", "minute"]),
 })
 
 def is_float(value):
@@ -54,10 +57,11 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     mode = config.get(CONF_MODE)
     token = config.get(CONF_TOKEN)
     aggregate = config.get(CONF_AGGREGATE)
-    async_add_entities([SensorHistory(hass, name, entity_id, days, factor, token, mode, aggregate)], True)
+    aggregate_key = config.get(CONF_AGGREGATE_KEY)
+    async_add_entities([SensorHistory(hass, name, entity_id, days, factor, token, mode, aggregate, aggregate_key)], True)
 
 class SensorHistory(Entity):
-    def __init__(self, hass, name, entity_id, days, factor, token, mode, aggregate):
+    def __init__(self, hass, name, entity_id, days, factor, token, mode, aggregate, aggregate_key):
         self._hass = hass
         self._name = name
         self._days = days
@@ -67,6 +71,7 @@ class SensorHistory(Entity):
         self._token = token
         self._mode = mode
         self._aggregate = aggregate
+        self._aggregate_key = aggregate_key
 
     @property
     def name(self):
@@ -99,18 +104,32 @@ class SensorHistory(Entity):
         
         self.debug("Processing %d values for %s", len(values), self._entity_id)
 
+        match self._aggregate_key:
+            case "day":
+                key_length = 10
+            case "month":
+                key_length = 7
+            case "year":
+                key_length = 4
+            case "week":
+                key_length = 10
+            case "hour":
+                key_length = 13
+            case "minute":
+                key_length = 16
+                    
         # Group by date and find daily maxima
         aggregated = {}
         for value, timestamp in values:
-            date = timestamp.split('T')[0] # just the date
-            if date in aggregated: # the date is already sortable, so we don't need to convert it to a datetime object
+            key = timestamp[:key_length] # just the date
+            if key in aggregated: # the date is already sortable, so we don't need to convert it to a datetime object
                 match self._aggregate:
                     case "max":
-                        aggregated[date] = max(aggregated[date], value) 
+                        aggregated[key] = max(aggregated[key], value) 
                     case "sum":
-                        aggregated[date] += value
+                        aggregated[key] += value
             else:
-                aggregated[date] = value
+                aggregated[key] = value
         
         aggregatedValues = list(aggregated.values())
         

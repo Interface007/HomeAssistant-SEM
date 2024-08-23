@@ -131,6 +131,8 @@ class SensorHistory(Entity):
             else:
                 aggregated[key] = value
         
+        self.info(f"aggregated {aggregated}")
+        
         aggregatedValues = list(aggregated.values())
         
         match self._mode:

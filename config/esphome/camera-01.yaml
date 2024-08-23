@@ -1,5 +1,5 @@
 esphome:
-  name: "Kamera 01"
+  name: "kamera01"
   friendly_name: "Kamera 01"
 
 

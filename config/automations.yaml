@@ -35,7 +35,6 @@
       data:
         state: close
   mode: single
-
 - id: '1706905294258'
   alias: Wohnzimmerheizung geht an
   description: ''
@@ -53,7 +52,6 @@
     entity_id: e95f9ffd5fed1e31cfcbcbdaec51ecfd
     domain: switch
   mode: single
-
 - id: '1706905325310'
   alias: Wohnzimmerheizung geht aus
   description: ''
@@ -93,17 +91,18 @@
 - alias: Update Watermeter History
   trigger:
     platform: time_pattern
-    minutes: "/5"
+    minutes: /5
   action:
     service: homeassistant.update_entity
     target:
       entity_id: sensor.epaper_watermeter_history
-
+  id: 7ceeef4183db44a69eb15dc3985a8864
 - alias: Update Power Main History
   trigger:
     platform: time_pattern
-    minutes: "/5"
+    minutes: /5
   action:
     service: homeassistant.update_entity
     target:
       entity_id: sensor.epaper_power_history
+  id: 79b4a9f16f6f4fd3aeca653a2961bba9

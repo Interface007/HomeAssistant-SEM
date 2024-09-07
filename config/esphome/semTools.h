@@ -4,6 +4,7 @@
 #include "esphome.h"
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/font/font.h"
 
 #include <iostream>
 #include <sstream>
@@ -12,11 +13,45 @@
 class semTools
 {
 public:
-  semTools(esphome::display::Display &display) : display_(display) {}
+  semTools(esphome::display::Display &display, esphome::font::Font *symbolFont, esphome::font::Font *labelFont)
+      : display_(display), symbolFont_(symbolFont), labelFont_(labelFont) {}
+
+  void BatterySymbol(esphome::homeassistant::HomeassistantTextSensor *&sensor, int x1, int y1, std::string label)
+  {
+    ESP_LOGD("render battery", "start");
+
+    std::string symbol = "U";
+    if (sensor->has_state() && sensor->state != "unavailable")
+    {
+      ESP_LOGD("render battery", "has_state: %s", sensor->state.c_str());
+
+      int battery = std::stoi(sensor->state.c_str());
+      ESP_LOGD("render battery", "sensor value: %d", battery);
+
+      const std::string symbols[] = {
+          "\U000F007A", "\U000F007B", "\U000F007C", "\U000F007D", "\U000F007E",
+          "\U000F007F", "\U000F0080", "\U000F0081", "\U000F007B", "\U000F0079"};
+
+      int index = battery / 10;
+      if (index < 0) index = 0;
+      if (index > 9) index = 9;
+      symbol = symbols[index];
+    }
+    else
+    {
+      ESP_LOGD("render battery", "sensor value undefined");
+      symbol = "\U000F125E";
+    }
+
+    ESP_LOGD("render battery", "printing");
+    display_.print(x1, y1, symbolFont_, symbol.c_str());
+    display_.print(x1 + 10, y1 + 25, labelFont_, label.c_str());
+    ESP_LOGD("render battery", "done");
+  }
 
   void RenderDiagram(esphome::homeassistant::HomeassistantTextSensor *&sensor, int x1, int y1, int dx, int dy)
   {
-    display_.start_clipping(x1 - 2, y1 - dy - 2,x1 + dx + 2, y1 + 2);
+    display_.start_clipping(x1 - 2, y1 - dy - 2, x1 + dx + 2, y1 + 2);
 
     display_.line(x1, y1 - dy, x1, y1);
     display_.line(x1, y1, x1 + dx, y1);
@@ -51,7 +86,7 @@ public:
 
       auto barWidth = dx / (n + 1);
       auto distance = barWidth + (barWidth / n);
-      
+
       auto i = 0;
       for (int value : values)
       {
@@ -66,7 +101,9 @@ public:
 
         i++;
       }
-    } else {
+    }
+    else
+    {
       ESP_LOGD("render csv", "sensor has no state");
     }
 
@@ -75,6 +112,12 @@ public:
 
 private:
   esphome::display::Display &display_;
+
+private:
+  esphome::font::Font *symbolFont_;
+
+private:
+  esphome::font::Font *labelFont_;
 
   std::vector<std::string> split(const std::string &s, char delimiter)
   {

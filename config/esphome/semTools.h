@@ -45,7 +45,7 @@ public:
 
     ESP_LOGD("render battery", "printing");
     display_.print(x1, y1, symbolFont_, symbol.c_str());
-    display_.print(x1 + 10, y1 + 25, labelFont_, label.c_str());
+    display_.print(x1 + 5, y1 + 22, labelFont_, label.c_str());
     ESP_LOGD("render battery", "done");
   }
 

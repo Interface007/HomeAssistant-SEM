@@ -39,7 +39,7 @@ wifi:
 font:
   - file: 'fonts/OpenSans-Bold.ttf'
     id: openSansBold_font_small
-    size: 10
+    size: 12
     glyphs:
       ['&', '@', '!', '?', ',', '.', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
        '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
@@ -129,18 +129,6 @@ font:
       "\U000F0925", # mdi-wifi-strength-3
       "\U000F0928", # mdi-wifi-strength-4
       "\U000F092B", # mdi-wifi-strength-alert-outline
-      
-      "\U000F007A", # Battery 10
-      "\U000F007B", # Battery 20
-      "\U000F007C", # Battery 30
-      "\U000F007D", # Battery 40
-      "\U000F007E", # Battery 50
-      "\U000F007F", # Battery 60
-      "\U000F0080", # Battery 70
-      "\U000F0081", # Battery 80
-      "\U000F0082", # Battery 90
-      "\U000F0079", # Battery 100
-      "\U000F125E", # Battery alert
        
       "\U000F0590", # weather-cloudy
       "\U000F0F2F", # weather-cloudy-alert
@@ -172,6 +160,24 @@ font:
       "\U000F0F38", # weather-tornado
       "\U000F059D", # weather-windy
       "\U000F059E"  # weather-windy-variant
+      ]
+       
+       
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: materialdesign_icons_tiny
+    size: 26
+    glyphs: [
+      "\U000F007A", # Battery 10
+      "\U000F007B", # Battery 20
+      "\U000F007C", # Battery 30
+      "\U000F007D", # Battery 40
+      "\U000F007E", # Battery 50
+      "\U000F007F", # Battery 60
+      "\U000F0080", # Battery 70
+      "\U000F0081", # Battery 80
+      "\U000F0082", # Battery 90
+      "\U000F0079", # Battery 100
+      "\U000F125E"  # Battery alert
       ]
        
   - file: 'fonts/materialdesignicons-webfont.ttf'
@@ -490,7 +496,7 @@ display:
         }
       }
       
-      auto my_tools = semTools(it, id(materialdesign_icons_32), id(openSansBold_font_small));
+      auto my_tools = semTools(it, id(materialdesign_icons_tiny), id(openSansBold_font_small));
       ////////////////////////////////// Water Meter Graph ///////////////////////////////////////////
       y += 80;
       ESP_LOGI(TAG, "Water Meter Graph %d", y);
@@ -539,10 +545,13 @@ display:
       it.printf(xL1 + 40, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, id(wifi_bssid).state.c_str());
 
       x = 490; y = 445 - y2;
-      x += 30; my_tools.BatterySymbol(id(bad_fenster_battery),                x, y, "bf");
-      x += 30; my_tools.BatterySymbol(id(fenster_lea_battery),                x, y, "lf");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_sink_batterie),         x, y, "ks");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_drainage_pit_batterie), x, y, "dp");
+      x += 30; my_tools.BatterySymbol(id(bad_fenster_battery),                  x, y, "bf");
+      x += 30; my_tools.BatterySymbol(id(fenster_lea_battery),                  x, y, "lf");
+      x += 30; my_tools.BatterySymbol(id(water_sensor_kitchen_sink_batterie),   x, y, "ks");
+      x += 30; my_tools.BatterySymbol(id(water_sensor_drainage_pit_batterie),   x, y, "dp");
+      x += 30; my_tools.BatterySymbol(id(water_sensor_aquarium_batterie),       x, y, "aq");
+      x += 30; my_tools.BatterySymbol(id(water_sensor_bathroom_og_batterie),    x, y, "bo");
+      x += 30; my_tools.BatterySymbol(id(water_sensor_small_bathroom_batterie), x, y, "bu");
 
       //// if (id(uptime_human).has_state()) {
       ////   ESP_LOGI(TAG, "UpTime");
@@ -662,12 +671,24 @@ text_sensor:
     entity_id: sensor.fenster_lea_battery
     internal: true
   - platform: homeassistant
-    id: water_sensor_sink_batterie
-    entity_id: sensor.water_sensor_sink_batterie
+    id: water_sensor_kitchen_sink_batterie
+    entity_id: sensor.water_sensor_kitchen_sink_batterie
     internal: true
   - platform: homeassistant
     id: water_sensor_drainage_pit_batterie
     entity_id: sensor.third_reality_inc_3rws18bz_batterie
+    internal: true
+  - platform: homeassistant
+    id: water_sensor_aquarium_batterie
+    entity_id: sensor.water_sensor_aquarium_batterie_2
+    internal: true
+  - platform: homeassistant
+    id: water_sensor_bathroom_og_batterie
+    entity_id: sensor.water_sensor_bathroom_og_batterie_2
+    internal: true
+  - platform: homeassistant
+    id: water_sensor_small_bathroom_batterie
+    entity_id: sensor.water_sensor_small_bathroom_batterie_2
     internal: true
 
 binary_sensor:

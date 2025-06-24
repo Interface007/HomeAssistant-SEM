@@ -52,6 +52,40 @@ sensor:
     aggregate: "sum"
     aggregate_key: "hour"
     bearertoken: !secret bearer_token
+  - platform: filter
+    name: "Panel 1 (Moving Average)"
+    entity_id: sensor.solarbank_3_e2700_pro_solar_pv1
+    filters:
+      - filter: time_simple_moving_average
+        window_size: "00:30"
+        precision: 0
+  - platform: filter
+    name: "Panel 2 (Moving Average)"
+    entity_id: sensor.solarbank_3_e2700_pro_solar_pv2
+    filters:
+      - filter: time_simple_moving_average
+        window_size: "00:30"
+        precision: 0
+  - platform: filter
+    name: "Panel 3 (Moving Average)"
+    entity_id: sensor.solarbank_3_e2700_pro_solar_pv3
+    filters:
+      - filter: time_simple_moving_average
+        window_size: "00:30"
+        precision: 0
+  - platform: filter
+    name: "Panel 4 (Moving Average)"
+    entity_id: sensor.solarbank_3_e2700_pro_solar_pv4
+    filters:
+      - filter: time_simple_moving_average
+        window_size: "00:30"
+        precision: 0
+  - platform: template
+    sensors:
+      power_main_total_active_power_rounded:
+        friendly_name: "Enwag → Haus"
+        value_template: "{{ states('sensor.power_main_total_active_power') | float | round(0) }}"
+        unit_of_measurement: "W"
 
 input_text:
   teams_status:

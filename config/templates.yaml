@@ -5,7 +5,32 @@
 
   - name: ePaper Weather Forecast
     unique_id: epaper_weather_forecast_2
-    state: "{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[0]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[0]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[0]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[0]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[1]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[1]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[1]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[1]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[2]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[2]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[2]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[2]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[3]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[3]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[3]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[3]['templow']| replace('.',',') }};{{as_timestamp(state_attr('sensor.forecast_next_days', 'forecast')[4]['datetime']) | timestamp_custom('%a') }};{{state_attr('sensor.forecast_next_days', 'forecast')[4]['condition']}};{{state_attr('sensor.forecast_next_days', 'forecast')[4]['temperature']| replace('.',',') }};{{state_attr('sensor.forecast_next_days', 'forecast')[4]['templow']| replace('.',',') }}"
+    state: >
+      {% set forecast = state_attr('sensor.forecast_next_days', 'forecast') %}
+      {% if forecast and forecast | count >= 5 %}
+        {{ as_timestamp(forecast[0].datetime) | timestamp_custom('%a') }};
+        {{ forecast[0].condition }};
+        {{ forecast[0].temperature | replace('.',',') }};
+        {{ forecast[0].templow | replace('.',',') }};
+        {{ as_timestamp(forecast[1].datetime) | timestamp_custom('%a') }};
+        {{ forecast[1].condition }};
+        {{ forecast[1].temperature | replace('.',',') }};
+        {{ forecast[1].templow | replace('.',',') }};
+        {{ as_timestamp(forecast[2].datetime) | timestamp_custom('%a') }};
+        {{ forecast[2].condition }};
+        {{ forecast[2].temperature | replace('.',',') }};
+        {{ forecast[2].templow | replace('.',',') }};
+        {{ as_timestamp(forecast[3].datetime) | timestamp_custom('%a') }};
+        {{ forecast[3].condition }};
+        {{ forecast[3].temperature | replace('.',',') }};
+        {{ forecast[3].templow | replace('.',',') }};
+        {{ as_timestamp(forecast[4].datetime) | timestamp_custom('%a') }};
+        {{ forecast[4].condition }};
+        {{ forecast[4].temperature | replace('.',',') }};
+        {{ forecast[4].templow | replace('.',',') }}
+      {% else %}
+        Keine Daten
+      {% endif %}
 
   - name: ePaper Sunrise
     unique_id: epaper_sunrise_2

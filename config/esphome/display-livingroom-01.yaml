@@ -108,6 +108,8 @@ font:
       "\U000F11BB", # dryer ready
       "\U000F0855", # check
       "\U000F0996", # progress-clock
+      "\U000F06D0", # eye-outline
+      "\U000F06D1", # eye-off-outline
       
       "\U000F050F", # mdi-thermometer
       "\U000F0F55", # mdi-home-thermometer-outline
@@ -496,18 +498,34 @@ display:
         }
       }
       
+      if (id(aurora_visible_state).has_state()) {
+        auto state = id(aurora_visible_state).state;
+        ESP_LOGI(TAG, "Aurora");
+        if (state) {
+          it.printf(xRightCapt + 75, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F06D0"); // not visible
+        } else {
+          it.printf(xRightCapt + 75, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F06D1"); // visible
+        }
+      }
+      
       auto my_tools = semTools(it, id(materialdesign_icons_tiny), id(openSansBold_font_small));
       ////////////////////////////////// Water Meter Graph ///////////////////////////////////////////
       y += 80;
       ESP_LOGI(TAG, "Water Meter Graph %d", y);
       it.printf(xRightCapt, y - 15, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F1B29"); // faucet
-      my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
+      if (id(water_meter_history).has_state() && !id(water_meter_history).state.empty()) {
+        //my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
+      } else {
+        ESP_LOGW(TAG, "Water meter history is empty or unavailable");
+        // Optionally, draw some placeholder text or image
+      }
+      //my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
       
       ////////////////////////////////// Power Meter Graph ///////////////////////////////////////////
       y += 90;
       ESP_LOGI(TAG, "Power Meter Graph %d", y);
       it.printf(xRightCapt, y - 15, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F1904"); // home power
-      my_tools.RenderDiagram(id(power_history), xRightCapt + 40, y, 144, 75);
+      //my_tools.RenderDiagram(id(power_history), xRightCapt + 40, y, 144, 75);
       ////////////////////////////////////////////////////////////////////////////////////////////////
 
       ESP_LOGI(TAG, "Footer");
@@ -663,6 +681,10 @@ text_sensor:
     entity_id: sensor.trockner_operation_state
     internal: true
   - platform: homeassistant
+    id: aurora_visibility_state
+    entity_id: sensor.aurora_visibility_sichtbarkeit
+    internal: true
+  - platform: homeassistant
     id: bad_fenster_battery
     entity_id: sensor.bad_fenster_battery
     internal: true
@@ -699,6 +721,10 @@ binary_sensor:
   - platform: homeassistant
     id: fenster_lea
     entity_id: binary_sensor.epaper_fenster_lea
+    internal: true
+  - platform: homeassistant
+    id: aurora_visible_state
+    entity_id: binary_sensor.aurora_visibility_sichtbarkeitswarnung
     internal: true
 
 time:

@@ -26,11 +26,10 @@ public:
       ESP_LOGD("render battery", "has_state: %s", sensor->state.c_str());
 
       int battery = std::stoi(sensor->state.c_str());
-      ESP_LOGD("render battery", "sensor value: %d", battery);
 
       const std::string symbols[] = {
           "\U000F007A", "\U000F007B", "\U000F007C", "\U000F007D", "\U000F007E",
-          "\U000F007F", "\U000F0080", "\U000F0081", "\U000F007B", "\U000F0079"};
+          "\U000F007F", "\U000F0080", "\U000F0081", "\U000F0082", "\U000F0079"};
 
       int index = battery / 10;
       if (index < 0) index = 0;

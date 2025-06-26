@@ -240,7 +240,7 @@ display:
     busy_pin: 25
     reset_pin: 26
     model: 7.50inv2alt 
-    update_interval: 20min
+    update_interval: 1min
     lambda: |
       static const char* TAG = "ePaperLambda";
       ESP_LOGI(TAG, "starting lambda");
@@ -326,7 +326,9 @@ display:
         std::make_pair("windy",              "\U000F059D"),
         std::make_pair("windy-variant",      "\U000F059E")};
       
-      if(id(epaper_weather_actual).has_state()) {
+      auto my_tools = semTools(it, id(materialdesign_icons_tiny), id(openSansBold_font_small));
+
+      if (id(epaper_weather_actual).has_state()) {
         ESP_LOGI(TAG, "Current weather - has state, so render");
         std::string actualWeatherCSV = id(epaper_weather_actual).state; //("cloudy;5,9;50;1025,6;16,9");
         if (actualWeatherCSV == "unavailable;None;None;None;None") {
@@ -340,64 +342,70 @@ display:
           int xCurVals = x1 + 185;
           int xCurUnit = x1 + 190;
           for (int i=0; i<5; i++) {
-              const char * value = actualWeatherCSV.substr(previous, current - previous).c_str();
-              if(i == 0) { // icon
-                std::string unicodeWeatherIcon = weatherMap.at(value);
-                it.printf(x , y, id(materialdesign_icons_80), TextAlign::BASELINE_LEFT, unicodeWeatherIcon.c_str()); 
-                y = 120;
-                x = x + 90;
-              } else if (i == 1) { // temperature
-                  it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value);
-                  it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"°C");
-              } else if (i == 2) { // humidity
-                  it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value);
-                  it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s", "%");
-              } else if (i == 3) { // pressure
-                  it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value);
-                  it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"PA");
-              } else if (i == 4) { // windpeed
-                  it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value);
-                  it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"m/s");
-              }
-              y += 25;
-              previous = current + 1;
-              current = actualWeatherCSV.find(delim, previous);
+            std::string value = semTools::extract_and_trim(actualWeatherCSV, previous, current);
+            const char* value_cstr = value.c_str();
+            // const char * value = actualWeatherCSV.substr(previous, current - previous).c_str();
+            ESP_LOGI(TAG, "weather value %d: %s", i, value_cstr);
+            if (i == 0) { // icon
+              std::string unicodeWeatherIcon = weatherMap.at(value_cstr);
+              it.printf(x , y, id(materialdesign_icons_80), TextAlign::BASELINE_LEFT, unicodeWeatherIcon.c_str()); 
+              y = 120;
+              x = x + 90;
+            } else if (i == 1) { // temperature
+              it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
+              it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"°C");
+            } else if (i == 2) { // humidity
+              it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
+              it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s", "%");
+            } else if (i == 3) { // pressure
+              it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
+              it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"PA");
+            } else if (i == 4) { // windpeed
+              it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
+              it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"m/s");
+            }
+            y += 25;
+            previous = current + 1;
+            current = actualWeatherCSV.find(delim, previous);
           }
         }
       }
 
       ESP_LOGI(TAG, "Weather Forecast");
-      if(id(epaper_weather_forecast).has_state()) {
+      if (id(epaper_weather_forecast).has_state()) {
         ESP_LOGI(TAG, "Weather Forecast - has state, so render");
         std::string forecastWeatherCSV = id(epaper_weather_forecast).state; // Mon;sunny;16,5;5,1;Tue;sunny;17,2;6,8;Wed;sunny;15,4;2,7;Thu;sunny;15,3;4,6;Fri;partlycloudy;16,0;3,5
         auto csv = forecastWeatherCSV.c_str();
         ESP_LOGI("Weather forecast", "%s", csv);
-        
+      
         if(forecastWeatherCSV != "unavailable") {
-          ESP_LOGI("Weather forecast", "csv != 'unavailable'");
+          ESP_LOGI("Weather forecast", "csv != 'unavailable': %s", csv);
           std::size_t current, previous = 0;
           char delim = ';';
           current = forecastWeatherCSV.find(delim);
           x = 5; y = 270;
           int nextRow =0;
           for (int i = 0; i < 20; i++) {
-              const char * value = forecastWeatherCSV.substr(previous, current - previous).c_str();
-              if (i == 0 || i == 4 || i == 8 || i == 12 || i == 16) {           // Weekday
-                it.printf(x1 + x      , y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s", value);
-              } else if (i == 1 || i == 5 || i == 9 || i == 13 || i == 17) {    // icon
-                it.printf(x1 + x + 50 , y + 3, id(materialdesign_icons_32), TextAlign::BASELINE_LEFT, weatherMap.at(value).c_str()); 
-              } else if (i == 2 || i == 6 || i == 10 || i == 14 || i == 18) {   // Temp high
-                it.printf(x1 + x + 100, y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s°C", value);
-              } else if (i == 3 || i == 7 || i == 11 || i == 15 || i == 19) {   // Temp low
-                it.printf(x1 + x + 170, y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s°C", value);
-              }
-              nextRow = nextRow + 1;
-              if (nextRow == 4) {
-                y += 28;
-                nextRow = 0;
-              }
-              previous = current + 1;
-              current = forecastWeatherCSV.find(delim, previous);
+            std::string value = semTools::extract_and_trim(forecastWeatherCSV, previous, current);
+            const char* value_cstr = value.c_str();
+            ESP_LOGI("Weather forecast", "value=%s", value_cstr);
+            if (i == 0 || i == 4 || i == 8 || i == 12 || i == 16) {           // Weekday
+              it.printf(x1 + x      , y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s", value_cstr);
+            } else if (i == 1 || i == 5 || i == 9 || i == 13 || i == 17) {    // icon
+              auto unicodeWeatherIcon = weatherMap.at(value_cstr);
+              it.printf(x1 + x + 50 , y + 3, id(materialdesign_icons_32), TextAlign::BASELINE_LEFT, unicodeWeatherIcon.c_str()); 
+            } else if (i == 2 || i == 6 || i == 10 || i == 14 || i == 18) {   // Temp high
+              it.printf(x1 + x + 100, y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s°C", value_cstr);
+            } else if (i == 3 || i == 7 || i == 11 || i == 15 || i == 19) {   // Temp low
+              it.printf(x1 + x + 170, y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s°C", value_cstr);
+            }
+            nextRow = nextRow + 1;
+            if (nextRow == 4) {
+              y += 28;
+              nextRow = 0;
+            }
+            previous = current + 1;
+            current = forecastWeatherCSV.find(delim, previous);
           }
         }
       }
@@ -508,24 +516,17 @@ display:
         }
       }
       
-      auto my_tools = semTools(it, id(materialdesign_icons_tiny), id(openSansBold_font_small));
       ////////////////////////////////// Water Meter Graph ///////////////////////////////////////////
       y += 80;
       ESP_LOGI(TAG, "Water Meter Graph %d", y);
       it.printf(xRightCapt, y - 15, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F1B29"); // faucet
-      if (id(water_meter_history).has_state() && !id(water_meter_history).state.empty()) {
-        //my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
-      } else {
-        ESP_LOGW(TAG, "Water meter history is empty or unavailable");
-        // Optionally, draw some placeholder text or image
-      }
-      //my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
+      my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
       
       ////////////////////////////////// Power Meter Graph ///////////////////////////////////////////
       y += 90;
       ESP_LOGI(TAG, "Power Meter Graph %d", y);
       it.printf(xRightCapt, y - 15, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F1904"); // home power
-      //my_tools.RenderDiagram(id(power_history), xRightCapt + 40, y, 144, 75);
+      my_tools.RenderDiagram(id(power_history), xRightCapt + 40, y, 144, 75);
       ////////////////////////////////////////////////////////////////////////////////////////////////
 
       ESP_LOGI(TAG, "Footer");
@@ -558,9 +559,35 @@ display:
         }
       }
 
-      it.printf(xL1 - 20, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, "V 7.1");
+      // it.printf(xL1 - 20, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, "V 7.3");
+
+      it.printf(
+          xL1 - 20, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT,
+          "%c%c%c%c-%02d-%02d %02d:%02d",
+          __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10], // Jahr
+          ([]() { // Monat
+              const char* m = __DATE__;
+              if      (m[0]=='J' && m[1]=='a') return 1;
+              else if (m[0]=='F') return 2;
+              else if (m[0]=='M' && m[2]=='r') return 3;
+              else if (m[0]=='A' && m[1]=='p') return 4;
+              else if (m[0]=='M' && m[2]=='y') return 5;
+              else if (m[0]=='J' && m[2]=='n') return 6;
+              else if (m[0]=='J' && m[2]=='l') return 7;
+              else if (m[0]=='A' && m[1]=='u') return 8;
+              else if (m[0]=='S') return 9;
+              else if (m[0]=='O') return 10;
+              else if (m[0]=='N') return 11;
+              else if (m[0]=='D') return 12;
+              else return 0;
+          })(),
+          atoi(&__DATE__[4]), // day
+          atoi(&__TIME__[0]), // hour
+          atoi(&__TIME__[3])  // minute
+      );
+
       ESP_LOGI("WiFi-BSSID", id(wifi_bssid).state.c_str());
-      it.printf(xL1 + 40, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, id(wifi_bssid).state.c_str());
+      // it.printf(xL1 + 40, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, id(wifi_bssid).state.c_str());
 
       x = 490; y = 445 - y2;
       x += 30; my_tools.BatterySymbol(id(bad_fenster_battery),                  x, y, "bf");
@@ -571,10 +598,6 @@ display:
       x += 30; my_tools.BatterySymbol(id(water_sensor_bathroom_og_batterie),    x, y, "bo");
       x += 30; my_tools.BatterySymbol(id(water_sensor_small_bathroom_batterie), x, y, "bu");
 
-      //// if (id(uptime_human).has_state()) {
-      ////   ESP_LOGI(TAG, "UpTime");
-      ////   it.printf(520, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, "UpTime: %s", id(uptime_human).state.c_str());
-      //// }
       ESP_LOGI("RENDERING", "DONE");
 
 # --- Sensors ------------------------------------------------------------------

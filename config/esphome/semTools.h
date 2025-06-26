@@ -32,8 +32,10 @@ public:
           "\U000F007F", "\U000F0080", "\U000F0081", "\U000F0082", "\U000F0079"};
 
       int index = battery / 10;
-      if (index < 0) index = 0;
-      if (index > 9) index = 9;
+      if (index < 0)
+        index = 0;
+      if (index > 9)
+        index = 9;
       symbol = symbols[index];
     }
     else
@@ -55,7 +57,10 @@ public:
     display_.line(x1, y1 - dy, x1, y1);
     display_.line(x1, y1, x1 + dx, y1);
 
-    if (sensor->has_state())
+    if (
+        sensor->has_state() &&
+        !sensor->state.empty() &&
+        sensor->state != "unknown")
     {
       std::string csv = sensor->state;
 
@@ -107,6 +112,14 @@ public:
     }
 
     display_.end_clipping();
+  }
+
+  static std::string extract_and_trim(const std::string &csv, size_t previous, size_t current)
+  {
+    std::string raw_value = csv.substr(previous, current - previous);
+    size_t start = raw_value.find_first_not_of(" \t\r\n");
+    size_t end = raw_value.find_last_not_of(" \t\r\n");
+    return (start == std::string::npos) ? "" : raw_value.substr(start, end - start + 1);
   }
 
 private:

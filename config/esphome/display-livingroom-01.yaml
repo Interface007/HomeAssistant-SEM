@@ -477,13 +477,16 @@ display:
       ESP_LOGI("temp__in", std::to_string(temp__in).c_str());
       auto humi__in = atoi(id(humidity_inside).state.c_str());
       ESP_LOGI("humi__in", std::to_string(humi__in).c_str());
-      int humabsout = 1323.48 * humi_out * pow(10, (7.5 * temp_out / (237.4 + temp_out))) / (temp_out + 273.15);
-      int humabs_in = 1323.48 * humi__in * pow(10, (7.5 * temp__in / (237.4 + temp__in))) / (temp__in + 273.15);
-      ESP_LOGI("humabsout", std::to_string(humabsout).c_str());
-      ESP_LOGI("humabs_in", std::to_string(humabs_in).c_str());
 
-      it.printf(xRightCapt, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F058E"); // home minus
-      if (humabsout > humabs_in) {
+      double absHumidityOut = semTools::abshumidity(temp_out, humi_out);
+      ESP_LOGI("absHumidityOut", std::to_string(absHumidityOut).c_str());
+      double absHumidityIn  = semTools::abshumidity(temp__in, humi__in);
+      ESP_LOGI("absHumidityIn", std::to_string(absHumidityIn).c_str());
+      double humiditydifference = semTools::humiditydifference(temp_out, temp__in, humi_out, humi__in);
+      ESP_LOGI("humiditydifference", std::to_string(humiditydifference).c_str());
+
+      it.printf(xRightCapt, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F058E"); // Water Drop with percentage
+      if (humiditydifference > 0) {
         it.printf(xRightCapt + 60, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0974"); // home minus
         it.printf(xRightCapt + 115, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F19C0"); // home group plus
       } else {

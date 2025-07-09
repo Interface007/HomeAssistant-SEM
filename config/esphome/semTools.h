@@ -5,6 +5,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/font/font.h"
+#include <cmath>
 
 #include <iostream>
 #include <sstream>
@@ -120,6 +121,33 @@ public:
     size_t start = raw_value.find_first_not_of(" \t\r\n");
     size_t end = raw_value.find_last_not_of(" \t\r\n");
     return (start == std::string::npos) ? "" : raw_value.substr(start, end - start + 1);
+  }
+
+  static double abshumidity(int temp, int relativeHumidity)
+  {
+      // calculate the saturation vapor pressure (in hPa)
+      double sat_vapor_pressure = 6.112 * exp((17.67 * temp) / (temp + 243.5));
+
+      // calculate the absolute humidity using the formula (in g/m³)
+      double abs_humidity = (sat_vapor_pressure * relativeHumidity * 2.1674) / (273.15 + temp) / 100.0;
+
+      return abs_humidity; // convert to g/m³
+  }
+
+  static double humiditydifference(int tempOutside, int tempInside, int relativeHumidityOutside, int relativeHumidityInside)
+  {
+      // calculate the saturation vapor pressure (in hPa)
+      double sat_vapor_pressure_out = 6.112 * exp((17.67 * tempOutside) / (tempOutside + 243.5));
+      double sat_vapor_pressure_in  = 6.112 * exp((17.67 * tempInside) / (tempInside + 243.5));
+
+      // calculate the absolute humidity using the formula (in g/m³)
+      double abs_humidity_out = (sat_vapor_pressure_out * relativeHumidityOutside * 2.1674) / (273.15 + tempOutside) / 100.0;
+      double abs_humidity_in  = (sat_vapor_pressure_in  * relativeHumidityInside  * 2.1674) / (273.15 + tempInside) / 100.0;
+
+      // difference outside inside
+      double outsideInsideDiff = (abs_humidity_out - abs_humidity_in);
+
+      return outsideInsideDiff;
   }
 
 private:

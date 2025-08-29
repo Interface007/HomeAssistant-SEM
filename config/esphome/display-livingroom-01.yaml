@@ -1,3 +1,8 @@
+substitutions:
+  name: "display-livingroom-01"
+  friendly_name: Wohnzimmer Display 01
+  static_ip: 192.168.2.48
+
 esphome:
   name: "display-livingroom-01"
   friendly_name: Wohnzimmer Display 01
@@ -10,31 +15,12 @@ esp32:
   framework:
     type: arduino
 
-# Enable logging
-logger:
-  level: DEBUG 
-
-# Enable Home Assistant API
-api:
-  encryption:
-    key: !secret api_enc_key
-
-ota:
- - platform: esphome
-   password: !secret ota_password
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  
-  manual_ip:
-    static_ip: 192.168.2.48
-    gateway: 192.168.2.1
-    subnet: 255.255.255.0
-
-  ap:
-    ssid: "esphome-livingroom-01"
-    password: !secret ap_fallback_key
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+web_server: !include ./includes/web.yaml
 
 font:
   - file: 'fonts/OpenSans-Bold.ttf'
@@ -742,11 +728,11 @@ text_sensor:
 binary_sensor:
   - platform: homeassistant
     id: fenster_badezimmer
-    entity_id: binary_sensor.epaper_fenster_badezimmer
+    entity_id: binary_sensor.bad_og_north_window
     internal: true
   - platform: homeassistant
     id: fenster_lea
-    entity_id: binary_sensor.epaper_fenster_lea
+    entity_id: binary_sensor.bthome_sensor_f2ba_window
     internal: true
   - platform: homeassistant
     id: aurora_visible_state

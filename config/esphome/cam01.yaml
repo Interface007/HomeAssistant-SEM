@@ -1,0 +1,98 @@
+substitutions:
+  name: cam-01
+  friendly_name: Camera 01
+  static_ip: 192.168.2.61
+
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+# wifi: !include ./includes/wifi_common.yaml
+# captive_portal:
+web_server: !include ./includes/web.yaml
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  platformio_options:
+    board_build.arduino.memory_type: qio_opi
+    board_build.flash_mode: dio
+    upload_speed: 921600
+    monitor_speed: 115200
+  # on_boot:
+  #  priority: 700
+  #  then:
+  #    - switch.turn_off: relay1
+  #    - lambda: |-        
+  #        delay(1200);
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+# switch:
+#  - platform: gpio
+#    name: Camera 01 Relay1
+#    id: relay1
+#    pin: GPIO8
+#    restore_mode: ALWAYS_OFF
+#    setup_priority: 800
+
+esp32_camera:
+  name: ${friendly_name} Camera
+  external_clock:
+    pin: GPIO3
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO48
+    scl: GPIO47
+  data_pins: [GPIO41, GPIO45, GPIO46, GPIO42, GPIO40, GPIO38, GPIO15, GPIO18]
+  vsync_pin: GPIO1
+  href_pin: GPIO2
+  pixel_clock_pin: GPIO39
+  power_down_pin: GPIO8
+  resolution: 640x480
+  jpeg_quality: 10
+  #resolution: 1280x1024
+  #jpeg_quality: 30
+  vertical_flip: false
+  horizontal_mirror: false
+  # aec_mode: MANUAL
+  # aec_value: 1200
+  # brightness: 2
+  # wb_mode: HOME
+  # agc_mode: AUTO
+
+ethernet:
+  type: W5500
+  clk_pin: GPIO13
+  mosi_pin: GPIO11
+  miso_pin: GPIO12
+  cs_pin: GPIO14
+  interrupt_pin: GPIO10
+  reset_pin: GPIO9
+  manual_ip:
+    static_ip: ${static_ip}
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+
+#######################################
+### Bluetooth Proxy
+#######################################
+
+# esp32_ble_tracker:
+#   scan_parameters:
+#     #  only use these values on Ethernet not WIFI
+#     interval: 1100ms
+#     window: 1100ms
+#     active: true
+
+# bluetooth_proxy:
+#   active: true

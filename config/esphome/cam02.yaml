@@ -1,0 +1,38 @@
+substitutions:
+  name: cam-02
+  friendly_name: Camera 02
+  static_ip: 192.168.2.62
+
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+web_server: !include ./includes/web.yaml
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+esp32_camera:
+  name: "Camera 02"
+  external_clock:
+    pin: GPIO0
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+  max_framerate: 15 fps   
+  idle_framerate: 0.05 fps 
+  resolution: 1600x1200
+  jpeg_quality: 35

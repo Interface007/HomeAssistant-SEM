@@ -40,6 +40,82 @@ sensor:
         friendly_name: "Microsoft Teams activity"
         value_template: "{{states('input_text.teams_activity')}}"
         unique_id: sensor.teams_activity
+      rel_humidity_livingroomwall:
+        friendly_name: "Relative Feuchte an der Wohnzimmerwand"
+        icon_template: "mdi:water-percent-alert"
+        unit_of_measurement: '%'
+        value_template: >
+          {% set t_luft = states('sensor.klima_wohnzimmer_temperatur') | float %}
+          {% set rh_luft = states('sensor.klima_wohnzimmer_luftfeuchtigkeit') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {# 1. Taupunkt berechnen #}
+          {% set a = 17.625 %}
+          {% set b = 243.04 %}
+          {% set alpha = (rh_luft/100) | log + (a * t_luft)/(b + t_luft) %}
+          {% set t_tau = (b * alpha) / (a - alpha) %}
+          {# 2. Dampfdruck der Luft #}
+          {% set e = 6.1094 * (2.718281828459045 ** ((a * t_tau)/(b + t_tau))) %}
+          {# 3. Sättigungsdampfdruck an der Wand #}
+          {% set e_s = 6.1094 * (2.718281828459045 ** ((a * t_wand)/(b + t_wand))) %}
+          {# 4. Relative Feuchte an der Wand #}
+          {{ ((e / e_s) * 100) | round(1) }}
+      rel_humidity_bedroomwall:
+        friendly_name: "Relative Feuchte an der Schlafzimmerwand"
+        icon_template: "mdi:water-percent-alert"
+        unit_of_measurement: '%'
+        value_template: >
+          {% set t_luft = states('sensor.klima_schlafzimmer_temperatur') | float %}
+          {% set rh_luft = states('sensor.klima_schlafzimmer_luftfeuchtigkeit') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {# 1. Taupunkt berechnen #}
+          {% set a = 17.625 %}
+          {% set b = 243.04 %}
+          {% set alpha = (rh_luft/100) | log + (a * t_luft)/(b + t_luft) %}
+          {% set t_tau = (b * alpha) / (a - alpha) %}
+          {# 2. Dampfdruck der Luft #}
+          {% set e = 6.1094 * (2.718281828459045 ** ((a * t_tau)/(b + t_tau))) %}
+          {# 3. Sättigungsdampfdruck an der Wand #}
+          {% set e_s = 6.1094 * (2.718281828459045 ** ((a * t_wand)/(b + t_wand))) %}
+          {# 4. Relative Feuchte an der Wand #}
+          {{ ((e / e_s) * 100) | round(1) }}
+      rel_humidity_annawall:
+        friendly_name: "Relative Feuchte an der Wand Anna"
+        icon_template: "mdi:water-percent-alert"
+        unit_of_measurement: '%'
+        value_template: >
+          {% set t_luft = states('sensor.klima_ann_temperatur') | float %}
+          {% set rh_luft = states('sensor.klima_anna_luftfeuchtigkeit') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {# 1. Taupunkt berechnen #}
+          {% set a = 17.625 %}
+          {% set b = 243.04 %}
+          {% set alpha = (rh_luft/100) | log + (a * t_luft)/(b + t_luft) %}
+          {% set t_tau = (b * alpha) / (a - alpha) %}
+          {# 2. Dampfdruck der Luft #}
+          {% set e = 6.1094 * (2.718281828459045 ** ((a * t_tau)/(b + t_tau))) %}
+          {# 3. Sättigungsdampfdruck an der Wand #}
+          {% set e_s = 6.1094 * (2.718281828459045 ** ((a * t_wand)/(b + t_wand))) %}
+          {# 4. Relative Feuchte an der Wand #}
+          {{ ((e / e_s) * 100) | round(1) }}
+      rel_humidity_leawall:
+        friendly_name: "Relative Feuchte an der Wand Lea"
+        icon_template: "mdi:water-percent-alert"
+        unit_of_measurement: '%'
+        value_template: >
+          {% set t_luft = states('sensor.klima_lea_temperatur') | float %}
+          {% set rh_luft = states('sensor.klima_lea_luftfeuchtigkeit') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {# 1. Taupunkt berechnen #}
+          {% set a = 17.625 %}
+          {% set b = 243.04 %}
+          {% set alpha = (rh_luft/100) | log + (a * t_luft)/(b + t_luft) %}
+          {% set t_tau = (b * alpha) / (a - alpha) %}
+          {# 2. Dampfdruck der Luft #}
+          {% set e = 6.1094 * (2.718281828459045 ** ((a * t_tau)/(b + t_tau))) %}
+          {# 3. Sättigungsdampfdruck an der Wand #}
+          {% set e_s = 6.1094 * (2.718281828459045 ** ((a * t_wand)/(b + t_wand))) %}
+          {# 4. Relative Feuchte an der Wand #}
+          {{ ((e / e_s) * 100) | round(1) }}
   - platform: sensor_history
     entity_id: sensor.watermeter_value
     name: "epaper_watermeter_history"
@@ -100,6 +176,8 @@ input_boolean:
     name: Trigger Forecast Update
     initial: off
     icon: mdi:update
+
+http:
 
 logger:
   default: info

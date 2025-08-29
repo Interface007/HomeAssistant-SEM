@@ -1,0 +1,32 @@
+substitutions:
+  name: cam-02
+  friendly_name: Camera 02
+  static_ip: 192.168.2.47
+
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+web_server: !include ./includes/web.yaml
+
+esphome:
+  name: esphome-web-e866d8
+  friendly_name: Wand Temperatur Sensor
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+one_wire:
+  - platform: gpio
+    pin: GPIO18
+
+sensor:
+  - platform: dallas_temp
+    name: "Temperatur Wand Wohnzimmer"
+    accuracy_decimals: 1
+    update_interval: 60s

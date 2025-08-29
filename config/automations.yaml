@@ -1,40 +1,4 @@
-- id: '1705235905228'
-  alias: Bad Window Open
-  description: ''
-  trigger:
-  - type: opened
-    platform: device
-    device_id: 62cec91c45b8b94e61471bba33c65bc5
-    entity_id: 150d69a8c9b2bd4ae8caf421347ab28c
-    domain: binary_sensor
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 30
-  - type: not_opened
-    platform: device
-    device_id: 62cec91c45b8b94e61471bba33c65bc5
-    entity_id: 150d69a8c9b2bd4ae8caf421347ab28c
-    domain: binary_sensor
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 10
-  condition: []
-  action:
-  - if:
-    - condition: state
-      entity_id: binary_sensor.bad_fenster_door
-      state: 'on'
-    then:
-    - service: rest_command.shellytrv_bad_set_window_state
-      data:
-        state: open
-    else:
-    - service: rest_command.shellytrv_bad_set_window_state
-      data:
-        state: close
-  mode: single
+# switch on radiator-fan when valve opens in livingroom
 - id: '1706905294258'
   alias: Wohnzimmerheizung geht an
   description: ''
@@ -52,6 +16,8 @@
     entity_id: e95f9ffd5fed1e31cfcbcbdaec51ecfd
     domain: switch
   mode: single
+
+# keep radiator-fan on for 5 minutes when valve closes in livingroom
 - id: '1706905325310'
   alias: Wohnzimmerheizung geht aus
   description: ''
@@ -97,6 +63,7 @@
     target:
       entity_id: sensor.epaper_watermeter_history
   id: 7ceeef4183db44a69eb15dc3985a8864
+
 - alias: Update Power Main History
   trigger:
     platform: time_pattern

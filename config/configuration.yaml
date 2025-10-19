@@ -47,7 +47,7 @@ sensor:
         value_template: >
           {% set t_luft = states('sensor.klima_wohnzimmer_temperatur') | float %}
           {% set rh_luft = states('sensor.klima_wohnzimmer_luftfeuchtigkeit') | float %}
-          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_wand_temperatur_sensor') | float %}
           {# 1. Taupunkt berechnen #}
           {% set a = 17.625 %}
           {% set b = 243.04 %}
@@ -66,7 +66,7 @@ sensor:
         value_template: >
           {% set t_luft = states('sensor.klima_schlafzimmer_temperatur') | float %}
           {% set rh_luft = states('sensor.klima_schlafzimmer_luftfeuchtigkeit') | float %}
-          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_wand_temperatur_sensor') | float %}
           {# 1. Taupunkt berechnen #}
           {% set a = 17.625 %}
           {% set b = 243.04 %}
@@ -83,9 +83,9 @@ sensor:
         icon_template: "mdi:water-percent-alert"
         unit_of_measurement: '%'
         value_template: >
-          {% set t_luft = states('sensor.klima_ann_temperatur') | float %}
+          {% set t_luft = states('sensor.klima_anna_temperatur') | float %}
           {% set rh_luft = states('sensor.klima_anna_luftfeuchtigkeit') | float %}
-          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_wand_temperatur_sensor') | float %}
           {# 1. Taupunkt berechnen #}
           {% set a = 17.625 %}
           {% set b = 243.04 %}
@@ -104,7 +104,7 @@ sensor:
         value_template: >
           {% set t_luft = states('sensor.klima_lea_temperatur') | float %}
           {% set rh_luft = states('sensor.klima_lea_luftfeuchtigkeit') | float %}
-          {% set t_wand = states('sensor.esphome_web_e866d8_temperatur_wand_wohnzimmer') | float %}
+          {% set t_wand = states('sensor.esphome_web_e866d8_wand_temperatur_sensor') | float %}
           {# 1. Taupunkt berechnen #}
           {% set a = 17.625 %}
           {% set b = 243.04 %}

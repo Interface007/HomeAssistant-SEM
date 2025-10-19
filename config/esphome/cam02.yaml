@@ -13,6 +13,8 @@ web_server: !include ./includes/web.yaml
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
 
 esp32:
   board: esp32dev
@@ -20,7 +22,7 @@ esp32:
     type: esp-idf
 
 esp32_camera:
-  name: "Camera 02"
+  name: ${friendly_name} Camera
   external_clock:
     pin: GPIO0
     frequency: 20MHz

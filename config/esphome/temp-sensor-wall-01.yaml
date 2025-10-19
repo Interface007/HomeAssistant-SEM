@@ -1,6 +1,6 @@
 substitutions:
-  name: cam-02
-  friendly_name: Camera 02
+  name: esphome-web-e866d8
+  friendly_name: Wand Temperatur Sensor
   static_ip: 192.168.2.47
 
 logger: !include ./includes/logger.yaml
@@ -11,10 +11,8 @@ captive_portal:
 web_server: !include ./includes/web.yaml
 
 esphome:
-  name: esphome-web-e866d8
-  friendly_name: Wand Temperatur Sensor
-  min_version: 2025.5.0
-  name_add_mac_suffix: false
+  name: ${name}
+  friendly_name: ${friendly_name}
 
 esp32:
   board: esp32dev
@@ -27,6 +25,6 @@ one_wire:
 
 sensor:
   - platform: dallas_temp
-    name: "Temperatur Wand Wohnzimmer"
+    name: ${friendly_name}
     accuracy_decimals: 1
     update_interval: 60s

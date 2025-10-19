@@ -4,9 +4,10 @@ substitutions:
   static_ip: 192.168.2.48
 
 esphome:
-  name: "display-livingroom-01"
-  friendly_name: Wohnzimmer Display 01
-
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
   includes:
     - ./semTools.h
 
@@ -220,12 +221,12 @@ spi:
 
 display:
   - platform: waveshare_epaper
+    model: 7.50inv2alt 
     id: epaperdisplay
     cs_pin: 15
     dc_pin: 27
     busy_pin: 25
     reset_pin: 26
-    model: 7.50inv2alt 
     update_interval: 1min
     lambda: |
       static const char* TAG = "ePaperLambda";
@@ -411,7 +412,7 @@ display:
         it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081C");
       } else {
         it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081B");
-      }     
+      }
       it.printf(xMidSymb, y + 20, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F050F");
       it.printf(xMidVals, y + 20, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", id(temperature_bathroom).state.c_str());
       it.printf(xMidUnit, y + 20, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s","°C");

@@ -6,7 +6,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.5.0
+  min_version: 2025.9.0
   name_add_mac_suffix: false
 
 esp32:
@@ -14,10 +14,7 @@ esp32:
   framework:
     type: arduino
 
-# logger:  !include ./includes/logger.yaml
-logger: 
-  level: DEBUG 
-
+logger: !include ./includes/logger.yaml
 api: !include ./includes/api.yaml
 ota: !include ./includes/ota.yaml
 wifi: !include ./includes/wifi_common.yaml
@@ -26,7 +23,7 @@ web_server: !include ./includes/web.yaml
 
 font:
   - file: "fonts/UbuntuMono-Regular.ttf"
-    id: font_12
+    id: font12
     size: 12
     glyphs:
       ['&', '@', '!', '?', ',', '.', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
@@ -36,10 +33,12 @@ font:
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
        'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß', '³']
  
+
 i2c:
   sda: GPIO22
   scl: GPIO23
   scan: true
+
 
 display:
   - platform: ssd1306_i2c
@@ -47,199 +46,27 @@ display:
     address: 0x3C
     id: oled_display
     lambda: |-
-      auto print_luften = [&](int y, float value, const char* msg) -> int {
-        int mold_risk_threshold = 70;
-        
-        if (std::isnan(value)) {
-          ESP_LOGI("mold", "Sensorwert noch nicht verfügbar");
-          return y;  // Nichts zeichnen, y nicht erhöhen
-        }
-        
-        ESP_LOGI("mold", "Sensorwert: %f", value);
-        if (value > mold_risk_threshold) {
-          it.print(0, y, id(font_12), msg);
-          y += 13;
-        }
-        return y;
-      };
+      it.printf(0, 0, id(font12), "Temperatur:");
+      if (id(temperature_inside).has_state()) {
+        it.printf(0, 20, id(font12), "%f %%", id(temperature_inside).state);
+      } else {
+        it.printf(0, 20, id(font12), "Kein Wert");
+      }
+      it.strftime(0, 45, id(font12), "%H:%M:%S", id(homeassistant_time).now());
 
-      std::string col1 = "";
-
-      auto y = 0;
-      
-      ESP_LOGI("window", "FSN state: %s", id(window_sleep_north).state ? "true" : "false");
-      ESP_LOGI("window", "water_sensor_drainage_pit_batterie state: %f", id(water_sensor_drainage_pit_batterie).state);
-
-      if(id(window_bathroom_og_north).state == true) { col1 += "FBA-"; ESP_LOGI("window", "FBA: open"); } else { ESP_LOGI("window", "FBA: closed"); }
-      if(id(window_lea_south).state == true)         { col1 += "FLE-"; ESP_LOGI("window", "FLE: open"); } else { ESP_LOGI("window", "FLE: closed"); }
-      if(id(window_anna_north).state == true)        { col1 += "FAN-"; ESP_LOGI("window", "FAN: open"); } else { ESP_LOGI("window", "FAN: closed"); }
-      if(id(window_anna_west).state == true)         { col1 += "FAW-"; ESP_LOGI("window", "FAW: open"); } else { ESP_LOGI("window", "FAW: closed"); }
-      if(id(window_sleep_north).state == true)       { col1 += "FSN-"; ESP_LOGI("window", "FSN: open"); } else { ESP_LOGI("window", "FSN: closed"); }
-      if(id(window_bathroom_eg_south).state == true) { col1 += "FLE-"; ESP_LOGI("window", "FLE: open"); } else { ESP_LOGI("window", "FLE: closed"); }
-      
-      if (col1.length() > 1) { col1.pop_back(); } else { y += 13; col1 = "alle Fenster sind zu"; }
-      it.print(0, 00, id(font_12), col1.c_str()); 
-      y += 13;
-
-      it.printf(0, y, id(font_12), "Wasser: %d qm", id(watermeter_value).state);
-
-      ESP_LOGI("mold", "Rel. Feuchte Wohnzimmerwand: %f", id(rel_humidity_livingroomwall).state);
-      ESP_LOGI("mold", "watermeter_value: %f", id(watermeter_value).state);
-
-      y = print_luften(y, id(rel_humidity_livingroomwall).state, "Lueften: Wohnzimmer");
-      y = print_luften(y, id(rel_humidity_leawall).state, "Lueften: Lea");
-      y = print_luften(y, id(rel_humidity_annawall).state, "Lueften: Anna");
-      y = print_luften(y, id(rel_humidity_bedroomwall).state, "Lueften: Schlafzimmer");
-      if (y == 13) { it.print(0, y, id(font_12), "Alles in Ordnung :)"); }
+interval:
+  - interval: 2s
+    then:
+      - component.update: oled_display
 
 # --- Sensors ------------------------------------------------------------------
 sensor:
-  # ESP Home UpTime
-  - platform: uptime
-    id: uptime_sensor
-    update_interval: 60s
-    on_raw_value:
-      then:
-        - text_sensor.template.publish:
-            id: uptime_human
-            state: !lambda |-
-              int seconds = round(id(uptime_sensor).raw_state);
-              int days = seconds / (24 * 3600);
-              seconds = seconds % (24 * 3600);
-              int hours = seconds / 3600;
-              seconds = seconds % 3600;
-              int minutes = seconds /  60;
-              seconds = seconds % 60;
-              return (
-                (days ? String(days) + ":" : "000:") +
-                (hours ? String(hours) + ":" : "00:") +
-                (minutes ? String(minutes) + ":" : "00:") +
-                (String(seconds) + "")
-              ).c_str();  
-  - platform: wifi_signal
-    name: "WiFi Signal Sensor"
-    id: wifisignal
-    update_interval: 60s
   - platform: homeassistant
-    id: watermeter_value
-    name: "Water Statistic"
-    entity_id: sensor.watermeter_value
-    on_value:
-      then:
-        - lambda: |-
-            ESP_LOGI("main", "Value of Water Statistic: %f", id(watermeter_value).state);
-            id(oled_display).update();
-  - platform: homeassistant
-    id: rel_humidity_livingroomwall
-    entity_id: sensor.rel_humidity_livingroomwall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: rel_humidity_bedroomwall
-    entity_id: sensor.rel_humidity_bedroomwall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: rel_humidity_annawall
-    entity_id: sensor.rel_humidity_annawall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: rel_humidity_leawall
-    entity_id: sensor.rel_humidity_leawall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display).update();'
- 
-text_sensor:
-  # ESP WLAN IP Address
-  - platform: wifi_info
-    ip_address:
-      name: "${name} IP Address"
-      id: ip_address
-    bssid:
-      name: ESP Connected BSSID
-      id: wifi_bssid
-  # ESP Home UpTime
-  - platform: template
-    id: uptime_human
-    icon: mdi:clock-start
-  - platform: homeassistant
-    id: bad_fenster_battery
-    entity_id: sensor.bad_fenster_battery
-    internal: true
-  - platform: homeassistant
-    id: fenster_lea_battery
-    entity_id: sensor.fenster_lea_battery
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_kitchen_sink_batterie
-    entity_id: sensor.water_sensor_kitchen_sink_batterie
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_drainage_pit_batterie
-    entity_id: sensor.third_reality_inc_3rws18bz_batterie
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_aquarium_batterie
-    entity_id: sensor.water_sensor_aquarium_batterie_2
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_bathroom_og_batterie
-    entity_id: sensor.water_sensor_bathroom_og_batterie_2
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_small_bathroom_batterie
-    entity_id: sensor.water_sensor_small_bathroom_batterie_2
+    id: temperature_inside
+    entity_id: sensor.klima_wohnzimmer_temperatur
     internal: true
 
-binary_sensor:
+time:
   - platform: homeassistant
-    id: window_bathroom_og_north
-    entity_id: binary_sensor.bad_og_north_window
-    internal: true
-    on_state:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: window_lea_south
-    entity_id: binary_sensor.bthome_sensor_f2ba_window
-    internal: true
-    on_state:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: window_anna_north
-    entity_id: binary_sensor.bthome_sensor_aeac_window
-    internal: true
-    on_state:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: window_anna_west
-    entity_id: binary_sensor.shelly_blu_door_window_f3b0_window
-    internal: true
-    on_state:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: window_sleep_north
-    entity_id: binary_sensor.bthome_sensor_3e90_window
-    internal: true
-    on_state:
-      then:
-        - lambda: 'id(oled_display).update();'
-  - platform: homeassistant
-    id: window_bathroom_eg_south
-    entity_id: binary_sensor.bthome_sensor_fae8_window
-    internal: true
-    on_state:
-      then:
-        - lambda: 'id(oled_display).update();'
+    id: homeassistant_time
+    timezone: Europe/Berlin

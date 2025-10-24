@@ -743,3 +743,4 @@ binary_sensor:
 time:
   - platform: homeassistant
     id: time_homeassistant
+    timezone: Europe/Berlin

@@ -1,49 +1,69 @@
 substitutions:
   name: screen-01
   friendly_name: Screen 01
-  static_ip: 192.168.2.45
+  static_ip: 192.168.2.55
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.5.0
+  min_version: 2025.9.0
   name_add_mac_suffix: false
 
 esp32:
   board: esp32dev
   framework:
-    type: esp-idf
+    type: arduino
 
-logger:
-  level: DEBUG
-
+logger: !include ./includes/logger.yaml
 api: !include ./includes/api.yaml
-ota: 
-- platform: esphome
-  password: !secret ota_password
-
+ota: !include ./includes/ota.yaml
 wifi: !include ./includes/wifi_common.yaml
 captive_portal:
-# web_server: !include ./includes/web.yaml
+web_server: !include ./includes/web.yaml
 
+font:
+  - file: "fonts/UbuntuMono-Regular.ttf"
+    id: font12
+    size: 12
+    glyphs:
+      ['&', '@', '!', '?', ',', '.', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
+       '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+       'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+       'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
+       'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+       'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß', '³']
+ 
 i2c:
   sda: GPIO22
   scl: GPIO23
   scan: true
 
-font:
-  - file: "fonts/UbuntuMono-Regular.ttf"
-    id: font_10
-    size: 12
-
 display:
   - platform: ssd1306_i2c
-    model: SSD1305_128X64
+    model: SSD1306_128X64
+    address: 0x3C
     id: oled_display
     lambda: |-
-      it.print(0, 0, id(font_10), "Hello");
+      it.printf(0, 0, id(font12), "Temperatur:");
+      if (id(temperature_inside).has_state()) {
+        it.printf(0, 20, id(font12), "%f %%", id(temperature_inside).state);
+      } else {
+        it.printf(0, 20, id(font12), "Kein Wert");
+      }
+      it.strftime(0, 45, id(font12), "%H:%M:%S", id(homeassistant_time).now());
 
 interval:
   - interval: 2s
     then:
-      - lambda: 'id(oled_display).update();'
+      - component.update: oled_display
+
+sensor:
+  - platform: homeassistant
+    id: temperature_inside
+    entity_id: sensor.epaper_temperature_inside
+    internal: true
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/Berlin

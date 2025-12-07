@@ -34,16 +34,33 @@ font:
        'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß', '³']
  
 i2c:
+  id: i2c_bus            # ID hinzufügen
   sda: GPIO22
   scl: GPIO23
   scan: true
+
+tca9548a:
+  - address: 0x70
+    id: multiplex0
+    i2c_id: i2c_bus
+    channels:
+      - bus_id: multiplex0channel0
+        channel: 0
+      - bus_id: multiplex0channel1
+        channel: 1
 
 display:
   - platform: ssd1306_i2c
     model: SSD1306_128X64
     address: 0x3C
-    id: oled_display
+    i2c_id: multiplex0channel0
+    id: oled_display_0
     lambda: |-
+      auto write_mux_channel = [](uint8_t channel) {
+        uint8_t data = 1 << channel;
+        id(i2c_bus).write(0x70, &data, 1);
+      };
+
       auto print_luften = [&](int y, float value, const char* msg) -> int {
         int mold_risk_threshold = 80;
         
@@ -80,6 +97,20 @@ display:
       y = print_luften(y, id(rel_humidity_annawall).state, "Lueften: Anna");
       y = print_luften(y, id(rel_humidity_bedroomwall).state, "Lueften: Schlafzimmer");
       if (y == 15) { it.print(0, y, id(font12), "Alles in Ordnung :)"); }
+  
+  - platform: ssd1306_i2c
+    model: SSD1306_128X64
+    address: 0x3C
+    i2c_id: multiplex0channel1
+    id: oled_display_1
+    lambda: |-
+      auto write_mux_channel = [](uint8_t channel) {
+        uint8_t data = 1 << channel;
+        id(i2c_bus).write(0x70, &data, 1);
+      };
+
+      // write_mux_channel(1);
+      it.print(10, 10, id(font12), "HELLO");
 
 # --- Sensors ------------------------------------------------------------------
 sensor:
@@ -89,28 +120,28 @@ sensor:
     internal: true
     on_value:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: rel_humidity_bedroomwall
     entity_id: sensor.rel_humidity_bedroomwall
     internal: true
     on_value:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: rel_humidity_annawall
     entity_id: sensor.rel_humidity_annawall
     internal: true
     on_value:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: rel_humidity_leawall
     entity_id: sensor.rel_humidity_leawall
     internal: true
     on_value:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
 
 binary_sensor:
   - platform: homeassistant
@@ -119,39 +150,39 @@ binary_sensor:
     internal: true
     on_state:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_lea_south
     entity_id: binary_sensor.bthome_sensor_f2ba_window
     internal: true
     on_state:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_anna_north
     entity_id: binary_sensor.bthome_sensor_aeac_window
     internal: true
     on_state:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_anna_west
     entity_id: binary_sensor.shelly_blu_door_window_f3b0_window
     internal: true
     on_state:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_sleep_north
     entity_id: binary_sensor.bthome_sensor_3e90_window
     internal: true
     on_state:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_bathroom_eg_south
     entity_id: binary_sensor.bthome_sensor_fae8_window
     internal: true
     on_state:
       then:
-        - lambda: 'id(oled_display).update();'
+        - lambda: 'id(oled_display_0).update();'

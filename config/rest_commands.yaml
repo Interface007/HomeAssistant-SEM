@@ -1,0 +1,15 @@
+# bathroom
+shellytrv_bad_set_external_temperature:
+  # Variable "temperature": Temperature in °C (als Float)
+  url: http://192.168.2.23/ext_t?temp={{temperature}}
+shellytrv_bad_set_window_state:
+  # Variable "state": "open" (Window open) oder "close" (Window closed)
+  url: http://192.168.2.23/window?state={{state}}
+
+# LEA
+shellytrv_lea_set_external_temperature:
+  # Variable "temperature": Temperature in °C (als Float)
+  url: http://192.168.2.33/ext_t?temp={{temperature}}
+shellytrv_lea_set_window_state:
+  # Variable "state": "open" (Window open) oder "close" (Window closed)
+  url: http://192.168.2.33/window?state={{state}}

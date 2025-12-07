@@ -1,0 +1,4 @@
+- name: Enwag → Haus
+  unit_of_measurement: W
+  default_entity_id: sensor.power_main_total_active_power_rounded
+  state: '{{ states(''sensor.power_main_total_active_power'') | float | round(0) }}'

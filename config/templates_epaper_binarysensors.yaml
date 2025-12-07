@@ -1,0 +1,5 @@
+- name: ePaper Fenster Badezimmer
+  state: "{{ states('binary_sensor.bad_fenster_door') }}"
+
+- name: ePaper Fenster Lea
+  state: "{{ states('binary_sensor.fenster_lea_door') }}"

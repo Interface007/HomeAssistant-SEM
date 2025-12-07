@@ -1,0 +1,58 @@
+- name: Relative Feuchte an der Wohnzimmerwand
+  unit_of_measurement: '%'
+  icon: mdi:water-percent-alert
+  state: >
+    {% from 'wall_moisture.jinja' import relative_wall_humidity %}
+    {{ relative_wall_humidity(
+      'sensor.klima_wohnzimmer_temperatur',
+      'sensor.klima_wohnzimmer_luftfeuchtigkeit',
+      'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+    ) }}
+
+- name: Relative Feuchte an der Schlafzimmerwand
+  unit_of_measurement: '%'
+  default_entity_id: sensor.rel_humidity_bedroomwall
+  icon: mdi:water-percent-alert
+  state: >
+    {% from 'wall_moisture.jinja' import relative_wall_humidity %}
+    {{ relative_wall_humidity(
+      'sensor.klima_schlafzimmer_temperatur',
+      'sensor.klima_schlafzimmer_luftfeuchtigkeit',
+      'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+    ) }}
+
+- name: Relative Feuchte an der Wohnzimmerwand
+  unit_of_measurement: '%'
+  default_entity_id: sensor.rel_humidity_livingroomwall
+  icon: mdi:water-percent-alert
+  state: >
+    {% from 'wall_moisture.jinja' import relative_wall_humidity %}
+    {{ relative_wall_humidity(
+      'sensor.klima_wohnzimmer_temperatur',
+      'sensor.klima_wohnzimmer_luftfeuchtigkeit',
+      'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+    ) }}
+
+- name: Relative Feuchte an der Wand Anna
+  unit_of_measurement: '%'
+  default_entity_id: sensor.rel_humidity_annawall
+  icon: mdi:water-percent-alert
+  state: >
+    {% from 'wall_moisture.jinja' import relative_wall_humidity %}
+    {{ relative_wall_humidity(
+      'sensor.klima_anna_temperatur',
+      'sensor.klima_anna_luftfeuchtigkeit',
+      'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+    ) }}
+
+- name: Relative Feuchte an der Wand Lea
+  unit_of_measurement: '%'
+  default_entity_id: sensor.rel_humidity_leawall
+  icon: mdi:water-percent-alert
+  state: >
+    {% from 'wall_moisture.jinja' import relative_wall_humidity %}
+    {{ relative_wall_humidity(
+      'sensor.klima_lea_temperatur',
+      'sensor.klima_lea_luftfeuchtigkeit',
+      'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+    ) }}

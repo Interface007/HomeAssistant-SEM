@@ -1,0 +1,22 @@
+{% macro relative_wall_humidity(t_air_entity, rh_air_entity, t_wall_entity) %}
+  {% set t_air = states(t_air_entity) | float %}
+  {% set rh_air = states(rh_air_entity) | float %}
+  {% set t_wall = states(t_wall_entity) | float %}
+
+  {# Constant Magnus-Formular Parameters #}
+  {% set a = 17.625 %}
+  {% set b = 243.04 %}
+
+  {# 1. calculate dew point #}
+  {% set alpha = (rh_air / 100) | log + (a * t_air) / (b + t_air) %}
+  {% set t_dew = (b * alpha) / (a - alpha) %}
+
+  {# 2. vapour pressure of air #}
+  {% set e = 6.1094 * (2.718281828459045 ** ((a * t_dew) / (b + t_dew))) %}
+
+  {# 3. saturation vapour pressure at the wall #}
+  {% set e_s = 6.1094 * (2.718281828459045 ** ((a * t_wall) / (b + t_wall))) %}
+
+  {# 4. relative moisture at the wall #}
+  {{ ((e / e_s) * 100) | round(1) }}
+{% endmacro %}

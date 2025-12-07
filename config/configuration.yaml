@@ -1,4 +1,3 @@
-
 # Loads default set of integrations. Do not remove.
 default_config:
 
@@ -11,22 +10,7 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 template: !include templates.yaml
 
-rest_command:
-  # bathroom
-  shellytrv_bad_set_external_temperature:
-    # Variable "temperature": Temperatur in °C (als Float)
-    url: http://192.168.2.23/ext_t?temp={{temperature}}
-  shellytrv_bad_set_window_state:
-    # Variable "state": "open" (Fenster offen) oder "close" (Fenster geschlossen)
-    url: http://192.168.2.23/window?state={{state}}
-  # LEA
-  shellytrv_lea_set_external_temperature:
-    # Variable "temperature": Temperatur in °C (als Float)
-    url: http://192.168.2.33/ext_t?temp={{temperature}}
-  shellytrv_lea_set_window_state:
-    # Variable "state": "open" (Fenster offen) oder "close" (Fenster geschlossen)
-    url: http://192.168.2.33/window?state={{state}}
-  # ... Services für die anderen Thermostate
+rest_command: !include rest_commands.yaml
 
 sensor:
   - platform: sensor_history
@@ -69,16 +53,6 @@ sensor:
       - filter: time_simple_moving_average
         window_size: "00:30"
         precision: 0
-
-
-
-input_text:
-  teams_status:
-    name: Microsoft Teams status
-    icon: mdi:microsoft-teams
-  teams_activity:
-    name: Microsoft Teams activity
-    icon: mdi:phone-off
 
 input_boolean:
   trigger_forecast_update:

@@ -8,3 +8,5 @@ This entire repo is a work-in-progress... anything but "finished," but maybe it 
 
 This is how it looks like:
 <img width="1090" alt="image of the epaper display" src="https://github.com/Interface007/HomeAssistant-SEM/assets/995497/25abf4a8-d048-4308-859d-ce0272dd23c6">
+
+You might wonder what components to buy. I cannot tell you what components to buy now, but [on this page](components-and-devices.md) you can see what I use to realize my projects.

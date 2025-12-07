@@ -1,4 +1,68 @@
 - sensor:
+  - name: Enwag → Haus
+    unit_of_measurement: W
+    default_entity_id: sensor.power_main_total_active_power_rounded
+    state: '{{ states(''sensor.power_main_total_active_power'') | float | round(0) }}'
+
+  - name: "Relative Feuchte an der Wohnzimmerwand"
+    unit_of_measurement: '%'
+    icon: mdi:water-percent-alert
+    state: >
+      {% from 'wand_feuchte.jinja' import relative_feuchte_wand %}
+      {{ relative_feuchte_wand(
+        'sensor.klima_wohnzimmer_temperatur',
+        'sensor.klima_wohnzimmer_luftfeuchtigkeit',
+        'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+      ) }}
+
+  - name: Relative Feuchte an der Schlafzimmerwand
+    unit_of_measurement: '%'
+    default_entity_id: sensor.rel_humidity_bedroomwall
+    icon: mdi:water-percent-alert
+    state: >
+      {% from 'wand_feuchte.jinja' import relative_feuchte_wand %}
+      {{ relative_feuchte_wand(
+        'sensor.klima_schlafzimmer_temperatur',
+        'sensor.klima_schlafzimmer_luftfeuchtigkeit',
+        'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+      ) }}
+
+  - name: Relative Feuchte an der Wohnzimmerwand
+    unit_of_measurement: '%'
+    default_entity_id: sensor.rel_humidity_livingroomwall
+    icon: mdi:water-percent-alert
+    state: >
+      {% from 'wand_feuchte.jinja' import relative_feuchte_wand %}
+      {{ relative_feuchte_wand(
+        'sensor.klima_wohnzimmer_temperatur',
+        'sensor.klima_wohnzimmer_luftfeuchtigkeit',
+        'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+      ) }}
+
+  - name: Relative Feuchte an der Wand Anna
+    unit_of_measurement: '%'
+    default_entity_id: sensor.rel_humidity_annawall
+    icon: mdi:water-percent-alert
+    state: >
+      {% from 'wand_feuchte.jinja' import relative_feuchte_wand %}
+      {{ relative_feuchte_wand(
+        'sensor.klima_anna_temperatur',
+        'sensor.klima_anna_luftfeuchtigkeit',
+        'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+      ) }}
+
+  - name: Relative Feuchte an der Wand Lea
+    unit_of_measurement: '%'
+    default_entity_id: sensor.rel_humidity_leawall
+    icon: mdi:water-percent-alert
+    state: >
+      {% from 'wand_feuchte.jinja' import relative_feuchte_wand %}
+      {{ relative_feuchte_wand(
+        'sensor.klima_lea_temperatur',
+        'sensor.klima_lea_luftfeuchtigkeit',
+        'sensor.esphome_web_e866d8_wand_temperatur_sensor'
+      ) }}
+
   - name: ePaper Weather Actual
     unique_id: epaper_weather_actual_2
     state: "{{states('weather.home_2')}};{{state_attr('weather.home_2', 'temperature') | replace('.',',') }};{{state_attr('weather.home_2', 'humidity') | replace('.',',') }};{{state_attr('weather.home_2', 'pressure') | replace('.',',') }};{{state_attr('weather.home_2', 'wind_speed') | replace('.',',') }}"

@@ -1,0 +1,22 @@
+{% macro relative_feuchte_wand(t_luft_entity, rh_luft_entity, t_wand_entity) %}
+  {% set t_luft = states(t_luft_entity) | float %}
+  {% set rh_luft = states(rh_luft_entity) | float %}
+  {% set t_wand = states(t_wand_entity) | float %}
+
+  {# Konstante Magnus-Formel Parameter #}
+  {% set a = 17.625 %}
+  {% set b = 243.04 %}
+
+  {# 1. Taupunkt berechnen #}
+  {% set alpha = (rh_luft / 100) | log + (a * t_luft) / (b + t_luft) %}
+  {% set t_tau = (b * alpha) / (a - alpha) %}
+
+  {# 2. Dampfdruck der Luft #}
+  {% set e = 6.1094 * (2.718281828459045 ** ((a * t_tau) / (b + t_tau))) %}
+
+  {# 3. Sättigungsdampfdruck an der Wand #}
+  {% set e_s = 6.1094 * (2.718281828459045 ** ((a * t_wand) / (b + t_wand))) %}
+
+  {# 4. Relative Feuchte an der Wand #}
+  {{ ((e / e_s) * 100) | round(1) }}
+{% endmacro %}

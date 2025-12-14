@@ -37,7 +37,7 @@ i2c:
   id: i2c_bus            # ID hinzufügen
   sda: GPIO22
   scl: GPIO23
-  scan: true
+  frequency: 50kHz
 
 tca9548a:
   - address: 0x70
@@ -110,7 +110,7 @@ display:
       };
 
       // write_mux_channel(1);
-      it.print(10, 10, id(font12), "HELLO");
+      it.print(10, 20, id(font12), "HELLO");
 
 # --- Sensors ------------------------------------------------------------------
 sensor:

@@ -4,10 +4,15 @@ manual_ip:
   static_ip: ${static_ip}
   gateway: 192.168.2.1
   subnet: 255.255.255.0
+  dns1: 192.168.2.4
+  dns2: 1.1.1.1
 ap:
   ssid: ${ap_ssid}
   password: !secret ap_fallback_key
-on_connect:
-  - script.execute: draw_display
-on_disconnect:
-  - script.execute: draw_display
+
+power_save_mode: none
+
+# on_connect:
+#   - script.execute: draw_display
+# on_disconnect:
+#   - script.execute: draw_display

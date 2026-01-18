@@ -1,4 +1,3 @@
-# switch on radiator-fan when valve opens in livingroom
 - id: '1706905294258'
   alias: Wohnzimmerheizung geht an
   description: ''
@@ -16,8 +15,6 @@
     entity_id: e95f9ffd5fed1e31cfcbcbdaec51ecfd
     domain: switch
   mode: single
-
-# keep radiator-fan on for 5 minutes when valve closes in livingroom
 - id: '1706905325310'
   alias: Wohnzimmerheizung geht aus
   description: ''
@@ -37,7 +34,6 @@
     entity_id: e95f9ffd5fed1e31cfcbcbdaec51ecfd
     domain: switch
   mode: single
-
 - id: '1717938966464'
   alias: Get weather forecast
   description: ''
@@ -53,7 +49,6 @@
       type: daily
     response_variable: daily
   mode: single
-
 - alias: Update Watermeter History
   trigger:
     platform: time_pattern
@@ -63,7 +58,6 @@
     target:
       entity_id: sensor.epaper_watermeter_history
   id: 7ceeef4183db44a69eb15dc3985a8864
-
 - alias: Update Power Main History
   trigger:
     platform: time_pattern
@@ -73,3 +67,58 @@
     target:
       entity_id: sensor.epaper_power_history
   id: 79b4a9f16f6f4fd3aeca653a2961bba9
+- id: '1768683019731'
+  alias: ESL Temperature and Humidity WZ and Outside
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.klima_ausen_temperatur
+    - sensor.klima_wohnzimmer_temperatur
+    - sensor.klima_ausen_luftfeuchtigkeit
+    - sensor.klima_wohnzimmer_luftfeuchtigkeit
+  actions:
+  - target:
+      device_id: 62b68791e3762f3875499e1919151f45
+      entity_id: open_epaper_link.0000185157BA2010
+    data:
+      background: white
+      payload:
+      - type: text
+        value: 'Außen:'
+        x: 10
+        y: 10
+        size: 45
+      - type: text
+        value: '{{ states(''sensor.klima_ausen_temperatur'') }}°C'
+        x: 220
+        y: 10
+        size: 45
+      - type: text
+        value: 'WohnZ:'
+        x: 10
+        y: 60
+        size: 45
+      - type: text
+        value: '{{ states(''sensor.klima_wohnzimmer_temperatur'') }}°C'
+        x: 220
+        y: 60
+        size: 45
+      - type: icon
+        value: water-percent
+        x: 10
+        y: 110
+        size: 50
+        color: black
+      - type: text
+        value: Out {{ states('sensor.klima_ausen_luftfeuchtigkeit') }}% | In {{ states('sensor.klima_wohnzimmer_luftfeuchtigkeit')
+          }}%
+        x: 60
+        y: 120
+        size: 30
+      dry-run: false
+      rotate: 0
+      ttl: 60
+      dither: '0'
+    action: open_epaper_link.drawcustom
+  mode: restart

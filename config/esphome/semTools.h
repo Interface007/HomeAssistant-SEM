@@ -17,7 +17,7 @@ public:
   semTools(esphome::display::Display &display, esphome::font::Font *symbolFont, esphome::font::Font *labelFont)
       : display_(display), symbolFont_(symbolFont), labelFont_(labelFont) {}
 
-  void BatterySymbol(esphome::homeassistant::HomeassistantTextSensor *&sensor, int x1, int y1, std::string label)
+  void BatterySymbol(const esphome::homeassistant::HomeassistantTextSensor *sensor, int x1, int y1, std::string label)
   {
     ESP_LOGD("render battery", "start");
 
@@ -51,7 +51,7 @@ public:
     ESP_LOGD("render battery", "done");
   }
 
-  void RenderDiagram(esphome::homeassistant::HomeassistantTextSensor *&sensor, int x1, int y1, int dx, int dy)
+  void RenderDiagram(const esphome::homeassistant::HomeassistantTextSensor *sensor, int x1, int y1, int dx, int dy)
   {
     display_.start_clipping(x1 - 2, y1 - dy - 2, x1 + dx + 2, y1 + 2);
 

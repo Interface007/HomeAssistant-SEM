@@ -1,9 +1,9 @@
 - name: ePaper Weather Actual
-  unique_id: epaper_weather_actual_2
-  state: "{{states('weather.home_2')}};{{state_attr('weather.home_2', 'temperature') | replace('.',',') }};{{state_attr('weather.home_2', 'humidity') | replace('.',',') }};{{state_attr('weather.home_2', 'pressure') | replace('.',',') }};{{state_attr('weather.home_2', 'wind_speed') | replace('.',',') }}"
+  unique_id: epaper_weather_actual
+  state: "{{states('weather.home')}};{{state_attr('weather.home', 'temperature') | string | replace('.',',') }};{{state_attr('weather.home', 'humidity') | string | replace('.',',') }};{{state_attr('weather.home', 'pressure') | string | replace('.',',') }};{{state_attr('weather.home', 'wind_speed') | string | replace('.',',') }}"
 
 - name: ePaper Weather Forecast
-  unique_id: epaper_weather_forecast_2
+  unique_id: epaper_weather_forecast
   state: >
     {% set forecast = state_attr('sensor.forecast_next_days', 'forecast') %}
     {% if forecast and forecast | count >= 5 %}

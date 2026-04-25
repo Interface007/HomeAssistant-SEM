@@ -16,7 +16,7 @@ esp32:
   framework:
     type: arduino
 
-logger: 
+logger:
   level: VERY_VERBOSE
 # api: !include ./includes/api.yaml
 ota: !include ./includes/ota.yaml
@@ -27,7 +27,7 @@ web_server: !include ./includes/web.yaml
 api:
   on_client_connected:
     then:
-      - delay: 2s
+      - delay: 20s
       - component.update: epaperdisplay
   encryption:
     key: !secret api_enc_key
@@ -43,7 +43,7 @@ font:
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
        'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß']
- 
+
   - file: 'fonts/OpenSans-Bold.ttf'
     id: openSansBold_font
     size: 20
@@ -54,7 +54,7 @@ font:
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
        'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß']
- 
+
   - file: 'fonts/OpenSans-Bold.ttf'
     id: date_font
     size: 50
@@ -65,16 +65,16 @@ font:
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
        'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß']
-       
+
   - file: 'fonts/OpenSans-Bold.ttf'
     id: weekDay_font
     size: 38
     glyphs:
-      ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 
-       'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 
-       'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+       'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a',
+       'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
        'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-       
+
   - file: 'fonts/OpenSans-Bold.ttf'
     id: temperature_font
     size: 60
@@ -90,138 +90,168 @@ font:
     id: materialdesign_icons_35
     size: 35
     glyphs: [
-      "\U000F081B", # door-open
-      "\U000F081C", # door-closed
-      "\U000F156D", # living room
-      "\U000F0DD4", # outside
-      "\U000F0974", # home minus 
-      "\U000F0975", # home plus 
-      "\U000F19C1", # home group minus 
-      "\U000F19C0", # home group plus 
-      "\U000F1B29", # faucet 
-      "\U000F1904", # power
-      "\U000F0917", # dryer on
-      "\U000F11BB", # dryer ready
-      "\U000F0855", # check
-      "\U000F0996", # progress-clock
-      "\U000F06D0", # eye-outline
-      "\U000F06D1", # eye-off-outline
-      
-      "\U000F050F", # mdi-thermometer
-      "\U000F0F55", # mdi-home-thermometer-outline
-      "\U000F0F54", # mdi-home-thermometer
-      "\U000F058E", # mdi-water-percent
-      "\U000F029A", # mdi-gauge
-      "\U000F059B", # mdi-weather-sunset
-      "\U000F059C", # mdi-weather-sunrise
-      "\U000F10C2", # mdi-thermometer-high
-      "\U000F10C3"  # mdi-thermometer-low
+      "\U000F081B",
+      "\U000F081C",
+      "\U000F156D",
+      "\U000F0DD4",
+      "\U000F0974",
+      "\U000F0975",
+      "\U000F19C1",
+      "\U000F19C0",
+      "\U000F1B29",
+      "\U000F1904",
+      "\U000F0917",
+      "\U000F11BB",
+      "\U000F0855",
+      "\U000F0996",
+      "\U000F06D0",
+      "\U000F06D1",
+      "\U000F050F",
+      "\U000F0F55",
+      "\U000F0F54",
+      "\U000F058E",
+      "\U000F029A",
+      "\U000F059B",
+      "\U000F059C",
+      "\U000F059D",
+      "\U000F10C2",
+      "\U000F10C3"
       ]
-       
+
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: materialdesign_icons_30
+    size: 30
+    glyphs: [
+      "\U000F081B",
+      "\U000F081C",
+      "\U000F156D",
+      "\U000F0DD4",
+      "\U000F0974",
+      "\U000F0975",
+      "\U000F19C1",
+      "\U000F19C0",
+      "\U000F1B29",
+      "\U000F1904",
+      "\U000F0917",
+      "\U000F11BB",
+      "\U000F0855",
+      "\U000F0996",
+      "\U000F06D0",
+      "\U000F06D1",
+      "\U000F050F",
+      "\U000F0F55",
+      "\U000F0F54",
+      "\U000F058E",
+      "\U000F029A",
+      "\U000F059B",
+      "\U000F059C",
+      "\U000F059D",
+      "\U000F10C2",
+      "\U000F10C3"
+      ]
+
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: materialdesign_icons_32
     size: 32
     glyphs: [
-      "\U000F091F", # mdi-wifi-strength-1
-      "\U000F0922", # mdi-wifi-strength-2
-      "\U000F0925", # mdi-wifi-strength-3
-      "\U000F0928", # mdi-wifi-strength-4
-      "\U000F092B", # mdi-wifi-strength-alert-outline
-       
-      "\U000F0590", # weather-cloudy
-      "\U000F0F2F", # weather-cloudy-alert
-      "\U000F0E6E", # weather-cloudy-arrow-right
-      "\U000F0591", # weather-fog
-      "\U000F0592", # weather-hail
-      "\U000F0F30", # weather-hazy
-      "\U000F0898", # weather-hurricane
-      "\U000F0593", # weather-lightning
-      "\U000F067E", # weather-lightning-rainy
-      "\U000F0594", # weather-night
-      "\U000F0F31", # weather-night-partly-cloudy
-      "\U000F0595", # weather-partly-cloudy
-      "\U000F0F32", # weather-partly-lightning
-      "\U000F0F33", # weather-partly-rainy
-      "\U000F0F34", # weather-partly-snowy
-      "\U000F0F35", # weather-partly-snowy-rainy
-      "\U000F0596", # weather-pouring
-      "\U000F0597", # weather-rainy
-      "\U000F0598", # weather-snowy
-      "\U000F0F36", # weather-snowy-heavy
-      "\U000F067F", # weather-snowy-rainy
-      "\U000F0599", # weather-sunny
-      "\U000F0F37", # weather-sunny-alert
-      "\U000F14E4", # weather-sunny-off
-      "\U000F059A", # weather-sunset
-      "\U000F059B", # weather-sunset-down
-      "\U000F059C", # weather-sunset-up
-      "\U000F0F38", # weather-tornado
-      "\U000F059D", # weather-windy
-      "\U000F059E"  # weather-windy-variant
+      "\U000F091F",
+      "\U000F0922",
+      "\U000F0925",
+      "\U000F0928",
+      "\U000F092B",
+      "\U000F0590",
+      "\U000F0F2F",
+      "\U000F0E6E",
+      "\U000F0591",
+      "\U000F0592",
+      "\U000F0F30",
+      "\U000F0898",
+      "\U000F0593",
+      "\U000F067E",
+      "\U000F0594",
+      "\U000F0F31",
+      "\U000F0595",
+      "\U000F0F32",
+      "\U000F0F33",
+      "\U000F0F34",
+      "\U000F0F35",
+      "\U000F0596",
+      "\U000F0597",
+      "\U000F0598",
+      "\U000F0F36",
+      "\U000F067F",
+      "\U000F0599",
+      "\U000F0F37",
+      "\U000F14E4",
+      "\U000F059A",
+      "\U000F059B",
+      "\U000F059C",
+      "\U000F0F38",
+      "\U000F059D",
+      "\U000F059E"
       ]
-       
-       
+
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: materialdesign_icons_tiny
     size: 26
     glyphs: [
-      "\U000F007A", # Battery 10
-      "\U000F007B", # Battery 20
-      "\U000F007C", # Battery 30
-      "\U000F007D", # Battery 40
-      "\U000F007E", # Battery 50
-      "\U000F007F", # Battery 60
-      "\U000F0080", # Battery 70
-      "\U000F0081", # Battery 80
-      "\U000F0082", # Battery 90
-      "\U000F0079", # Battery 100
-      "\U000F125E"  # Battery alert
+      "\U000F007A",
+      "\U000F007B",
+      "\U000F007C",
+      "\U000F007D",
+      "\U000F007E",
+      "\U000F007F",
+      "\U000F0080",
+      "\U000F0081",
+      "\U000F0082",
+      "\U000F0079",
+      "\U000F125E"
       ]
-       
+
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: materialdesign_icons_60
     size: 60
     glyphs: [
-      "\U000F156D", # sofa (living room)
-      "\U000F09A0", # bathroom
-      "\U000F0DD4", # garden
-      "\U000F156F"  # lea (sofa)
+      "\U000F156D",
+      "\U000F09A0",
+      "\U000F0DD4",
+      "\U000F156F"
     ]
 
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: materialdesign_icons_80
     size: 80
     glyphs: [
-      "\U000F0590", # weather-cloudy
-      "\U000F0F2F", # weather-cloudy-alert
-      "\U000F0E6E", # weather-cloudy-arrow-right
-      "\U000F0591", # weather-fog
-      "\U000F0592", # weather-hail
-      "\U000F0F30", # weather-hazy
-      "\U000F0898", # weather-hurricane
-      "\U000F0593", # weather-lightning
-      "\U000F067E", # weather-lightning-rainy
-      "\U000F0594", # weather-night
-      "\U000F0F31", # weather-night-partly-cloudy
-      "\U000F0595", # weather-partly-cloudy
-      "\U000F0F32", # weather-partly-lightning
-      "\U000F0F33", # weather-partly-rainy
-      "\U000F0F34", # weather-partly-snowy
-      "\U000F0F35", # weather-partly-snowy-rainy
-      "\U000F0596", # weather-pouring
-      "\U000F0597", # weather-rainy
-      "\U000F0598", # weather-snowy
-      "\U000F0F36", # weather-snowy-heavy
-      "\U000F067F", # weather-snowy-rainy
-      "\U000F0599", # weather-sunny
-      "\U000F0F37", # weather-sunny-alert
-      "\U000F14E4", # weather-sunny-off
-      "\U000F059A", # weather-sunset
-      "\U000F059B", # weather-sunset-down
-      "\U000F059C", # weather-sunset-up
-      "\U000F0F38", # weather-tornado
-      "\U000F059D", # weather-windy
-      "\U000F059E"  # weather-windy-variant
+      "\U000F0590",
+      "\U000F0F2F",
+      "\U000F0E6E",
+      "\U000F0591",
+      "\U000F0592",
+      "\U000F0F30",
+      "\U000F0898",
+      "\U000F0593",
+      "\U000F067E",
+      "\U000F0594",
+      "\U000F0F31",
+      "\U000F0595",
+      "\U000F0F32",
+      "\U000F0F33",
+      "\U000F0F34",
+      "\U000F0F35",
+      "\U000F0596",
+      "\U000F0597",
+      "\U000F0598",
+      "\U000F0F36",
+      "\U000F067F",
+      "\U000F0599",
+      "\U000F0F37",
+      "\U000F14E4",
+      "\U000F059A",
+      "\U000F059B",
+      "\U000F059C",
+      "\U000F0F38",
+      "\U000F059D",
+      "\U000F059E"
     ]
 
 spi:
@@ -236,377 +266,339 @@ display:
     dc_pin: 27
     busy_pin: 25
     reset_pin: 26
-    reset_duration: 20ms       # ← NEU: längere Reset-Zeit
+    reset_duration: 20ms
     update_interval: 15min
 
-    lambda: |
-      static const char* TAG = "ePaperLambda";
-      ESP_LOGI(TAG, "starting lambda");
-      int x, y;
+    lambda: |-
+      // Ensure each frame starts from a clean white canvas.
+      it.fill(COLOR_OFF);
 
-      // offsets
-      int x1 =  55; // OK
-      int x2 = 120; // OK
-      int y1 =   5; // OK
-      int y2 =  40; // OK
-      
-      int xL1 = x1 / 2 + 266;
-      int xL2 = 532 - x1 / 2;
-
-      int yHd = y1 + 108;
-      int yFt = 440 - y2;
-
-      ESP_LOGI(TAG, "Grid");
-      it.line(  0, yHd, 800, yHd); // Horizontal header
-      it.line(  0, yFt, 800, yFt); // Horizontal footer
-      it.line(xL1, yHd, xL1, yFt); // Vertical first line
-      it.line(xL2, yHd, xL2, yFt); // Vertical second line
-      ESP_LOGI(TAG, "Sunrise %s / Sunset %s", id(epaper_sunrise).state.c_str(), id(epaper_sunset).state.c_str());
-      it.printf(x1 +  5, y1 +  40,  id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F059C");
-      it.printf(x1 + 45, y1 +  60,  id(date_font),               TextAlign::BOTTOM_LEFT   , id(epaper_sunrise).state.c_str());
-      it.printf(x1 +  5, y1 +  90,  id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F059B");
-      it.printf(x1 + 45, y1 + 110,  id(date_font),               TextAlign::BOTTOM_LEFT   , id(epaper_sunset).state.c_str());
-      
-      ESP_LOGI(TAG, "Temperature inside / outside");
-      it.printf(x1 + 200, y1 +  40, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F156D"); 
-      it.printf(x1 + 365, y1 +  65, id(temperature_font),        TextAlign::BOTTOM_RIGHT  , "%s"        , id(temperature_inside).state.c_str());
-      it.printf(x1 + 370, y1 +  65, id(temperature_font),        TextAlign::BOTTOM_LEFT   , "°C");
-      it.printf(x1 + 200, y1 +  90, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0DD4");
-      it.printf(x1 + 365, y1 + 115, id(temperature_font),        TextAlign::BOTTOM_RIGHT  , "%s"        , id(temperature_outside).state.c_str());
-      it.printf(x1 + 370, y1 + 115, id(temperature_font),        TextAlign::BOTTOM_LEFT   , "°C");
-
-      ESP_LOGI(TAG, "Date");
-      it.strftime(xL2 + 5, y1 +  60,  id(weekDay_font),          TextAlign::BOTTOM_LEFT   , "%A"        , id(time_homeassistant).now());
-      it.strftime(xL2 + 5, y1 + 110,  id(date_font   ),          TextAlign::BOTTOM_LEFT   , "%d.%m.%y"  , id(time_homeassistant).now());
-
-      //      # ESP_LOGI(TAG, "Current weather - maps");
-      //      # // https://www.home-assistant.io/integrations/weather/
-      //      # // weahtericon;temperature;humidity,pressure;wind_speed
-      //      # // ex. data:   cloudy;5,9;50;1025,6;16,9
-      //      # std::map <std::string, std::string> weekMap =  {
-      //      #   std::make_pair("Mon","Mo"), 
-      //      #   std::make_pair("Tue","Di"), 
-      //      #   std::make_pair("Wed","Mi"), 
-      //      #   std::make_pair("Thu","Do"),
-      //      #   std::make_pair("Fri","Fr"), 
-      //      #   std::make_pair("Sat","Sa"), 
-      //      #   std::make_pair("Sun","So")};
-      //
-      //      # std::map <std::string, std::string> weatherMap =  {
-      //      #   std::make_pair("exceptional",        "\U000F0F2F"),
-      //      #   std::make_pair("cloudy",             "\U000F0590"),
-      //      #   std::make_pair("cloudy-alert",       "\U000F0F2F"),
-      //      #   std::make_pair("fog",                "\U000F0591"),
-      //      #   std::make_pair("hail",               "\U000F0592"),
-      //      #   std::make_pair("hazy",               "\U000F0F30"),
-      //      #   std::make_pair("hurricane",          "\U000F0898"),
-      //      #   std::make_pair("lightning",          "\U000F0593"),
-      //      #   std::make_pair("lightning-rainy",    "\U000F067E"),
-      //      #   std::make_pair("night",              "\U000F0594"),
-      //      #   std::make_pair("clear-night",        "\U000F0594"),
-      //      #   std::make_pair("night-partly-cloudy","\U000F0F31"),
-      //      #   std::make_pair("partly-cloudy",      "\U000F0595"),
-      //      #   std::make_pair("partlycloudy",       "\U000F0595"),
-      //      #   std::make_pair("partly-lightning",   "\U000F0F32"),
-      //      #   std::make_pair("partly-rainy",       "\U000F0F33"),
-      //      #   std::make_pair("partly-snowy",       "\U000F0F34"),
-      //      #   std::make_pair("partly-snowy-rainy", "\U000F0F35"),
-      //      #   std::make_pair("pouring",            "\U000F0596"),
-      //      #   std::make_pair("rainy",              "\U000F0597"),
-      //      #   std::make_pair("snowy",              "\U000F0598"),
-      //      #   std::make_pair("snowy-heavy",        "\U000F0F36"),
-      //      #   std::make_pair("snowy-rainy",        "\U000F067F"),
-      //      #   std::make_pair("sunny",              "\U000F0599"),
-      //      #   std::make_pair("sunny-alert",        "\U000F0F37"),
-      //      #   std::make_pair("sunny-off",          "\U000F14E4"),
-      //      #   std::make_pair("tornado",            "\U000F0F38"),
-      //      #   std::make_pair("windy",              "\U000F059D"),
-      //      #   std::make_pair("windy-variant",      "\U000F059E")};
-      
       auto my_tools = semTools(it, id(materialdesign_icons_tiny), id(openSansBold_font_small));
 
-      // if (id(epaper_weather_actual).has_state()) {
-      //   ESP_LOGI(TAG, "Current weather - has state, so render");
-      //   std::string actualWeatherCSV = id(epaper_weather_actual).state; //("cloudy;5,9;50;1025,6;16,9");
-      //   if (actualWeatherCSV == "unavailable;None;None;None;None") {
-      //     ESP_LOGW(TAG, "Weather today - Sensor data is unavailable.");
-      //   } else {
-      //     ESP_LOGI(TAG, "Weather today is %s", actualWeatherCSV.c_str());
-      //     std::size_t current, previous = 0;
-      //     char delim = ';';
-      //     current = actualWeatherCSV.find(delim);
-      //     x = x1 + 5; y = y1 + 200;
-      //     int xCurVals = x1 + 185;
-      //     int xCurUnit = x1 + 190;
-      //     for (int i=0; i<5; i++) {
-      //       std::string value = semTools::extract_and_trim(actualWeatherCSV, previous, current);
-      //       const char* value_cstr = value.c_str();
-      //       // const char * value = actualWeatherCSV.substr(previous, current - previous).c_str();
-      //       ESP_LOGI(TAG, "weather value %d: %s", i, value_cstr);
-      //       if (i == 0) { // icon
-      //         std::string unicodeWeatherIcon = weatherMap.at(value_cstr);
-      //         it.printf(x , y, id(materialdesign_icons_80), TextAlign::BASELINE_LEFT, unicodeWeatherIcon.c_str()); 
-      //         y = 120;
-      //         x = x + 90;
-      //       } else if (i == 1) { // temperature
-      //         it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
-      //         it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"°C");
-      //       } else if (i == 2) { // humidity
-      //         it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
-      //         it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s", "%");
-      //       } else if (i == 3) { // pressure
-      //         it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
-      //         it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"PA");
-      //       } else if (i == 4) { // windpeed
-      //         it.printf(xCurVals, y, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", value_cstr);
-      //         it.printf(xCurUnit, y, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"m/s");
-      //       }
-      //       y += 25;
-      //       previous = current + 1;
-      //       current = actualWeatherCSV.find(delim, previous);
-      //     }
-      //   }
-      // }
+      const int canvas_width = 800;
+      const int margin = 14;
+      const int gutter = 10;
 
-      // ESP_LOGI(TAG, "Weather Forecast");
-      // if (id(epaper_weather_forecast).has_state()) {
-      //   ESP_LOGI(TAG, "Weather Forecast - has state, so render");
-      //   std::string forecastWeatherCSV = id(epaper_weather_forecast).state; // Mon;sunny;16,5;5,1;Tue;sunny;17,2;6,8;Wed;sunny;15,4;2,7;Thu;sunny;15,3;4,6;Fri;partlycloudy;16,0;3,5
-      //   auto csv = forecastWeatherCSV.c_str();
-      //   ESP_LOGI("Weather forecast", "%s", csv);
-      // 
-      //   if(forecastWeatherCSV != "unavailable") {
-      //     ESP_LOGI("Weather forecast", "csv != 'unavailable': %s", csv);
-      //     std::size_t current, previous = 0;
-      //     char delim = ';';
-      //     current = forecastWeatherCSV.find(delim);
-      //     x = 5; y = 270;
-      //     int nextRow =0;
-      //     for (int i = 0; i < 20; i++) {
-      //       std::string value = semTools::extract_and_trim(forecastWeatherCSV, previous, current);
-      //       const char* value_cstr = value.c_str();
-      //       ESP_LOGI("Weather forecast", "value=%s", value_cstr);
-      //       if (i == 0 || i == 4 || i == 8 || i == 12 || i == 16) {           // Weekday
-      //         it.printf(x1 + x      , y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s", value_cstr);
-      //       } else if (i == 1 || i == 5 || i == 9 || i == 13 || i == 17) {    // icon
-      //         auto unicodeWeatherIcon = weatherMap.at(value_cstr);
-      //         it.printf(x1 + x + 50 , y + 3, id(materialdesign_icons_32), TextAlign::BASELINE_LEFT, unicodeWeatherIcon.c_str()); 
-      //       } else if (i == 2 || i == 6 || i == 10 || i == 14 || i == 18) {   // Temp high
-      //         it.printf(x1 + x + 100, y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s°C", value_cstr);
-      //       } else if (i == 3 || i == 7 || i == 11 || i == 15 || i == 19) {   // Temp low
-      //         it.printf(x1 + x + 170, y    , id(openSansBold_font      ), TextAlign::BASELINE_LEFT, "%s°C", value_cstr);
-      //       }
-      //       nextRow = nextRow + 1;
-      //       if (nextRow == 4) {
-      //         y += 28;
-      //         nextRow = 0;
-      //       }
-      //       previous = current + 1;
-      //       current = forecastWeatherCSV.find(delim, previous);
-      //     }
-      //   }
-      // }
+      auto split_csv = [](const std::string &csv) -> std::vector<std::string> {
+        std::vector<std::string> parts;
+        std::size_t start = 0;
+        while (start <= csv.size()) {
+          std::size_t end = csv.find(';', start);
+          parts.push_back(semTools::extract_and_trim(csv, start, end));
+          if (end == std::string::npos) {
+            break;
+          }
+          start = end + 1;
+        }
+        return parts;
+      };
 
-      ESP_LOGI(TAG, "2nd row - inside / outside humidity");
-      int xMidCapt = xL1 +  10;
-      int xMidSymb = xMidCapt + 90;
-      int xMidUnit = xL2 - 30;
-      int xMidVals = xMidUnit - 5;
-      y = yHd;
+      auto valid_text = [](const std::string &value) -> bool {
+        return !value.empty() && value != "unknown" && value != "unavailable" && value != "None";
+      };
 
-      ////////////////////////////////// BathRoom ////////////////////////////////////////////////////
-      ESP_LOGI(TAG, "BathRoom");
-      y += 45;
-      it.printf(xMidCapt, y + 15, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT , "\U000F09A0");
-      
-      // Window-Status: open or closed
-      if(id(fenster_badezimmer).state) {
-        it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081C");
-      } else {
-        it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081B");
+      auto parse_number = [&](std::string value, float fallback) -> float {
+        if (!valid_text(value)) {
+          return fallback;
+        }
+        for (char &ch : value) {
+          if (ch == ',') {
+            ch = '.';
+          }
+        }
+        return atof(value.c_str());
+      };
+
+      auto weather_icon = [](const std::string &state) -> const char * {
+        if (state == "cloudy") return "\U000F0590";
+        if (state == "exceptional" || state == "cloudy-alert") return "\U000F0F2F";
+        if (state == "fog") return "\U000F0591";
+        if (state == "hail") return "\U000F0592";
+        if (state == "hazy") return "\U000F0F30";
+        if (state == "hurricane") return "\U000F0898";
+        if (state == "lightning") return "\U000F0593";
+        if (state == "lightning-rainy") return "\U000F067E";
+        if (state == "night" || state == "clear-night") return "\U000F0594";
+        if (state == "night-partly-cloudy") return "\U000F0F31";
+        if (state == "partly-cloudy" || state == "partlycloudy") return "\U000F0595";
+        if (state == "partly-lightning") return "\U000F0F32";
+        if (state == "partly-rainy") return "\U000F0F33";
+        if (state == "partly-snowy") return "\U000F0F34";
+        if (state == "partly-snowy-rainy") return "\U000F0F35";
+        if (state == "pouring") return "\U000F0596";
+        if (state == "rainy") return "\U000F0597";
+        if (state == "snowy") return "\U000F0598";
+        if (state == "snowy-heavy") return "\U000F0F36";
+        if (state == "snowy-rainy") return "\U000F067F";
+        if (state == "sunny") return "\U000F0599";
+        if (state == "sunny-alert") return "\U000F0F37";
+        if (state == "sunny-off") return "\U000F14E4";
+        if (state == "tornado") return "\U000F0F38";
+        if (state == "windy") return "\U000F059D";
+        if (state == "windy-variant") return "\U000F059E";
+        return "\U000F0590";
+      };
+
+      auto short_day = [](const std::string &day) -> const char * {
+        if (day == "Mon") return "Mo";
+        if (day == "Tue") return "Di";
+        if (day == "Wed") return "Mi";
+        if (day == "Thu") return "Do";
+        if (day == "Fri") return "Fr";
+        if (day == "Sat") return "Sa";
+        if (day == "Sun") return "So";
+        return "--";
+      };
+
+      auto condition_label = [](std::string value) -> std::string {
+        if (value == "clear-night") return "Klare Nacht";
+        if (value == "partly-cloudy" || value == "partlycloudy") return "Teilweise wolkig";
+        if (value == "sunny") return "Sonnig";
+        if (value == "rainy") return "Regen";
+        if (value == "pouring") return "Starker Regen";
+        if (value == "cloudy") return "Wolkig";
+        if (value == "fog") return "Nebel";
+        if (value == "windy") return "Windig";
+        if (value == "lightning") return "Gewitter";
+        if (value == "lightning-rainy") return "Gewitterregen";
+        if (value == "snowy") return "Schnee";
+        for (char &ch : value) {
+          if (ch == '-') {
+            ch = ' ';
+          }
+        }
+        return value;
+      };
+
+      auto draw_card = [&](int x, int y, int w, int h, const char *title) {
+        it.rectangle(x, y, w, h);
+        it.printf(x + 14, y + 22, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s", title);
+      };
+
+      std::string weather_actual_raw = id(epaper_weather_actual).has_state() ? id(epaper_weather_actual).state : "";
+      std::vector<std::string> weather_actual = split_csv(weather_actual_raw);
+
+      std::string current_condition = "cloudy";
+      if (weather_actual.size() > 0 && valid_text(weather_actual[0])) {
+        current_condition = weather_actual[0];
       }
 
-      // Temperature
-      it.printf(xMidSymb, y + 20, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F050F");
-      it.printf(xMidVals, y + 20, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", id(temperature_bathroom).state.c_str());
-      it.printf(xMidUnit, y + 20, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s","°C");
-      ////////////////////////////////////////////////////////////////////////////////////////////////
-      
-      ////////////////////////////////// Lea /////////////////////////////////////////////////////////     
-      ESP_LOGI(TAG, "Lea");
-      y += 73;
-      it.printf(xMidCapt, y + 15, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT , "\U000F156F");
-      if(id(fenster_lea       ).state) {
-        it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081C");
-      } else {
-        it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081B");
+      std::string outside_temp = id(temperature_outside).has_state() ? id(temperature_outside).state : "--";
+      if (weather_actual.size() > 1 && valid_text(weather_actual[1])) {
+        outside_temp = weather_actual[1];
       }
-      it.printf(xMidSymb, y + 20, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F050F");
-      it.printf(xMidVals, y + 20, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", id(temperature_lea).state.c_str());
-      it.printf(xMidUnit, y + 20, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s","°C");
-      ////////////////////////////////////////////////////////////////////////////////////////////////
-      
-      ////////////////////////////////// LivingRoom //////////////////////////////////////////////////     
-      ESP_LOGI(TAG, "LivingRoom");
-      y += 73;
-      it.printf(xMidCapt, y + 15, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT , "\U000F156D");
-      it.printf(xMidSymb, y +  5, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F058E");
-      it.printf(xMidVals, y     , id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", id(humidity_inside).state.c_str());
-      it.printf(xMidUnit, y     , id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s","%");
-      ////////////////////////////////////////////////////////////////////////////////////////////////
-      
-      ////////////////////////////////// Garden //////////////////////////////////////////////////     
-      ESP_LOGI(TAG, "Garden");
-      y += 73;
-      it.printf(xMidCapt, y + 15, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT , "\U000F0DD4");
-      it.printf(xMidSymb, y +  5, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F058E");
-      it.printf(xMidVals, y     , id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", id(humidity_outside).state.c_str());
-      it.printf(xMidUnit, y     , id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s","%");
-      ////////////////////////////////////////////////////////////////////////////////////////////////
 
-      int xRightCapt = xL2 +  10;
-      y = yHd;
-      
-      ////////////////////////////////// Abs Humidity IN/OUT LivingRoom //////////////////////////////
-      ESP_LOGI(TAG, "Abs Humidity IN/OUT LivingRoom");
-      y += 45;
-      auto temp_out = atoi(id(temperature_outside).state.c_str());
-      ESP_LOGI("temp_out", std::to_string(temp_out).c_str());
-      auto humi_out = atoi(id(humidity_outside).state.c_str());
-      ESP_LOGI("humi_out", std::to_string(humi_out).c_str());
-      auto temp__in = atoi(id(temperature_inside).state.c_str());
-      ESP_LOGI("temp__in", std::to_string(temp__in).c_str());
-      auto humi__in = atoi(id(humidity_inside).state.c_str());
-      ESP_LOGI("humi__in", std::to_string(humi__in).c_str());
-
-      double absHumidityOut = semTools::abshumidity(temp_out, humi_out);
-      ESP_LOGI("absHumidityOut", std::to_string(absHumidityOut).c_str());
-      double absHumidityIn  = semTools::abshumidity(temp__in, humi__in);
-      ESP_LOGI("absHumidityIn", std::to_string(absHumidityIn).c_str());
-      double humiditydifference = semTools::humiditydifference(temp_out, temp__in, humi_out, humi__in);
-      ESP_LOGI("humiditydifference", std::to_string(humiditydifference).c_str());
-
-      it.printf(xRightCapt, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F058E"); // Water Drop with percentage
-      if (humiditydifference > 0) {
-        it.printf(xRightCapt + 60, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0974"); // home minus
-        it.printf(xRightCapt + 115, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F19C0"); // home group plus
-      } else {
-        it.printf(xRightCapt + 60, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0975"); // home plus
-        it.printf(xRightCapt + 115, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F19C1"); // home group minus
+      std::string outside_humidity = id(humidity_outside).has_state() ? id(humidity_outside).state : "--";
+      if (weather_actual.size() > 2 && valid_text(weather_actual[2])) {
+        outside_humidity = weather_actual[2];
       }
-      ////////////////////////////////////////////////////////////////////////////////////////////////
 
-      y += 50;
-      if (id(trockner_operation_state).has_state()) {
-        auto state = id(trockner_operation_state).state;
-        ESP_LOGI(TAG, "Trockner");
-        if (state == "Finished") {
-          it.printf(xRightCapt, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0917"); // dryer
-          it.printf(xRightCapt + 35, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0855"); // check
-        } else if (state == "Ready") {
-          it.printf(xRightCapt, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F0917"); // dryer on
+      std::string pressure = weather_actual.size() > 3 && valid_text(weather_actual[3]) ? weather_actual[3] : "--";
+      std::string wind = weather_actual.size() > 4 && valid_text(weather_actual[4]) ? weather_actual[4] : "--";
+
+      std::string inside_temp = id(temperature_inside).has_state() ? id(temperature_inside).state : "--";
+      std::string inside_humidity = id(humidity_inside).has_state() ? id(humidity_inside).state : "--";
+      std::string radiator_temp = id(radiator_1_livingroom).has_state() ? id(radiator_1_livingroom).state : "--";
+      std::string bathroom_temp = id(temperature_bathroom).has_state() ? id(temperature_bathroom).state : "--";
+      std::string lea_temp = id(temperature_lea).has_state() ? id(temperature_lea).state : "--";
+      std::string sunrise = id(epaper_sunrise).has_state() ? id(epaper_sunrise).state : "--:--";
+      std::string sunset = id(epaper_sunset).has_state() ? id(epaper_sunset).state : "--:--";
+
+      float temp_out = parse_number(outside_temp, 0.0f);
+      float temp_in = parse_number(inside_temp, 0.0f);
+      float humi_out = parse_number(outside_humidity, 0.0f);
+      float humi_in = parse_number(inside_humidity, 0.0f);
+
+      double abs_humidity_out = semTools::abshumidity(temp_out, humi_out);
+      double abs_humidity_in = semTools::abshumidity(temp_in, humi_in);
+      double humidity_delta = semTools::humiditydifference(temp_out, temp_in, humi_out, humi_in);
+
+      char abs_out_buffer[16];
+      char abs_in_buffer[16];
+      char humidity_delta_buffer[16];
+      snprintf(abs_out_buffer, sizeof(abs_out_buffer), "%.1f", abs_humidity_out);
+      snprintf(abs_in_buffer, sizeof(abs_in_buffer), "%.1f", abs_humidity_in);
+      snprintf(humidity_delta_buffer, sizeof(humidity_delta_buffer), "%+.1f", humidity_delta);
+
+      const char *bath_window_icon = id(fenster_badezimmer).state ? "\U000F081C": "\U000F081B";
+      const char *bath_window_text = id(fenster_badezimmer).state ? "Fenster offen" : "Fenster zu";
+      const char *lea_window_icon = id(fenster_lea).state ? "\U000F081C" : "\U000F081B";
+      const char *lea_window_text = id(fenster_lea).state ? "Fenster offen" : "Fenster zu";
+      const char *vent_icon = humidity_delta > 0 ? "\U000F0974" : "\U000F0975";
+      const char *vent_text = humidity_delta > 0 ? "Lueften sinnvoll" : "Drinnen trockener";
+      const char *aurora_icon = id(aurora_visible_state).state ? "\U000F06D0" : "\U000F06D1";
+      const char *aurora_text = id(aurora_visible_state).state ? "Aurora moeglich" : "Aurora ruhig";
+      std::string dryer_text = id(trockner_operation_state).has_state() ? id(trockner_operation_state).state : "Unbekannt";
+
+      auto now = id(time_homeassistant).now();
+
+      const int header_x = margin;
+      const int header_y = 12;
+      const int header_w = canvas_width - (margin * 2);
+      const int header_h = 140;
+      const int header_divider_x = header_x + 450;
+
+      const int card_y = 164;
+      const int card_h = 118;
+      const int card_w = (canvas_width - (margin * 2) - (gutter * 3)) / 4;
+      const int card1_x = margin;
+      const int card2_x = card1_x + card_w + gutter;
+      const int card3_x = card2_x + card_w + gutter;
+      const int card4_x = card3_x + card_w + gutter;
+
+      const int bottom_y = 302;
+      const int bottom_h = 128;
+      const int forecast_x = margin;
+      const int forecast_w = 512;
+      const int utility_x = forecast_x + forecast_w + gutter;
+      const int utility_w = canvas_width - margin - utility_x;
+
+      it.rectangle(header_x, header_y, header_w, header_h);
+      it.line(header_divider_x, header_y + 14, header_divider_x, header_y + header_h - 14);
+
+      it.printf(header_x + 22, header_y + 26, id(openSansBold_font), TextAlign::BASELINE_LEFT, "Wetter jetzt");
+      it.printf(header_x + 20, header_y + 105, id(materialdesign_icons_80), TextAlign::BASELINE_LEFT, "%s", weather_icon(current_condition));
+      it.printf(header_x + 122, header_y + 96, id(temperature_font), TextAlign::BASELINE_LEFT, "%s", outside_temp.c_str());
+      it.printf(header_x + 250, header_y + 96, id(temperature_font), TextAlign::BASELINE_LEFT, "°C");
+      std::string condition_text = condition_label(current_condition);
+      it.printf(header_x + 22, header_y + 132, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s", condition_text.c_str());
+
+      it.printf(header_x + 319, header_y + 36, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F058E");
+      it.printf(header_x + 359, header_y + 36, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s%%", outside_humidity.c_str());
+      it.printf(header_x + 319, header_y + 72, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F029A");
+      it.printf(header_x + 359, header_y + 72, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s hPa", pressure.c_str());
+      it.printf(header_x + 319, header_y + 108, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F059D");
+      it.printf(header_x + 359, header_y + 108, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s km/h", wind.c_str());
+
+      it.strftime(header_divider_x + 20, header_y + 42, id(weekDay_font), TextAlign::BASELINE_LEFT, "%A", now);
+      it.strftime(header_divider_x + 20, header_y + 92, id(date_font), TextAlign::BASELINE_LEFT, "%d.%m.%y", now);
+      it.strftime(header_divider_x + 20, header_y + 130, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%H:%M", now);
+
+      // it.printf(header_divider_x + 175, header_y + 36, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F059C");
+      // it.printf(header_divider_x + 212, header_y + 36, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s", sunrise.c_str());
+      // it.printf(header_divider_x + 175, header_y + 72, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F059B");
+      // it.printf(header_divider_x + 212, header_y + 72, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s", sunset.c_str());
+
+      it.printf(header_divider_x + 175, header_y + 130, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "%s", vent_icon);
+      it.printf(header_divider_x + 212, header_y + 130, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s g/m3", humidity_delta_buffer);
+
+      draw_card(card1_x, card_y, card_w, card_h, "Wohnzimmer");
+      it.printf(card1_x + 14, card_y + 52, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F050F");
+      it.printf(card1_x + 54, card_y + 52, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s °C", inside_temp.c_str());
+      it.printf(card1_x + 14, card_y + 82, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F058E");
+      it.printf(card1_x + 54, card_y + 82, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s %%", inside_humidity.c_str());
+      it.printf(card1_x + 14, card_y + 108, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F10C2");
+      it.printf(card1_x + 54, card_y + 108, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "Heizung %s °C", radiator_temp.c_str());
+
+      draw_card(card2_x, card_y, card_w, card_h, "Bad");
+      it.printf(card2_x + 14, card_y + 72, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT, "\U000F09A0");
+      it.printf(card2_x + 92, card_y + 56, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s °C", bathroom_temp.c_str());
+      it.printf(card2_x + 14, card_y + 108, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "%s", bath_window_icon);
+      it.printf(card2_x + 54, card_y + 108, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", bath_window_text);
+
+      draw_card(card3_x, card_y, card_w, card_h, "Lea");
+      it.printf(card3_x + 14, card_y + 72, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT, "\U000F156F");
+      it.printf(card3_x + 92, card_y + 56, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s °C", lea_temp.c_str());
+      it.printf(card3_x + 14, card_y + 108, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "%s", lea_window_icon);
+      it.printf(card3_x + 54, card_y + 108, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", lea_window_text);
+
+      draw_card(card4_x, card_y, card_w, card_h, "Hausstatus");
+      it.printf(card4_x + 14, card_y + 49, id(materialdesign_icons_30), TextAlign::BASELINE_LEFT, "%s", vent_icon);
+      it.printf(card4_x + 54, card_y + 49, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", vent_text);
+      it.printf(card4_x + 14, card_y + 78, id(materialdesign_icons_30), TextAlign::BASELINE_LEFT, "\U000F0917");
+      it.printf(card4_x + 54, card_y + 78, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", dryer_text.c_str());
+      it.printf(card4_x + 14, card_y + 107, id(materialdesign_icons_30), TextAlign::BASELINE_LEFT, "%s", aurora_icon);
+      it.printf(card4_x + 54, card_y + 107, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", aurora_text);
+
+      it.rectangle(forecast_x, bottom_y, forecast_w, bottom_h);
+      it.printf(forecast_x + 14, bottom_y + 22, id(openSansBold_font), TextAlign::BASELINE_LEFT, "5-Tage-Ausblick");
+
+      std::string forecast_raw = id(epaper_weather_forecast).has_state() ? id(epaper_weather_forecast).state : "";
+      std::vector<std::string> forecast_parts = split_csv(forecast_raw);
+      for (int i = 0; i < 5; i++) {
+        int block_x = forecast_x + 18 + (i * 98);
+        int label_y = bottom_y + 52;
+        if (forecast_parts.size() >= (i * 4 + 4)) {
+          std::string day = forecast_parts[i * 4 + 0];
+          std::string icon_state = forecast_parts[i * 4 + 1];
+          std::string high = forecast_parts[i * 4 + 2];
+          std::string low = forecast_parts[i * 4 + 3];
+          it.printf(block_x, label_y, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s", short_day(day));
+          it.printf(block_x + 6, label_y + 34, id(materialdesign_icons_32), TextAlign::BASELINE_LEFT, "%s", weather_icon(icon_state));
+          it.printf(block_x, label_y + 65, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s / %s", high.c_str(), low.c_str());
         } else {
-          it.printf(xRightCapt, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F11BB"); // dryer off
+          it.printf(block_x, label_y + 34, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "--");
+        }
+        if (i < 4) {
+          it.line(block_x + 74, bottom_y + 36, block_x + 74, bottom_y + bottom_h - 12);
         }
       }
-      
-      if (id(aurora_visible_state).has_state()) {
-        auto state = id(aurora_visible_state).state;
-        ESP_LOGI(TAG, "Aurora");
-        if (state) {
-          it.printf(xRightCapt + 75, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F06D0"); // not visible
-        } else {
-          it.printf(xRightCapt + 75, y, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F06D1"); // visible
-        }
-      }
-      
-      ////////////////////////////////// Water Meter Graph ///////////////////////////////////////////
-      y += 80;
-      ESP_LOGI(TAG, "Water Meter Graph %d", y);
-      it.printf(xRightCapt, y - 15, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F1B29"); // faucet
-      my_tools.RenderDiagram(id(water_meter_history), xRightCapt + 40, y, 144, 75);
-      
-      ////////////////////////////////// Power Meter Graph ///////////////////////////////////////////
-      y += 90;
-      ESP_LOGI(TAG, "Power Meter Graph %d", y);
-      it.printf(xRightCapt, y - 15, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F1904"); // home power
-      my_tools.RenderDiagram(id(power_history), xRightCapt + 40, y, 144, 75);
-      ////////////////////////////////////////////////////////////////////////////////////////////////
 
-      ESP_LOGI(TAG, "Footer");
+      it.rectangle(utility_x, bottom_y, utility_w, bottom_h);
+      it.printf(utility_x + 14, bottom_y + 22, id(openSansBold_font), TextAlign::BASELINE_LEFT, "Verbrauch");
+      it.printf(utility_x + 14, bottom_y + 65, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F1B29");
+      my_tools.RenderDiagram(id(water_meter_history), utility_x + 52, bottom_y + 70, utility_w - 68, 28);
+      it.printf(utility_x + 14, bottom_y + 113, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F1904");
+      my_tools.RenderDiagram(id(power_history), utility_x + 52, bottom_y + 118, utility_w - 68, 28);
+
+      it.line(margin, 438, canvas_width - margin, 438);
       if (id(ip_address).has_state()) {
-        ESP_LOGI(TAG, "IP Address");
-        it.printf(x1 + 5, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, "IP: %s", id(ip_address).state.c_str());
+        it.printf(margin, 462, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "IP %s", id(ip_address).state.c_str());
       }
 
-      // WiFi Signal Strength
-      if(id(wifisignal).has_state()) {
-        ESP_LOGI(TAG, "WiFi Signal Strength");
-        x = 200 + x1, y = 475 - y2;
-        auto wifivalue = id(wifisignal).state;
-        ESP_LOGI("WiFi", std::to_string(wifivalue).c_str());
-        if (wifivalue >= -50) {
-            it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F0928");
-            ESP_LOGI("WiFi", "Exellent");
-        } else if (wifivalue  >= -60) {
-            it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F0925");
-            ESP_LOGI("WiFi", "Good");
-        } else if (wifivalue  >= -67) {
-            it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F0922");
-            ESP_LOGI("WiFi", "Fair");
-        } else if (wifivalue  >= -70) {
-            it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F091F");
-            ESP_LOGI("WiFi", "Weak");
-        } else {
-            it.print(x, y, id(materialdesign_icons_32), TextAlign::BOTTOM_RIGHT, "\U000F092B");
-            ESP_LOGI("WiFi", "Unlikely");
+      if (id(wifisignal).has_state()) {
+        const char *wifi_icon = "\U000F092B";
+        auto wifi_value = id(wifisignal).state;
+        if (wifi_value >= -50) {
+          wifi_icon = "\U000F0928";
+        } else if (wifi_value >= -60) {
+          wifi_icon = "\U000F0925";
+        } else if (wifi_value >= -67) {
+          wifi_icon = "\U000F0922";
+        } else if (wifi_value >= -70) {
+          wifi_icon = "\U000F091F";
         }
+        it.printf(208, 462, id(materialdesign_icons_32), TextAlign::BASELINE_LEFT, "%s", wifi_icon);
+        it.printf(244, 462, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%0.0f dBm", wifi_value);
       }
-
-      // it.printf(xL1 - 20, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, "V 7.3");
 
       it.printf(
-          xL1 - 20, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT,
-          "%c%c%c%c-%02d-%02d %02d:%02d",
-          __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10], // Jahr
-          ([]() { // Monat
-              const char* m = __DATE__;
-              if      (m[0]=='J' && m[1]=='a') return 1;
-              else if (m[0]=='F') return 2;
-              else if (m[0]=='M' && m[2]=='r') return 3;
-              else if (m[0]=='A' && m[1]=='p') return 4;
-              else if (m[0]=='M' && m[2]=='y') return 5;
-              else if (m[0]=='J' && m[2]=='n') return 6;
-              else if (m[0]=='J' && m[2]=='l') return 7;
-              else if (m[0]=='A' && m[1]=='u') return 8;
-              else if (m[0]=='S') return 9;
-              else if (m[0]=='O') return 10;
-              else if (m[0]=='N') return 11;
-              else if (m[0]=='D') return 12;
+          360, 462, id(openSansBold_font_small), TextAlign::BASELINE_LEFT,
+          "Build %c%c%c%c-%02d-%02d %02d:%02d",
+          __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10],
+          ([]() {
+              const char *m = __DATE__;
+              if      (m[0] == 'J' && m[1] == 'a') return 1;
+              else if (m[0] == 'F') return 2;
+              else if (m[0] == 'M' && m[2] == 'r') return 3;
+              else if (m[0] == 'A' && m[1] == 'p') return 4;
+              else if (m[0] == 'M' && m[2] == 'y') return 5;
+              else if (m[0] == 'J' && m[2] == 'n') return 6;
+              else if (m[0] == 'J' && m[2] == 'l') return 7;
+              else if (m[0] == 'A' && m[1] == 'u') return 8;
+              else if (m[0] == 'S') return 9;
+              else if (m[0] == 'O') return 10;
+              else if (m[0] == 'N') return 11;
+              else if (m[0] == 'D') return 12;
               else return 0;
           })(),
-          atoi(&__DATE__[4]), // day
-          atoi(&__TIME__[0]), // hour
-          atoi(&__TIME__[3])  // minute
+          atoi(&__DATE__[4]),
+          atoi(&__TIME__[0]),
+          atoi(&__TIME__[3])
       );
 
-      ESP_LOGI("WiFi-BSSID", id(wifi_bssid).state.c_str());
-      // it.printf(xL1 + 40, 470 - y2, id(openSansBold_font), TextAlign::BASELINE_LEFT, id(wifi_bssid).state.c_str());
-
-      x = 490; y = 445 - y2;
-      x += 30; my_tools.BatterySymbol(id(bad_fenster_battery),                  x, y, "bf");
-      x += 30; my_tools.BatterySymbol(id(fenster_lea_battery),                  x, y, "lf");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_kitchen_sink_batterie),   x, y, "ks");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_drainage_pit_batterie),   x, y, "dp");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_aquarium_batterie),       x, y, "aq");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_bathroom_og_batterie),    x, y, "bo");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_bathroom_eg_batterie), x, y, "bu");
-      
-      ESP_LOGI("RENDERING", "DONE");
+      int battery_x = 594;
+      int battery_y = 444;
+      battery_x += 28; my_tools.BatterySymbol(id(bad_fenster_battery),                battery_x, battery_y, "bf");
+      battery_x += 28; my_tools.BatterySymbol(id(fenster_lea_battery),                battery_x, battery_y, "lf");
+      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_kitchen_sink_batterie), battery_x, battery_y, "ks");
+      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_drainage_pit_batterie), battery_x, battery_y, "dp");
+      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_aquarium_batterie),     battery_x, battery_y, "aq");
+      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_bathroom_og_batterie),  battery_x, battery_y, "bo");
+      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_bathroom_eg_batterie),  battery_x, battery_y, "bu");
 
 # --- Sensors ------------------------------------------------------------------
 sensor:
-  # ESP Home UpTime
   - platform: uptime
     id: uptime_sensor
     update_interval: 60s
@@ -615,7 +607,7 @@ sensor:
         - text_sensor.template.publish:
             id: uptime_human
             state: !lambda |-
-              int seconds = round(id(uptime_sensor).raw_state);
+              int seconds = round(id(uptime_sensor).get_raw_state());
               int days = seconds / (24 * 3600);
               seconds = seconds % (24 * 3600);
               int hours = seconds / 3600;
@@ -627,7 +619,7 @@ sensor:
                 (hours ? String(hours) + ":" : "00:") +
                 (minutes ? String(minutes) + ":" : "00:") +
                 (String(seconds) + "")
-              ).c_str();  
+              ).c_str();
   - platform: wifi_signal
     name: "WiFi Signal Sensor"
     id: wifisignal
@@ -636,9 +628,8 @@ sensor:
     id: watermeter_value
     name: "Water Statistic"
     entity_id: sensor.watermeter_value
- 
+
 text_sensor:
-  # ESP WLAN IP Address
   - platform: wifi_info
     ip_address:
       name: "${name} IP Address"
@@ -646,19 +637,17 @@ text_sensor:
     bssid:
       name: ESP Connected BSSID
       id: wifi_bssid
-  # ESP Home UpTime
   - platform: template
     id: uptime_human
     icon: mdi:clock-start
-  # Weather forecast 
-  # - platform: homeassistant
-  #   id: epaper_weather_actual
-  #   entity_id: sensor.epaper_weather_actual_2
-  #   internal: true
-  # - platform: homeassistant
-  #   id: epaper_weather_forecast
-  #   entity_id: sensor.epaper_weather_forecast_2
-  #   internal: true
+  - platform: homeassistant
+    id: epaper_weather_actual
+    entity_id: sensor.aktuelles_wetter
+    internal: true
+  - platform: homeassistant
+    id: epaper_weather_forecast
+    entity_id: sensor.epaper_weather_forecast
+    internal: true
   - platform: homeassistant
     id: epaper_sunrise
     entity_id: sensor.epaper_sunrise_2

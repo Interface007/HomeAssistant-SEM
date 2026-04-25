@@ -12,6 +12,11 @@ template: !include templates.yaml
 
 rest_command: !include rest_commands.yaml
 
+utility_meter:
+  power_main_daily:
+    source: sensor.power_main_total_active_energy
+    cycle: daily
+
 sensor:
   - platform: sensor_history
     entity_id: sensor.watermeter_value

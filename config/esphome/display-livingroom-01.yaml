@@ -16,12 +16,21 @@ esp32:
   framework:
     type: arduino
 
-logger: !include ./includes/logger.yaml
-api: !include ./includes/api.yaml
+logger: 
+  level: VERY_VERBOSE
+# api: !include ./includes/api.yaml
 ota: !include ./includes/ota.yaml
 wifi: !include ./includes/wifi_common.yaml
 captive_portal:
 web_server: !include ./includes/web.yaml
+
+api:
+  on_client_connected:
+    then:
+      - delay: 2s
+      - component.update: epaperdisplay
+  encryption:
+    key: !secret api_enc_key
 
 font:
   - file: 'fonts/OpenSans-Bold.ttf'
@@ -221,13 +230,15 @@ spi:
 
 display:
   - platform: waveshare_epaper
-    model: 7.50inv2alt 
+    model: 7.50inv2alt
     id: epaperdisplay
     cs_pin: 15
     dc_pin: 27
     busy_pin: 25
     reset_pin: 26
-    update_interval: 1min
+    reset_duration: 20ms       # ← NEU: längere Reset-Zeit
+    update_interval: 15min
+
     lambda: |
       static const char* TAG = "ePaperLambda";
       ESP_LOGI(TAG, "starting lambda");
@@ -250,8 +261,7 @@ display:
       it.line(  0, yFt, 800, yFt); // Horizontal footer
       it.line(xL1, yHd, xL1, yFt); // Vertical first line
       it.line(xL2, yHd, xL2, yFt); // Vertical second line
-
-      ESP_LOGI(TAG, "Sunrise / Sunset");
+      ESP_LOGI(TAG, "Sunrise %s / Sunset %s", id(epaper_sunrise).state.c_str(), id(epaper_sunset).state.c_str());
       it.printf(x1 +  5, y1 +  40,  id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F059C");
       it.printf(x1 + 45, y1 +  60,  id(date_font),               TextAlign::BOTTOM_LEFT   , id(epaper_sunrise).state.c_str());
       it.printf(x1 +  5, y1 +  90,  id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F059B");
@@ -408,11 +418,15 @@ display:
       ESP_LOGI(TAG, "BathRoom");
       y += 45;
       it.printf(xMidCapt, y + 15, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT , "\U000F09A0");
+      
+      // Window-Status: open or closed
       if(id(fenster_badezimmer).state) {
         it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081C");
       } else {
         it.printf(xMidVals, y - 10, id(materialdesign_icons_35), TextAlign::BASELINE_RIGHT, "\U000F081B");
       }
+
+      // Temperature
       it.printf(xMidSymb, y + 20, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT , "\U000F050F");
       it.printf(xMidVals, y + 20, id(openSansBold_font), TextAlign::BASELINE_RIGHT,"%s", id(temperature_bathroom).state.c_str());
       it.printf(xMidUnit, y + 20, id(openSansBold_font), TextAlign::BASELINE_LEFT ,"%s","°C");
@@ -586,8 +600,8 @@ display:
       x += 30; my_tools.BatterySymbol(id(water_sensor_drainage_pit_batterie),   x, y, "dp");
       x += 30; my_tools.BatterySymbol(id(water_sensor_aquarium_batterie),       x, y, "aq");
       x += 30; my_tools.BatterySymbol(id(water_sensor_bathroom_og_batterie),    x, y, "bo");
-      x += 30; my_tools.BatterySymbol(id(water_sensor_small_bathroom_batterie), x, y, "bu");
-
+      x += 30; my_tools.BatterySymbol(id(water_sensor_bathroom_eg_batterie), x, y, "bu");
+      
       ESP_LOGI("RENDERING", "DONE");
 
 # --- Sensors ------------------------------------------------------------------
@@ -675,11 +689,11 @@ text_sensor:
     internal: true
   - platform: homeassistant
     id: temperature_bathroom
-    entity_id: sensor.epaper_temperature_bathroom
+    entity_id: sensor.klima_bad_og_temperatur
     internal: true
   - platform: homeassistant
     id: temperature_lea
-    entity_id: sensor.epaper_temperature_lea
+    entity_id: sensor.klima_lea_temperatur
     internal: true
   - platform: homeassistant
     id: water_meter_history
@@ -722,8 +736,8 @@ text_sensor:
     entity_id: sensor.water_sensor_bathroom_og_batterie_2
     internal: true
   - platform: homeassistant
-    id: water_sensor_small_bathroom_batterie
-    entity_id: sensor.water_sensor_small_bathroom_batterie_2
+    id: water_sensor_bathroom_eg_batterie
+    entity_id: sensor.water_sensor_bathroom_eg_batterie
     internal: true
 
 binary_sensor:

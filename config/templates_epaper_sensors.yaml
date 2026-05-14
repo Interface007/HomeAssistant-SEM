@@ -48,6 +48,9 @@
 - name: ePaper Humidity Inside
   state: "{{ states('sensor.klima_wohnzimmer_luftfeuchtigkeit') }}"
 
+- name: ePaper Humidity Bathroom
+  state: "{{ states('sensor.klima_bad_og_luftfeuchtigkeit') }}"
+
 - name: ePaper Temperature Inside
   unique_id: epaper_temperature_intside
   icon: mdi:sun-clock-outline

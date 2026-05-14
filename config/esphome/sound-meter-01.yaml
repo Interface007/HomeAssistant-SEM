@@ -1,0 +1,98 @@
+substitutions:
+  name: "sound-meter-01"
+  friendly_name: "Sound Meter 01"
+  static_ip: 192.168.2.232
+
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+web_server: !include ./includes/web.yaml
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2024.7.0
+  name_add_mac_suffix: true
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.mcu: esp32c3
+
+esp32:
+  board: seeed_xiao_esp32c3
+  variant: esp32c3
+  framework:
+    type: arduino
+      
+external_components:
+  - source: github://stas-sl/esphome-sound-level-meter
+
+###########################################################
+#  INMP441 I²S-MEMS-Microphone (Arduino-Framework)
+#
+#  SD  → GPIO7
+#  WS  → GPIO5
+#  SCK → GPIO6
+#  VDD → 3V3
+#  GND → GND
+#  L/R → GND
+###########################################################
+i2s:
+  bck_pin: GPIO6         # Serial Clock (SCK) → Board-Pin D4 → white
+  ws_pin: GPIO5          # Word Select (WS)   → Board-Pin D3 → grey
+  din_pin: GPIO7         # Serial Data (SD)   → Board-Pin D5 → brown
+  sample_rate: 44100     # 44.1 kHz (stabiler auf ESP32-C3)
+  bits_per_sample: 32    # 32 Bit (MIC liefert 24 Bit + 8 Bit Padding)
+  bits_shift: 8          # Rechts‐Shift um 8 Bit für 24→32 Bit Alignment
+  channel: left          # INMP441 mit L/R=GND → left channel
+  use_apll: false        # APLL is not supported on ESP32-C3
+
+###########################################################
+#  Sound Level Meter (External Component)
+###########################################################
+sound_level_meter:
+  id: sound_level_meter1
+  update_interval: 1s
+  buffer_size: 1024
+  warmup_interval: 500ms
+  task_core: 0
+  mic_sensitivity: -26dB
+  mic_sensitivity_ref: 94dB
+  offset: -10dB # For calibration, initially set to 0 and observe raw values
+  groups:
+    - sensors:
+        - type: eq
+          name: "Leq_1s"
+        - type: max
+          name: "Lmax_1s"
+          window_size: 1s
+
+###########################################################
+#  Switch to turn the sound meter on/off
+###########################################################
+switch:
+  - platform: template
+    name: "Decibel Meter ON/OFF"
+    lambda: |-
+      return id(sound_level_meter1).is_on();
+    turn_on_action:
+      - sound_level_meter.turn_on: sound_level_meter1
+    turn_off_action:
+      - sound_level_meter.turn_off: sound_level_meter1
+    restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: restart
+    name: "Decibel Meter Reset"
+
+###########################################################
+#  System Sensors
+###########################################################
+sensor:
+  - platform: wifi_signal
+    name: "WiFi ESP32"
+    update_interval: 60s
+
+binary_sensor:
+  - platform: status
+    name: "ESP32 Status"

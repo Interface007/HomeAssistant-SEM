@@ -1,0 +1,84 @@
+# =====================================================================
+# Außenwerte (kombiniert aus garden_north = sonoff_th_03
+#                        und terrace     = sonoff_th_05)
+# Plausibilitätsbereich Temperatur: -30…+45 °C
+# =====================================================================
+- sensor:
+    - name: "Outdoor Temperature"
+      unique_id: outdoor_temperature
+      default_entity_id: sensor.outdoor_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.garden_north_temperature')
+           or has_value('sensor.terrace_temperature') }}
+      state: >
+        {% set ns = namespace(vals=[]) %}
+        {% for e in ['sensor.garden_north_temperature', 'sensor.terrace_temperature'] %}
+          {% if has_value(e) and -30 < states(e) | float(-99) < 45 %}
+            {% set ns.vals = ns.vals + [states(e) | float] %}
+          {% endif %}
+        {% endfor %}
+        {{ (ns.vals | min) | round(1) if ns.vals | count > 0 else 'unavailable' }}
+
+    # Rel. Feuchte: Mittelwert nur als grober Anzeigewert (Ziel-Doku).
+    # Für alle Entscheidungslogik outdoor_absolute_humidity verwenden!
+    - name: "Outdoor Humidity"
+      unique_id: outdoor_humidity
+      default_entity_id: sensor.outdoor_humidity
+      unit_of_measurement: "%"
+      device_class: humidity
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.garden_north_humidity')
+           or has_value('sensor.terrace_humidity') }}
+      state: >
+        {% set ns = namespace(vals=[]) %}
+        {% for e in ['sensor.garden_north_humidity', 'sensor.terrace_humidity'] %}
+          {% if has_value(e) and 0 < states(e) | float(-1) <= 100 %}
+            {% set ns.vals = ns.vals + [states(e) | float] %}
+          {% endif %}
+        {% endfor %}
+        {{ (ns.vals | average) | round(0) if ns.vals | count > 0 else 'unavailable' }}
+
+    - name: "Outdoor Absolute Humidity"
+      unique_id: outdoor_absolute_humidity
+      default_entity_id: sensor.outdoor_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ (has_value('sensor.garden_north_temperature') and has_value('sensor.garden_north_humidity'))
+           or (has_value('sensor.terrace_temperature') and has_value('sensor.terrace_humidity')) }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {% set ns = namespace(vals=[]) %}
+        {% for t, h in [('sensor.garden_north_temperature', 'sensor.garden_north_humidity'),
+                        ('sensor.terrace_temperature', 'sensor.terrace_humidity')] %}
+          {% if has_value(t) and has_value(h) and -30 < states(t) | float(-99) < 45 %}
+            {% set ns.vals = ns.vals + [abs_humidity(states(t) | float, states(h) | float) | float] %}
+          {% endif %}
+        {% endfor %}
+        {{ (ns.vals | average) | round(2) if ns.vals | count > 0 else 'unavailable' }}
+
+    - name: "Outdoor Dew Point"
+      unique_id: outdoor_dew_point
+      default_entity_id: sensor.outdoor_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:water-thermometer-outline
+      availability: >
+        {{ (has_value('sensor.garden_north_temperature') and has_value('sensor.garden_north_humidity'))
+           or (has_value('sensor.terrace_temperature') and has_value('sensor.terrace_humidity')) }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {% set ns = namespace(vals=[]) %}
+        {% for t, h in [('sensor.garden_north_temperature', 'sensor.garden_north_humidity'),
+                        ('sensor.terrace_temperature', 'sensor.terrace_humidity')] %}
+          {% if has_value(t) and has_value(h) and -30 < states(t) | float(-99) < 45 %}
+            {% set ns.vals = ns.vals + [dew_point(states(t) | float, states(h) | float) | float] %}
+          {% endif %}
+        {% endfor %}
+        {{ (ns.vals | average) | round(1) if ns.vals | count > 0 else 'unavailable' }}

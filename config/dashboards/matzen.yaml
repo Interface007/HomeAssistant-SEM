@@ -1,0 +1,386 @@
+views:
+  # ------------------------------------------------------------ Übersicht
+  - type: sections
+    title: Übersicht
+    path: home
+    icon: mdi:home
+    max_columns: 4
+    badges:
+      - type: entity
+        entity: switch.front_door_opener
+        show_name: false
+        show_state: false
+        show_icon: true
+        icon: mdi:door-closed-lock
+      - type: entity
+        entity: sensor.epaper_mold_alert
+        name: Schimmel
+        icon: mdi:home-alert
+      - type: entity
+        entity: sensor.epaper_ventilation_advice
+        name: Lüften
+        icon: mdi:window-open-variant
+
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Außen
+            icon: mdi:tree-outline
+          - type: weather-forecast
+            entity: weather.forecast_home
+            forecast_type: daily
+          - type: tile
+            entity: sensor.outdoor_temperature
+            name: Temperatur
+          - type: tile
+            entity: sensor.outdoor_absolute_humidity
+            name: Abs. Feuchte
+          - type: tile
+            entity: sensor.outdoor_dew_point
+            name: Taupunkt
+          - type: tile
+            entity: sensor.terrace_noise_level
+            name: Lärmpegel Terrasse
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Klima Räume
+            icon: mdi:thermometer
+          - type: tile
+            entity: sensor.living_room_temperature
+            name: Wohnzimmer
+            state_content: [state, last_changed]
+          - type: tile
+            entity: sensor.living_room_humidity
+            name: Wohnzimmer rF
+          - type: tile
+            entity: sensor.bedroom_temperature
+            name: Schlafzimmer
+          - type: tile
+            entity: sensor.bedroom_humidity
+            name: Schlafzimmer rF
+          - type: tile
+            entity: sensor.storage_room_temperature
+            name: Vorratsraum
+          - type: tile
+            entity: sensor.storage_room_humidity
+            name: Vorratsraum rF
+          - type: tile
+            entity: sensor.bathroom_temperature
+            name: Bad
+          - type: tile
+            entity: sensor.bathroom_humidity
+            name: Bad rF
+          - type: tile
+            entity: sensor.lea_room_temperature
+            name: Lea
+          - type: tile
+            entity: sensor.lea_room_humidity
+            name: Lea rF
+          - type: tile
+            entity: sensor.anna_room_temperature
+            name: Anna
+          - type: tile
+            entity: sensor.anna_room_humidity
+            name: Anna rF
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Schimmel- & Lüftungsstatus
+            icon: mdi:water-percent-alert
+          - type: tile
+            entity: binary_sensor.living_room_mold_risk
+            name: Wohnzimmer Schimmel
+          - type: tile
+            entity: binary_sensor.bedroom_mold_risk
+            name: Schlafzimmer Schimmel
+          - type: tile
+            entity: binary_sensor.storage_room_mold_risk
+            name: Vorratsraum Schimmel
+          - type: tile
+            entity: binary_sensor.bathroom_mold_risk
+            name: Bad Schimmel
+          - type: tile
+            entity: binary_sensor.lea_room_mold_risk
+            name: Lea Schimmel
+          - type: tile
+            entity: binary_sensor.anna_room_mold_risk
+            name: Anna Schimmel
+          - type: tile
+            entity: binary_sensor.living_room_ventilation_recommended
+            name: Wohnzimmer lüften?
+          - type: tile
+            entity: binary_sensor.bedroom_ventilation_recommended
+            name: Schlafzimmer lüften?
+          - type: tile
+            entity: binary_sensor.storage_room_ventilation_recommended
+            name: Keller lüften?
+          - type: tile
+            entity: binary_sensor.bathroom_ventilation_recommended
+            name: Bad lüften?
+          - type: tile
+            entity: binary_sensor.lea_room_ventilation_recommended
+            name: Lea lüften?
+          - type: tile
+            entity: binary_sensor.anna_room_ventilation_recommended
+            name: Anna lüften?
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Fenster
+            icon: mdi:window-closed-variant
+          - type: tile
+            entity: binary_sensor.bedroom_window_north_contact
+            name: Schlafzimmer Nord
+          - type: tile
+            entity: binary_sensor.bathroom_window_north_contact
+            name: Bad Nord
+          - type: tile
+            entity: binary_sensor.toilet_window_south_contact
+            name: Toilette Süd
+          - type: tile
+            entity: binary_sensor.lea_room_window_south_contact
+            name: Lea Süd
+          # TODO nach Klärung der Orientierung (siehe renames.csv):
+          # - anna_room_window_<north|south_2|west>_contact (2 Sensoren)
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Energie
+            icon: mdi:lightning-bolt
+          - type: gauge
+            entity: sensor.power_main_power
+            name: Hausanschluss
+            unit: W
+            min: 0
+            max: 10000
+            severity:
+              green: 0
+              yellow: 3000
+              red: 6000
+          - type: tile
+            entity: sensor.anker_solarbank_01_solar_power
+            name: Solar aktuell
+          - type: tile
+            entity: sensor.anker_solarbank_01_battery_level
+            name: Akku
+          - type: tile
+            entity: sensor.anker_solarbank_01_ac_output_power
+            name: Solarbank-Abgabe
+          - type: tile
+            entity: sensor.watermeter_value
+            name: Wasserzähler
+          - type: tile
+            entity: sensor.water_daily
+            name: Wasser heute
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Geräte
+            icon: mdi:washing-machine
+          - type: tile
+            entity: sensor.laundry_room_dryer_operation_state
+            name: Trockner
+          - type: tile
+            entity: sensor.ikea_plug_01_power
+            name: Waschmaschine
+          - type: tile
+            entity: binary_sensor.laundry_room_water_leak
+            name: Leck Waschraum
+          - type: tile
+            entity: binary_sensor.kitchen_water_leak
+            name: Leck Küche
+          - type: tile
+            entity: binary_sensor.bathroom_water_leak
+            name: Leck Bad
+
+  # ------------------------------------------------------- Klima-Details
+  - type: sections
+    title: Klima
+    path: climate
+    icon: mdi:water-percent
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Absolute Feuchte innen vs. außen
+          - type: history-graph
+            hours_to_show: 48
+            entities:
+              - sensor.living_room_absolute_humidity
+              - sensor.bedroom_absolute_humidity
+              - sensor.storage_room_absolute_humidity
+              - sensor.bathroom_absolute_humidity
+              - sensor.lea_room_absolute_humidity
+              - sensor.anna_room_absolute_humidity
+              - sensor.outdoor_absolute_humidity
+      - type: grid
+        cards:
+          - type: heading
+            heading: Wandoberflächen-Feuchte (24-h-Mittel)
+          - type: history-graph
+            hours_to_show: 168
+            entities:
+              - sensor.living_room_wall_surface_humidity_24h
+              - sensor.bedroom_wall_surface_humidity_24h
+              - sensor.storage_room_wall_surface_humidity_24h
+              - sensor.bathroom_wall_surface_humidity_24h
+              - sensor.lea_room_wall_surface_humidity_24h
+              - sensor.anna_room_wall_surface_humidity_24h
+      - type: grid
+        cards:
+          - type: heading
+            heading: Wandtemperatur & Taupunkt
+          - type: history-graph
+            hours_to_show: 48
+            entities:
+              - sensor.living_room_wall_temperature
+              - sensor.living_room_dew_point
+              - sensor.bedroom_wall_temperature
+              - sensor.bedroom_dew_point
+      - type: grid
+        cards:
+          - type: heading
+            heading: f_Rsi Referenz (Wohnzimmer, gemessen)
+          - type: history-graph
+            hours_to_show: 168
+            entities:
+              - sensor.living_room_f_rsi_live
+
+  # ------------------------------------------------------------- Energie
+  - type: sections
+    title: Energie
+    path: energy
+    icon: mdi:lightning-bolt
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Leistung Hausanschluss & Solar
+          - type: history-graph
+            hours_to_show: 24
+            entities:
+              - sensor.power_main_power
+              - sensor.anker_solarbank_01_solar_power
+              - sensor.anker_solarbank_01_ac_output_power
+      - type: grid
+        cards:
+          - type: heading
+            heading: Phasen
+          - type: history-graph
+            hours_to_show: 24
+            entities:
+              - sensor.power_main_phase_a_power
+              - sensor.power_main_phase_b_power
+              - sensor.power_main_phase_c_power
+      - type: grid
+        cards:
+          - type: heading
+            heading: Akku
+          - type: history-graph
+            hours_to_show: 48
+            entities:
+              - sensor.anker_solarbank_01_battery_level
+          - type: tile
+            entity: sensor.solarbank_01_charge_energy
+            name: Geladen gesamt
+          - type: tile
+            entity: sensor.solarbank_01_discharge_energy
+            name: Entladen gesamt
+      - type: grid
+        cards:
+          - type: heading
+            heading: Wasser
+          - type: history-graph
+            hours_to_show: 168
+            entities:
+              - sensor.water_daily
+
+  # -------------------------------------------------------------- System
+  - type: sections
+    title: System
+    path: system
+    icon: mdi:cog
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Batterien
+            icon: mdi:battery-50
+          - type: tile
+            entity: sensor.sonoff_th_01_battery
+            name: TH Schlafzimmer
+          - type: tile
+            entity: sensor.sonoff_th_02_battery
+            name: TH Wohnzimmer
+          - type: tile
+            entity: sensor.sonoff_th_03_battery
+            name: TH Garten
+          - type: tile
+            entity: sensor.sonoff_th_04_battery
+            name: TH Vorratsraum
+          - type: tile
+            entity: sensor.sonoff_th_05_battery
+            name: TH Terrasse
+          - type: tile
+            entity: sensor.shelly_dw_01_battery
+            name: Fenster Schlafzimmer
+          - type: tile
+            entity: sensor.shelly_dw_02_battery
+            name: Fenster Toilette
+          - type: tile
+            entity: sensor.shelly_dw_03_battery
+            name: Fenster Bad
+          - type: tile
+            entity: sensor.shelly_dw_04_battery
+            name: Fenster Lea
+          - type: tile
+            entity: sensor.shelly_dw_05_battery
+            name: Fenster Anna 1
+          - type: tile
+            entity: sensor.shelly_dw_06_battery
+            name: Fenster Anna 2
+          - type: tile
+            entity: sensor.thirdreality_waterleak_01_battery
+            name: Leck Waschraum
+          - type: tile
+            entity: sensor.thirdreality_waterleak_02_battery
+            name: Leck Wohnzimmer
+          - type: tile
+            entity: sensor.thirdreality_waterleak_03_battery
+            name: Leck Toilette
+          - type: tile
+            entity: sensor.thirdreality_waterleak_04_battery
+            name: Leck Küche
+          - type: tile
+            entity: sensor.thirdreality_waterleak_05_battery
+            name: Leck Bad
+      - type: grid
+        cards:
+          - type: heading
+            heading: Infrastruktur
+            icon: mdi:server
+          - type: tile
+            entity: binary_sensor.zigbee2mqtt_bridge_connection_state
+            name: Zigbee2MQTT
+          - type: tile
+            entity: sensor.anker_solarbank_01_cloud_state
+            name: Anker Cloud
+          - type: tile
+            entity: binary_sensor.raspberry_pi_power_status
+            name: Pi Stromversorgung
+          - type: tile
+            entity: sensor.backup_last_successful_automatic_backup
+            name: Letztes Backup
+          - type: tile
+            entity: sensor.living_room_esp32_display_01_wifi_signal_sensor
+            name: ePaper WLAN

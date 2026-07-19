@@ -1,3 +1,15 @@
+# =====================================================================
+# display-livingroom-01 — 7.5" ePaper Statusdisplay (Wohnzimmer)
+# Angepasst an die neue Strategie (HomeAssistant-2.0):
+#   - ALLE Berechnungen (abs. Feuchte, Lüften, Schimmel) laufen in HA;
+#     der ESP32 zeigt nur noch fertige Werte an
+#   - Entity-IDs auf neue epaper_*-Feeder und Konventions-Namen umgestellt
+#   - Aurora-Zeile ersetzt durch Schimmelrisiko-Status (epaper_mold_alert)
+#   - Alte Lüftungslogik war invertiert (out-in statt in-out) -> behoben,
+#     Quelle jetzt binary_sensor.living_room_ventilation_recommended
+# TODO (siehe 03 - ePaper Reaktivierung und Berechnungen.md):
+#   - Watermeter-/Power-History: Quellen fehlen noch (sensor_history-Ersatz folgt)
+# =====================================================================
 substitutions:
   name: "display-livingroom-01"
   friendly_name: Wohnzimmer Display 01
@@ -17,8 +29,8 @@ esp32:
     type: arduino
 
 logger:
-  level: VERY_VERBOSE
-# api: !include ./includes/api.yaml
+  level: DEBUG
+
 ota: !include ./includes/ota.yaml
 wifi: !include ./includes/wifi_common.yaml
 captive_portal:
@@ -118,6 +130,7 @@ font:
       "\U000F10C3"
       ]
 
+  # + F0026 (alert) und F05E0 (check-circle) für den Schimmel-Status
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: materialdesign_icons_30
     size: 30
@@ -147,7 +160,9 @@ font:
       "\U000F059C",
       "\U000F059D",
       "\U000F10C2",
-      "\U000F10C3"
+      "\U000F10C3",
+      "\U000F0026",
+      "\U000F05E0"
       ]
 
   - file: 'fonts/materialdesignicons-webfont.ttf'
@@ -387,16 +402,16 @@ display:
         current_condition = weather_actual[0];
       }
 
-      std::string inside_temp = id(temperature_inside).has_state() ? id(temperature_inside).state : "--";
-      std::string inside_humidity = id(humidity_inside).has_state() ? id(humidity_inside).state : "--";
+      std::string inside_temp = id(living_room_temperature).has_state() ? id(living_room_temperature).state : "--";
+      std::string inside_humidity = id(living_room_humidity).has_state() ? id(living_room_humidity).state : "--";
 
-      std::string outside_temp = id(temperature_outside).has_state() ? id(temperature_outside).state : "--";
+      std::string outside_temp = id(outdoor_temperature).has_state() ? id(outdoor_temperature).state : "--";
       if ("--" == outside_temp && weather_actual.size() > 1 && valid_text(weather_actual[1])) {
         ESP_LOGI(TAG, "unknown garden temperature: %s", outside_temp.c_str());
         outside_temp = weather_actual[1];
       }
 
-      std::string outside_humidity = id(humidity_outside).has_state() ? id(humidity_outside).state : "--";
+      std::string outside_humidity = id(outdoor_humidity).has_state() ? id(outdoor_humidity).state : "--";
       if ("--" == outside_humidity && weather_actual.size() > 2 && valid_text(weather_actual[2])) {
         ESP_LOGI(TAG, "unknown garden humidity: %s", outside_humidity.c_str());
         outside_humidity = weather_actual[2];
@@ -405,33 +420,34 @@ display:
       std::string pressure = weather_actual.size() > 3 && valid_text(weather_actual[3]) ? weather_actual[3] : "--";
       std::string wind = weather_actual.size() > 4 && valid_text(weather_actual[4]) ? weather_actual[4] : "--";
 
-      std::string radiator_temp = id(radiator_1_livingroom).has_state() ? id(radiator_1_livingroom).state : "--";
-      std::string bathroom_temp = id(temperature_bathroom).has_state() ? id(temperature_bathroom).state : "--";
-      std::string lea_temp = id(temperature_lea).has_state() ? id(temperature_lea).state : "--";
+      std::string bathroom_temp = id(bathroom_temperature).has_state() ? id(bathroom_temperature).state : "--";
+      std::string lea_temp = id(lea_room_temperature).has_state() ? id(lea_room_temperature).state : "--";
 
       float temp_out = parse_number(outside_temp, 0.0f);
-      float temp_in = parse_number(inside_temp, 0.0f);
-      float humi_out = parse_number(outside_humidity, 0.0f);
-      float humi_in = parse_number(inside_humidity, 0.0f);
 
-      double abs_humidity_out = semTools::abshumidity(temp_out, humi_out);
-      double abs_humidity_in = semTools::abshumidity(temp_in, humi_in);
-      double humidity_delta = semTools::humiditydifference(temp_out, temp_in, humi_out, humi_in);
-
-      char abs_out_buffer[16];
-      char abs_in_buffer[16];
+      // NEU: Delta der absoluten Feuchte (innen - außen) kommt fertig aus HA
+      // (sensor.epaper_humidity_delta). Positiv = drinnen feuchter.
       char humidity_delta_buffer[16];
-      snprintf(abs_out_buffer, sizeof(abs_out_buffer), "%.1f", abs_humidity_out);
-      snprintf(abs_in_buffer, sizeof(abs_in_buffer), "%.1f", abs_humidity_in);
-      snprintf(humidity_delta_buffer, sizeof(humidity_delta_buffer), "%+.1f", humidity_delta);
+      if (id(humidity_delta).has_state()) {
+        snprintf(humidity_delta_buffer, sizeof(humidity_delta_buffer), "%+.1f", id(humidity_delta).state);
+      } else {
+        snprintf(humidity_delta_buffer, sizeof(humidity_delta_buffer), "--");
+      }
 
-      const char *lea_window_icon = id(fenster_lea).state ? "\U000F081C" : "\U000F081B";
-      const char *lea_window_text = id(fenster_lea).state ? "Fenster offen" : "Fenster zu";
-      const char *vent_icon = humidity_delta > 0 ? "\U000F0974" : "\U000F0975";
-      const char *vent_text = humidity_delta > 0 ? "Lueften sinnvoll" : "Drinnen trockener";
-      const char *aurora_icon = id(aurora_visible_state).state ? "\U000F06D0" : "\U000F06D1";
-      const char *aurora_text = id(aurora_visible_state).state ? "Aurora moeglich" : "Aurora ruhig";
-      std::string dryer_text = id(trockner_operation_state).has_state() ? id(trockner_operation_state).state : "Unbekannt";
+      const char *lea_window_icon = id(lea_room_window).state ? "\U000F081C" : "\U000F081B";
+      const char *lea_window_text = id(lea_room_window).state ? "Fenster offen" : "Fenster zu";
+
+      // NEU: Lüftungsempfehlung direkt aus HA (mit Hysterese, korrektes Vorzeichen)
+      const char *vent_icon = id(vent_recommended).state ? "\U000F0974" : "\U000F0975";
+      const char *vent_text = id(vent_recommended).state ? "Lueften sinnvoll" : "Drinnen trockener";
+
+      // NEU: Schimmelrisiko-Status statt Aurora
+      std::string mold_state = id(mold_alert).has_state() ? id(mold_alert).state : "unknown";
+      bool mold_ok = (mold_state == "OK");
+      const char *mold_icon = mold_ok ? "\U000F05E0" : "\U000F0026";
+      std::string mold_text = mold_ok ? "Schimmel: OK" : ("Schimmel: " + mold_state);
+
+      std::string dryer_text = id(dryer_operation_state).has_state() ? id(dryer_operation_state).state : "Unbekannt";
 
       auto now = id(time_homeassistant).now();
 
@@ -461,7 +477,7 @@ display:
 
       it.printf(header_x + 22, header_y + 26, id(openSansBold_font), TextAlign::BASELINE_LEFT, "Wetter jetzt");
       it.printf(header_x + 20, header_y + 105, id(materialdesign_icons_80), TextAlign::BASELINE_LEFT, "%s", weather_icon(current_condition));
-      
+
       // position of temperature right aligned to the icon
       auto pox = 122;
       if (temp_out < 10.0f) {
@@ -494,13 +510,13 @@ display:
       it.printf(card1_x + 14, card_y + 108, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F10C2");
 
       draw_card(card2_x, card_y, card_w, card_h, "Bad");
-      const char *bath_window1_icon = id(fenster_badezimmer).state ? "\U000F081C": "\U000F081B";
-      const char *bath_window1_text = id(fenster_badezimmer).state ? "Fenster offen" : "Fenster zu";
-      std::string bathroom_humidity = id(humidity_bathroom).has_state() ? id(humidity_bathroom).state : "--";
+      const char *bath_window1_icon = id(bathroom_window).state ? "\U000F081C": "\U000F081B";
+      const char *bath_window1_text = id(bathroom_window).state ? "Fenster offen" : "Fenster zu";
+      std::string bathroom_humidity_text = id(bathroom_humidity).has_state() ? id(bathroom_humidity).state : "--";
       it.printf(card2_x +  14, card_y + 72, id(materialdesign_icons_60), TextAlign::BASELINE_LEFT, "\U000F09A0");
       it.printf(card2_x + 100, card_y + 56, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s °C", bathroom_temp.c_str());
       it.printf(card2_x +  80, card_y + 82, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "\U000F058E");
-      it.printf(card2_x + 100, card_y + 82, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s %%", bathroom_humidity.c_str());
+      it.printf(card2_x + 100, card_y + 82, id(openSansBold_font), TextAlign::BASELINE_LEFT, "%s %%", bathroom_humidity_text.c_str());
       it.printf(card2_x +  14, card_y + 108, id(materialdesign_icons_35), TextAlign::BASELINE_LEFT, "%s", bath_window1_icon);
       it.printf(card2_x +  54, card_y + 108, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", bath_window1_text);
 
@@ -515,8 +531,8 @@ display:
       it.printf(card4_x + 54, card_y + 49, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", vent_text);
       it.printf(card4_x + 14, card_y + 78, id(materialdesign_icons_30), TextAlign::BASELINE_LEFT, "\U000F0917");
       it.printf(card4_x + 54, card_y + 78, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", dryer_text.c_str());
-      it.printf(card4_x + 14, card_y + 107, id(materialdesign_icons_30), TextAlign::BASELINE_LEFT, "%s", aurora_icon);
-      it.printf(card4_x + 54, card_y + 107, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", aurora_text);
+      it.printf(card4_x + 14, card_y + 107, id(materialdesign_icons_30), TextAlign::BASELINE_LEFT, "%s", mold_icon);
+      it.printf(card4_x + 54, card_y + 107, id(openSansBold_font_small), TextAlign::BASELINE_LEFT, "%s", mold_text.c_str());
 
       it.rectangle(forecast_x, bottom_y, forecast_w, bottom_h);
       it.printf(forecast_x + 14, bottom_y + 22, id(openSansBold_font), TextAlign::BASELINE_LEFT, "5-Tage-Ausblick");
@@ -595,15 +611,16 @@ display:
           atoi(&__TIME__[3])
       );
 
+      // Batterie-Leiste: Fenster (Shelly Blu) + Wasserleck-Sensoren
       int battery_x = 594;
       int battery_y = 444;
-      battery_x += 28; my_tools.BatterySymbol(id(bad_fenster_battery),                battery_x, battery_y, "bf");
-      battery_x += 28; my_tools.BatterySymbol(id(fenster_lea_battery),                battery_x, battery_y, "lf");
-      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_kitchen_sink_batterie), battery_x, battery_y, "ks");
-      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_drainage_pit_batterie), battery_x, battery_y, "dp");
-      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_aquarium_batterie),     battery_x, battery_y, "aq");
-      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_bathroom_og_batterie),  battery_x, battery_y, "bo");
-      battery_x += 28; my_tools.BatterySymbol(id(water_sensor_bathroom_eg_batterie),  battery_x, battery_y, "bu");
+      battery_x += 28; my_tools.BatterySymbol(id(bathroom_window_battery),        battery_x, battery_y, "bf");
+      battery_x += 28; my_tools.BatterySymbol(id(lea_room_window_battery),        battery_x, battery_y, "lf");
+      battery_x += 28; my_tools.BatterySymbol(id(kitchen_waterleak_battery),      battery_x, battery_y, "ks");
+      battery_x += 28; my_tools.BatterySymbol(id(laundry_room_waterleak_battery),      battery_x, battery_y, "wr");
+      battery_x += 28; my_tools.BatterySymbol(id(living_room_waterleak_battery),   battery_x, battery_y, "aq");
+      battery_x += 28; my_tools.BatterySymbol(id(bathroom_waterleak_battery),  battery_x, battery_y, "bo");
+      battery_x += 28; my_tools.BatterySymbol(id(toilet_waterleak_battery),       battery_x, battery_y, "wc");
 
 # --- Sensors ------------------------------------------------------------------
 sensor:
@@ -632,10 +649,16 @@ sensor:
     name: "WiFi Signal Sensor"
     id: wifisignal
     update_interval: 60s
+  # TODO: watermeter noch nicht installiert (AI on the Edge)
   - platform: homeassistant
     id: watermeter_value
     name: "Water Statistic"
     entity_id: sensor.watermeter_value
+  # NEU: Delta absolute Feuchte (innen - außen) aus HA, positiv = drinnen feuchter
+  - platform: homeassistant
+    id: humidity_delta
+    entity_id: sensor.epaper_humidity_delta
+    internal: true
 
 text_sensor:
   - platform: wifi_info
@@ -657,37 +680,35 @@ text_sensor:
     entity_id: sensor.epaper_weather_forecast
     internal: true
   - platform: homeassistant
-    id: temperature_inside
+    id: living_room_temperature
     entity_id: sensor.epaper_temperature_inside
     internal: true
   - platform: homeassistant
-    id: temperature_outside
+    id: outdoor_temperature
     entity_id: sensor.epaper_temperature_outside_2
     internal: true
   - platform: homeassistant
-    id: radiator_1_livingroom
-    entity_id: sensor.epaper_temperature_radiator_1_livingroom
-    internal: true
-  - platform: homeassistant
-    id: humidity_inside
+    id: living_room_humidity
     entity_id: sensor.epaper_humidity_inside
     internal: true
   - platform: homeassistant
-    id: humidity_bathroom
+    id: bathroom_humidity
     entity_id: sensor.epaper_humidity_bathroom
     internal: true
   - platform: homeassistant
-    id: humidity_outside
+    id: outdoor_humidity
     entity_id: sensor.epaper_humidity_outside
     internal: true
   - platform: homeassistant
-    id: temperature_bathroom
-    entity_id: sensor.klima_bad_og_temperatur
+    id: bathroom_temperature
+    entity_id: sensor.epaper_temperature_bathroom
     internal: true
+  # Quelle: Raumklima sonoff_th_06 (via epaper-Feeder)
   - platform: homeassistant
-    id: temperature_lea
-    entity_id: sensor.klima_lea_temperatur
+    id: lea_room_temperature
+    entity_id: sensor.epaper_temperature_lea
     internal: true
+  # TODO: sensor_history-Komponente + watermeter noch nicht installiert
   - platform: homeassistant
     id: water_meter_history
     entity_id: sensor.epaper_watermeter_history
@@ -697,57 +718,66 @@ text_sensor:
     entity_id: sensor.epaper_power_history
     internal: true
   - platform: homeassistant
-    id: trockner_operation_state
+    id: dryer_operation_state
     entity_id: sensor.trockner_operation_state
     internal: true
+  # NEU: Schimmel-Sammelstatus aus HA ("OK" oder Raumliste)
   - platform: homeassistant
-    id: aurora_visibility_state
-    entity_id: sensor.aurora_visibility_sichtbarkeit
+    id: mold_alert
+    entity_id: sensor.epaper_mold_alert
+    internal: true
+  # Batterien der Wasserleck-Sensoren (neue Zigbee-Namen)
+  - platform: homeassistant
+    id: kitchen_waterleak_battery
+    entity_id: sensor.thirdreality_waterleak_04_battery
     internal: true
   - platform: homeassistant
-    id: bad_fenster_battery
-    entity_id: sensor.bad_fenster_battery
+    id: laundry_room_waterleak_battery
+    entity_id: sensor.thirdreality_waterleak_01_battery
     internal: true
   - platform: homeassistant
-    id: fenster_lea_battery
-    entity_id: sensor.fenster_lea_battery
+    id: living_room_waterleak_battery
+    entity_id: sensor.thirdreality_waterleak_02_battery
     internal: true
   - platform: homeassistant
-    id: water_sensor_kitchen_sink_batterie
-    entity_id: sensor.water_sensor_kitchen_sink_batterie
+    id: bathroom_waterleak_battery
+    entity_id: sensor.thirdreality_waterleak_05_battery
     internal: true
   - platform: homeassistant
-    id: water_sensor_drainage_pit_batterie
-    entity_id: sensor.third_reality_inc_3rws18bz_batterie
+    id: toilet_waterleak_battery
+    entity_id: sensor.thirdreality_waterleak_03_battery
+    internal: true
+
+  # Fenster-Batterien (Shelly Blu)
+  - platform: homeassistant
+    id: bathroom_window_battery
+    entity_id: sensor.shelly_dw_03_battery
     internal: true
   - platform: homeassistant
-    id: water_sensor_aquarium_batterie
-    entity_id: sensor.water_sensor_aquarium_batterie_2
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_bathroom_og_batterie
-    entity_id: sensor.water_sensor_bathroom_og_batterie_2
-    internal: true
-  - platform: homeassistant
-    id: water_sensor_bathroom_eg_batterie
-    entity_id: sensor.water_sensor_bathroom_eg_batterie
+    id: lea_room_window_battery
+    entity_id: sensor.shelly_dw_04_battery
     internal: true
 
 binary_sensor:
   - platform: homeassistant
-    id: fenster_badezimmer
-    entity_id: binary_sensor.bad_og_north_window
+    id: bathroom_window
+    entity_id: binary_sensor.bathroom_window_north_contact
     internal: true
   - platform: homeassistant
-    id: fenster_lea
-    entity_id: binary_sensor.bthome_sensor_f2ba_window
+    id: lea_room_window
+    entity_id: binary_sensor.lea_room_window_south_contact
     internal: true
+  # NEU: Lüftungsempfehlung aus HA (Wohnzimmer, mit Hysterese)
   - platform: homeassistant
-    id: aurora_visible_state
-    entity_id: binary_sensor.aurora_visibility_sichtbarkeitswarnung
+    id: vent_recommended
+    entity_id: binary_sensor.living_room_ventilation_recommended
     internal: true
 
 time:
   - platform: homeassistant
     id: time_homeassistant
     timezone: Europe/Berlin
+
+button:
+  - platform: restart
+    name: "${friendly_name} Restart"

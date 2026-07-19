@@ -1,0 +1,138 @@
+# Vorher;Nachher  (Semikolon-getrennt, # = Kommentar)
+# Nach --apply: aktualisierte templates/rooms.yaml, templates/epaper.yaml und
+# automations/front_door.yaml auf den HA kopieren und YAML neu laden
+# (Quell-Verweise dort sind bereits auf die neuen IDs angepasst).
+
+# --- Fenstersensoren (Geräte bereits als shelly_dw_01..06 benannt) ---
+# Nummerierung gemäß Geräte-Zuordnung im Export vom 12.07.:
+#   dw_01 = 3E90 bedroom | dw_02 = FAE8 toilet | dw_03 = A510 bathroom
+#   dw_04 = F2BA lea_room | dw_05 = AEAC anna_room | dw_06 = F3B0 anna_room
+binary_sensor.bthome_sensor_3e90_window;binary_sensor.bedroom_window_north_contact
+sensor.bthome_sensor_3e90_rotation;sensor.bedroom_window_north_tilt_angle
+sensor.bthome_sensor_3e90_battery;sensor.shelly_dw_01_battery
+sensor.bthome_sensor_3e90_illuminance;sensor.shelly_dw_01_illuminance
+binary_sensor.bthome_sensor_a510_window;binary_sensor.bathroom_window_north_contact
+sensor.bthome_sensor_a510_rotation;sensor.bathroom_window_north_tilt_angle
+sensor.bthome_sensor_a510_battery;sensor.shelly_dw_03_battery
+sensor.bthome_sensor_a510_illuminance;sensor.shelly_dw_03_illuminance
+sensor.bthome_sensor_fae8_battery;sensor.shelly_dw_02_battery
+sensor.bthome_sensor_f2ba_battery;sensor.shelly_dw_04_battery
+sensor.bthome_sensor_aeac_battery;sensor.shelly_dw_05_battery
+sensor.bthome_sensor_f3b0_battery;sensor.shelly_dw_06_battery
+# Nachzügler (Entities nach erstem Auslösen mit deutschen Namen entstanden):
+binary_sensor.bthome_sensor_fae8_fenster;binary_sensor.toilet_window_south_contact
+sensor.bthome_sensor_fae8_drehung;sensor.toilet_window_south_tilt_angle
+sensor.bthome_sensor_fae8_beleuchtungsstarke;sensor.shelly_dw_02_illuminance
+binary_sensor.bthome_sensor_f2ba_fenster;binary_sensor.lea_room_window_south_contact
+sensor.bthome_sensor_f2ba_drehung;sensor.lea_room_window_south_tilt_angle
+sensor.bthome_sensor_f2ba_beleuchtungsstarke;sensor.shelly_dw_04_illuminance
+sensor.bthome_sensor_aeac_beleuchtungsstarke;sensor.shelly_dw_05_illuminance
+sensor.bthome_sensor_f3b0_beleuchtungsstarke;sensor.shelly_dw_06_illuminance
+# TODO Anna: Orientierung klären (Nord / Süd 2 / West), dann aktivieren:
+# binary_sensor.bthome_sensor_aeac_fenster;binary_sensor.anna_room_window_<orient>_contact
+# sensor.bthome_sensor_aeac_drehung;sensor.anna_room_window_<orient>_tilt_angle
+# binary_sensor.bthome_sensor_f3b0_fenster;binary_sensor.anna_room_window_<orient>_contact
+# (f3b0: _drehung-Entity entsteht erst beim ersten Kipp-Ereignis)
+
+# --- Raumklima-Messwerte als Standortwerte (Sonoff TH) ----------------
+# Batterie/Kalibrierung/Comfort-Numbers bleiben gerätebezogen.
+# ACHTUNG: Quellen in templates/rooms.yaml, outdoor.yaml, epaper.yaml und
+# dashboards/matzen.yaml sind bereits auf die neuen IDs angepasst.
+sensor.sonoff_th_01_temperature;sensor.bedroom_temperature
+sensor.sonoff_th_01_humidity;sensor.bedroom_humidity
+sensor.sonoff_th_02_temperature;sensor.living_room_temperature
+sensor.sonoff_th_02_humidity;sensor.living_room_humidity
+sensor.sonoff_th_03_temperature;sensor.garden_north_temperature
+sensor.sonoff_th_03_humidity;sensor.garden_north_humidity
+sensor.sonoff_th_04_temperature;sensor.storage_room_temperature
+sensor.sonoff_th_04_humidity;sensor.storage_room_humidity
+sensor.sonoff_th_05_temperature;sensor.terrace_temperature
+sensor.sonoff_th_05_humidity;sensor.terrace_humidity
+
+# --- Schallsensor Terrasse (Konvention: <area>_noise_level) ----------
+sensor.terrace_esp32_soundmeter_01_leq_1s;sensor.terrace_noise_level
+sensor.terrace_esp32_soundmeter_01_lmax_1s;sensor.terrace_noise_level_max
+
+# --- Hausanschluss (stabile Interface-Namen + englische Suffixe) -----
+sensor.staircase_basement_shelly_3empro_01_leistung;sensor.power_main_power
+sensor.staircase_basement_shelly_3empro_01_energie;sensor.power_main_energy
+sensor.staircase_basement_shelly_3empro_01_energieeinspeisung;sensor.power_main_energy_returned
+sensor.power_main_phase_a_leistung;sensor.power_main_phase_a_power
+sensor.power_main_phase_a_leistungsfaktor;sensor.power_main_phase_a_power_factor
+sensor.power_main_phase_a_scheinleistung;sensor.power_main_phase_a_apparent_power
+sensor.power_main_phase_b_leistung;sensor.power_main_phase_b_power
+sensor.power_main_phase_b_leistungsfaktor;sensor.power_main_phase_b_power_factor
+sensor.power_main_phase_b_scheinleistung;sensor.power_main_phase_b_apparent_power
+sensor.power_main_phase_c_leistung;sensor.power_main_phase_c_power
+sensor.power_main_phase_c_leistungsfaktor;sensor.power_main_phase_c_power_factor
+sensor.power_main_phase_c_scheinleistung;sensor.power_main_phase_c_apparent_power
+
+# --- Wasserleck als Standortwert (für Benachrichtigungen) ------------
+binary_sensor.thirdreality_waterleak_01_water_leak;binary_sensor.laundry_room_water_leak
+binary_sensor.thirdreality_waterleak_02_water_leak;binary_sensor.living_room_water_leak
+binary_sensor.thirdreality_waterleak_03_water_leak;binary_sensor.toilet_water_leak
+binary_sensor.thirdreality_waterleak_04_water_leak;binary_sensor.kitchen_water_leak
+binary_sensor.thirdreality_waterleak_05_water_leak;binary_sensor.bathroom_water_leak
+
+# --- Trockner (Home Connect, deutsche Suffixe -> englisch/Standort) --
+# ACHTUNG: Quelle in templates/epaper.yaml wird mit angepasst
+sensor.laundry_room_siemens_dryer_01_betriebszustand;sensor.laundry_room_dryer_operation_state
+sensor.laundry_room_siemens_dryer_01_programm_endzeit;sensor.laundry_room_dryer_program_end_time
+sensor.laundry_room_siemens_dryer_01_programm_fortschritt;sensor.laundry_room_dryer_program_progress
+sensor.laundry_room_siemens_dryer_01_tur;sensor.laundry_room_dryer_door
+
+# --- ESP32-Wandsensor (deutscher Suffix -> englisch) ------------------
+# ACHTUNG: Quelle in templates/rooms.yaml wird mit angepasst
+sensor.living_room_esp32_walltemp_01_wand_temperatur_sensor;sensor.esp32_walltemp_01_temperature
+
+# --- Haustür-Öffner als benannter Wert --------------------------------
+# ACHTUNG: automations/front_door.yaml wird mit angepasst
+switch.staircase_ground_floor_shelly_plusuni_01_o1;switch.front_door_opener
+
+# --- OPTIONAL / erst nach Klärung -----------------------------------
+# shelly_dw2_01 (WLAN Door/Window 2, deutsche Suffixe, keine Area):
+#   Standort klären, dann z. B.:
+# binary_sensor.shelly_dw2_01_tur;binary_sensor.<area>_window_<orient>_contact
+# sensor.shelly_dw2_01_kippstellung;sensor.<area>_window_<orient>_tilt_angle
+#
+# switch.staircase_ground_floor_shelly_plusuni_01_o0: Funktion klären (O0 = ?)
+#
+# --- Anker Solarbank (Gerät = anker_solarbank_01) --------------------
+# ACHTUNG: Quellen in sensors.yaml (Integral-Zähler) sind bereits auf die
+# neuen IDs angepasst; Energy Dashboard nach Rename von ertrag_gesamt
+# einmal neu auswählen!
+sensor.anker_solixe2700pro_01_solarleistung;sensor.anker_solarbank_01_solar_power
+sensor.anker_solixe2700pro_01_aufladeleistung;sensor.anker_solarbank_01_charge_power
+sensor.anker_solixe2700pro_01_entladeleistung;sensor.anker_solarbank_01_discharge_power
+sensor.anker_solixe2700pro_01_akkuleistung;sensor.anker_solarbank_01_battery_power
+sensor.anker_solixe2700pro_01_akkuenergie;sensor.anker_solarbank_01_battery_energy
+sensor.anker_solixe2700pro_01_ladestand;sensor.anker_solarbank_01_battery_level
+number.anker_solixe2700pro_01_akku_kapazitat;number.anker_solarbank_01_battery_capacity
+
+# --- Anker Solix Systemwerte (Gerät = anker_solix, Area virtual) ------
+sensor.terrace_anker_solix_ertrag_gesamt;sensor.anker_solix_solar_energy_total
+sensor.terrace_anker_solix_hausbedarf;sensor.anker_solix_home_demand
+sensor.terrace_anker_solix_sb_solarleistung;sensor.anker_solix_sb_solar_power
+sensor.terrace_anker_solix_sb_akkuleistung;sensor.anker_solix_sb_battery_power
+sensor.terrace_anker_solix_sb_einspeiseleistung;sensor.anker_solix_sb_output_power
+sensor.terrace_anker_solix_sb_ladestand;sensor.anker_solix_sb_battery_level
+sensor.anker_solixe2700pro_01_ac_hausabgabe;sensor.anker_solarbank_01_ac_output_power
+sensor.anker_solixe2700pro_01_ac_steckdose;sensor.anker_solarbank_01_ac_socket_power
+sensor.anker_solixe2700pro_01_dc_ausgangsleistung;sensor.anker_solarbank_01_dc_output_power
+sensor.anker_solixe2700pro_01_betriebszustand;sensor.anker_solarbank_01_operation_state
+sensor.anker_solixe2700pro_01_cloud_zustand;sensor.anker_solarbank_01_cloud_state
+sensor.anker_solixe2700pro_01_einspeisevorgabe;sensor.anker_solarbank_01_output_preset
+sensor.anker_solixe2700pro_01_heizleistung;sensor.anker_solarbank_01_heater_power
+sensor.anker_solixe2700pro_01_netzaufladung;sensor.anker_solarbank_01_grid_charge_power
+sensor.anker_solixe2700pro_01_erweiterungsakkus;sensor.anker_solarbank_01_expansion_batteries
+sensor.anker_solixe2700pro_01_fehlercode;sensor.anker_solarbank_01_error_code
+sensor.anker_solixe2700pro_01_solar_pv1;sensor.anker_solarbank_01_solar_pv1
+sensor.anker_solixe2700pro_01_solar_pv2;sensor.anker_solarbank_01_solar_pv2
+sensor.anker_solixe2700pro_01_solar_pv3;sensor.anker_solarbank_01_solar_pv3
+sensor.anker_solixe2700pro_01_solar_pv4;sensor.anker_solarbank_01_solar_pv4
+button.anker_solixe2700pro_01_details_aktualisieren;button.anker_solarbank_01_refresh_details
+# Preis-/AI-/CO2-Entities (anker_solix Systemgerät) bewusst nicht umbenannt.
+#
+# Bewusst NICHT umbenannt: Diagnose-Entities (Synology, Shelly _neu_starten/
+# _uberhitzung, ESPHome-WiFi/IP, Fyta-Pflanzensensoren) - tauchen in keiner
+# Logik auf, Umbenennung wäre Fleißarbeit ohne Nutzen.

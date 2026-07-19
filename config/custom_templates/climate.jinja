@@ -1,0 +1,53 @@
+{#
+  Klima-Makros — zentrale Berechnungen für alle Template-Sensoren.
+  Magnus-Formel, Parameter nach Sonntag (1990), über Wasser:
+  a = 17.62, b = 243.12 °C  (gültig ca. -45…+60 °C)
+#}
+
+{# Sättigungsdampfdruck in hPa bei Temperatur t [°C] #}
+{% macro sat_vapor_pressure(t) -%}
+  {{ 6.112 * e ** (17.62 * t / (243.12 + t)) }}
+{%- endmacro %}
+
+{# Taupunkt [°C] aus Lufttemperatur t [°C] und rel. Feuchte rh [%] #}
+{% macro dew_point(t, rh) -%}
+  {%- set alpha = log(rh / 100) + 17.62 * t / (243.12 + t) -%}
+  {{ 243.12 * alpha / (17.62 - alpha) }}
+{%- endmacro %}
+
+{# Absolute Feuchte [g/m³] aus t [°C] und rh [%] #}
+{% macro abs_humidity(t, rh) -%}
+  {%- set e_hpa = rh / 100 * 6.112 * e ** (17.62 * t / (243.12 + t)) -%}
+  {{ 216.679 * e_hpa / (273.15 + t) }}
+{%- endmacro %}
+
+{# Relative Feuchte an der Wandoberfläche [%]
+   aus Raumluft (t_air, rh_air) und Wandtemperatur t_wall.
+   >= 80 % über längere Zeit = Schimmelgefahr (DIN 4108-2) #}
+{% macro wall_surface_rh(t_air, rh_air, t_wall) -%}
+  {%- set e_air  = rh_air / 100 * 6.112 * e ** (17.62 * t_air  / (243.12 + t_air))  -%}
+  {%- set e_satw =              6.112 * e ** (17.62 * t_wall / (243.12 + t_wall)) -%}
+  {{ e_air / e_satw * 100 }}
+{%- endmacro %}
+
+{# Wandtemperatur-Schätzung [°C] über Temperaturfaktor f_Rsi (DIN 4108-2):
+   T_wand = T_außen + f_Rsi * (T_innen - T_außen) #}
+{% macro wall_temp_estimate(t_out, t_in, f_rsi) -%}
+  {{ t_out + f_rsi * (t_in - t_out) }}
+{%- endmacro %}
+
+{# f_Rsi je Raum — PLATZHALTER!
+   TODO: Im Winter (ΔT >= 10 K, nachts) je Raum mit IR-Thermometer an der
+   kältesten Stelle messen und hier eintragen:
+   f_Rsi = (T_wand - T_außen) / (T_innen - T_außen)
+   Referenz: Live-Wert sensor.living_room_f_rsi_live (gemessene Wand). #}
+{% macro f_rsi(room) -%}
+  {{ {
+    'living_room':  0.90,
+    'bedroom':      0.85,
+    'storage_room': 0.75,
+    'bathroom':     0.85,
+    'lea_room':     0.85,
+    'anna_room':    0.85
+  }.get(room, 0.85) }}
+{%- endmacro %}

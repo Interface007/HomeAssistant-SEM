@@ -1,0 +1,566 @@
+# =====================================================================
+# Raumklima-Berechnungen pro Raum
+#   living_room  -> sonoff_th_02 + gemessene Wandtemperatur (ESP32)
+#   bedroom      -> sonoff_th_01 (Wand geschätzt über f_Rsi)
+#   storage_room -> sonoff_th_04 (Keller; Wand geschätzt, Sonderlogik Lüften)
+#
+# Muster für weitere Räume: Block kopieren, Entities + Raumname ändern,
+# f_Rsi in custom_templates/climate.jinja ergänzen.
+# mold_risk nutzt den 24-h-Mittelwert (statistics-Sensor in sensors.yaml).
+# =====================================================================
+
+# ------------------------- LIVING ROOM -------------------------------
+- sensor:
+    - name: "Living Room Absolute Humidity"
+      unique_id: living_room_absolute_humidity
+      default_entity_id: sensor.living_room_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.living_room_temperature') and has_value('sensor.living_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.living_room_temperature') | float,
+                        states('sensor.living_room_humidity') | float) | float | round(2) }}
+
+    - name: "Living Room Dew Point"
+      unique_id: living_room_dew_point
+      default_entity_id: sensor.living_room_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.living_room_temperature') and has_value('sensor.living_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.living_room_temperature') | float,
+                     states('sensor.living_room_humidity') | float) | float | round(1) }}
+
+    # Gemessene Wandtemperatur -> einheitlicher Name nach Konvention
+    - name: "Living Room Wall Temperature"
+      unique_id: living_room_wall_temperature
+      default_entity_id: sensor.living_room_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: "{{ has_value('sensor.esp32_walltemp_01_temperature') }}"
+      state: "{{ states('sensor.esp32_walltemp_01_temperature') | float | round(1) }}"
+
+    - name: "Living Room Wall Surface Humidity"
+      unique_id: living_room_wall_surface_humidity
+      default_entity_id: sensor.living_room_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.living_room_temperature')
+           and has_value('sensor.living_room_humidity')
+           and has_value('sensor.living_room_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.living_room_temperature') | float,
+                           states('sensor.living_room_humidity') | float,
+                           states('sensor.living_room_wall_temperature') | float) | float | round(1) }}
+
+    # Diagnose: live gemessener f_Rsi als Referenz für die Schätz-Räume.
+    # Nur gültig bei ΔT >= 10 K (sonst unavailable).
+    - name: "Living Room f_Rsi Live"
+      unique_id: living_room_f_rsi_live
+      default_entity_id: sensor.living_room_f_rsi_live
+      state_class: measurement
+      icon: mdi:home-thermometer
+      availability: >
+        {{ has_value('sensor.living_room_temperature')
+           and has_value('sensor.living_room_wall_temperature')
+           and has_value('sensor.outdoor_temperature')
+           and (states('sensor.living_room_temperature') | float(0)
+                - states('sensor.outdoor_temperature') | float(0)) >= 10 }}
+      state: >
+        {% set t_in = states('sensor.living_room_temperature') | float %}
+        {% set t_out = states('sensor.outdoor_temperature') | float %}
+        {% set t_wall = states('sensor.living_room_wall_temperature') | float %}
+        {{ ((t_wall - t_out) / (t_in - t_out)) | round(3) }}
+
+- binary_sensor:
+    - name: "Living Room Condensation Risk"
+      unique_id: living_room_condensation_risk
+      default_entity_id: binary_sensor.living_room_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.living_room_wall_temperature') and has_value('sensor.living_room_dew_point') }}
+      state: >
+        {{ states('sensor.living_room_wall_temperature') | float
+           <= states('sensor.living_room_dew_point') | float }}
+
+    - name: "Living Room Mold Risk"
+      unique_id: living_room_mold_risk
+      default_entity_id: binary_sensor.living_room_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.living_room_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.living_room_wall_surface_humidity_24h') | float >= 80 }}"
+
+    # Lüften sinnvoll? AH innen - AH außen; Hysterese: ein > 0.7, aus < 0.3
+    - name: "Living Room Ventilation Recommended"
+      unique_id: living_room_ventilation_recommended
+      default_entity_id: binary_sensor.living_room_ventilation_recommended
+      icon: mdi:window-open-variant
+      availability: >
+        {{ has_value('sensor.living_room_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {% set d = states('sensor.living_room_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
+
+# --------------------------- BEDROOM ---------------------------------
+- sensor:
+    - name: "Bedroom Absolute Humidity"
+      unique_id: bedroom_absolute_humidity
+      default_entity_id: sensor.bedroom_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.bedroom_temperature') and has_value('sensor.bedroom_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.bedroom_temperature') | float,
+                        states('sensor.bedroom_humidity') | float) | float | round(2) }}
+
+    - name: "Bedroom Dew Point"
+      unique_id: bedroom_dew_point
+      default_entity_id: sensor.bedroom_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.bedroom_temperature') and has_value('sensor.bedroom_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.bedroom_temperature') | float,
+                     states('sensor.bedroom_humidity') | float) | float | round(1) }}
+
+    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    - name: "Bedroom Wall Temperature"
+      unique_id: bedroom_wall_temperature
+      default_entity_id: sensor.bedroom_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.bedroom_temperature') and has_value('sensor.outdoor_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
+        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
+                              states('sensor.bedroom_temperature') | float,
+                              f_rsi('bedroom') | float) | float | round(1) }}
+
+    - name: "Bedroom Wall Surface Humidity"
+      unique_id: bedroom_wall_surface_humidity
+      default_entity_id: sensor.bedroom_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.bedroom_temperature')
+           and has_value('sensor.bedroom_humidity')
+           and has_value('sensor.bedroom_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.bedroom_temperature') | float,
+                           states('sensor.bedroom_humidity') | float,
+                           states('sensor.bedroom_wall_temperature') | float) | float | round(1) }}
+
+- binary_sensor:
+    - name: "Bedroom Condensation Risk"
+      unique_id: bedroom_condensation_risk
+      default_entity_id: binary_sensor.bedroom_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.bedroom_wall_temperature') and has_value('sensor.bedroom_dew_point') }}
+      state: >
+        {{ states('sensor.bedroom_wall_temperature') | float
+           <= states('sensor.bedroom_dew_point') | float }}
+
+    - name: "Bedroom Mold Risk"
+      unique_id: bedroom_mold_risk
+      default_entity_id: binary_sensor.bedroom_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.bedroom_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.bedroom_wall_surface_humidity_24h') | float >= 80 }}"
+
+    - name: "Bedroom Ventilation Recommended"
+      unique_id: bedroom_ventilation_recommended
+      default_entity_id: binary_sensor.bedroom_ventilation_recommended
+      icon: mdi:window-open-variant
+      availability: >
+        {{ has_value('sensor.bedroom_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {% set d = states('sensor.bedroom_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
+
+# ------------------------- STORAGE ROOM (Keller) ----------------------
+# Achtung: Kellerwände grenzen ans Erdreich -> f_Rsi-Schätzung über die
+# Außentemperatur ist hier nur eine Näherung. Geplant: eigener Wandsensor.
+- sensor:
+    - name: "Storage Room Absolute Humidity"
+      unique_id: storage_room_absolute_humidity
+      default_entity_id: sensor.storage_room_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.storage_room_temperature') and has_value('sensor.storage_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.storage_room_temperature') | float,
+                        states('sensor.storage_room_humidity') | float) | float | round(2) }}
+
+    - name: "Storage Room Dew Point"
+      unique_id: storage_room_dew_point
+      default_entity_id: sensor.storage_room_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.storage_room_temperature') and has_value('sensor.storage_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.storage_room_temperature') | float,
+                     states('sensor.storage_room_humidity') | float) | float | round(1) }}
+
+    - name: "Storage Room Wall Temperature"
+      unique_id: storage_room_wall_temperature
+      default_entity_id: sensor.storage_room_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.storage_room_temperature') and has_value('sensor.outdoor_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
+        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
+                              states('sensor.storage_room_temperature') | float,
+                              f_rsi('storage_room') | float) | float | round(1) }}
+
+    - name: "Storage Room Wall Surface Humidity"
+      unique_id: storage_room_wall_surface_humidity
+      default_entity_id: sensor.storage_room_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.storage_room_temperature')
+           and has_value('sensor.storage_room_humidity')
+           and has_value('sensor.storage_room_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.storage_room_temperature') | float,
+                           states('sensor.storage_room_humidity') | float,
+                           states('sensor.storage_room_wall_temperature') | float) | float | round(1) }}
+
+- binary_sensor:
+    - name: "Storage Room Condensation Risk"
+      unique_id: storage_room_condensation_risk
+      default_entity_id: binary_sensor.storage_room_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.storage_room_wall_temperature') and has_value('sensor.storage_room_dew_point') }}
+      state: >
+        {{ states('sensor.storage_room_wall_temperature') | float
+           <= states('sensor.storage_room_dew_point') | float }}
+
+    - name: "Storage Room Mold Risk"
+      unique_id: storage_room_mold_risk
+      default_entity_id: binary_sensor.storage_room_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.storage_room_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.storage_room_wall_surface_humidity_24h') | float >= 80 }}"
+
+    # Keller-Sonderlogik (Basis für spätere Ventilator-Automation):
+    #  1. AH außen deutlich niedriger als innen (Hysterese wie oben)
+    #  2. UND Taupunkt außen < Kellerwand-Temperatur - 2 K
+    #     (sonst Sommer-Kondensation an kühlen Kellerwänden)
+    - name: "Storage Room Ventilation Recommended"
+      unique_id: storage_room_ventilation_recommended
+      default_entity_id: binary_sensor.storage_room_ventilation_recommended
+      icon: mdi:fan
+      availability: >
+        {{ has_value('sensor.storage_room_absolute_humidity')
+           and has_value('sensor.outdoor_absolute_humidity')
+           and has_value('sensor.outdoor_dew_point')
+           and has_value('sensor.storage_room_wall_temperature') }}
+      state: >
+        {% set d = states('sensor.storage_room_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {% set drier = d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 %}
+        {% set safe = states('sensor.outdoor_dew_point') | float
+                    < states('sensor.storage_room_wall_temperature') | float - 2 %}
+        {{ drier and safe }}
+
+# Blöcke generiert nach bedroom-Muster (geschätzte Wandtemperatur via f_Rsi)
+# --------------------------- BATHROOM ---------------------------------
+- sensor:
+    - name: "Bathroom Absolute Humidity"
+      unique_id: bathroom_absolute_humidity
+      default_entity_id: sensor.bathroom_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.bathroom_temperature') and has_value('sensor.bathroom_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.bathroom_temperature') | float,
+                        states('sensor.bathroom_humidity') | float) | float | round(2) }}
+
+    - name: "Bathroom Dew Point"
+      unique_id: bathroom_dew_point
+      default_entity_id: sensor.bathroom_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.bathroom_temperature') and has_value('sensor.bathroom_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.bathroom_temperature') | float,
+                     states('sensor.bathroom_humidity') | float) | float | round(1) }}
+
+    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    - name: "Bathroom Wall Temperature"
+      unique_id: bathroom_wall_temperature
+      default_entity_id: sensor.bathroom_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.bathroom_temperature') and has_value('sensor.outdoor_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
+        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
+                              states('sensor.bathroom_temperature') | float,
+                              f_rsi('bathroom') | float) | float | round(1) }}
+
+    - name: "Bathroom Wall Surface Humidity"
+      unique_id: bathroom_wall_surface_humidity
+      default_entity_id: sensor.bathroom_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.bathroom_temperature')
+           and has_value('sensor.bathroom_humidity')
+           and has_value('sensor.bathroom_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.bathroom_temperature') | float,
+                           states('sensor.bathroom_humidity') | float,
+                           states('sensor.bathroom_wall_temperature') | float) | float | round(1) }}
+
+- binary_sensor:
+    - name: "Bathroom Condensation Risk"
+      unique_id: bathroom_condensation_risk
+      default_entity_id: binary_sensor.bathroom_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.bathroom_wall_temperature') and has_value('sensor.bathroom_dew_point') }}
+      state: >
+        {{ states('sensor.bathroom_wall_temperature') | float
+           <= states('sensor.bathroom_dew_point') | float }}
+
+    - name: "Bathroom Mold Risk"
+      unique_id: bathroom_mold_risk
+      default_entity_id: binary_sensor.bathroom_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.bathroom_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.bathroom_wall_surface_humidity_24h') | float >= 80 }}"
+
+    - name: "Bathroom Ventilation Recommended"
+      unique_id: bathroom_ventilation_recommended
+      default_entity_id: binary_sensor.bathroom_ventilation_recommended
+      icon: mdi:window-open-variant
+      availability: >
+        {{ has_value('sensor.bathroom_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {% set d = states('sensor.bathroom_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
+
+# --------------------------- LEA ROOM ---------------------------------
+- sensor:
+    - name: "Lea Room Absolute Humidity"
+      unique_id: lea_room_absolute_humidity
+      default_entity_id: sensor.lea_room_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.lea_room_temperature') and has_value('sensor.lea_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.lea_room_temperature') | float,
+                        states('sensor.lea_room_humidity') | float) | float | round(2) }}
+
+    - name: "Lea Room Dew Point"
+      unique_id: lea_room_dew_point
+      default_entity_id: sensor.lea_room_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.lea_room_temperature') and has_value('sensor.lea_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.lea_room_temperature') | float,
+                     states('sensor.lea_room_humidity') | float) | float | round(1) }}
+
+    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    - name: "Lea Room Wall Temperature"
+      unique_id: lea_room_wall_temperature
+      default_entity_id: sensor.lea_room_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.lea_room_temperature') and has_value('sensor.outdoor_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
+        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
+                              states('sensor.lea_room_temperature') | float,
+                              f_rsi('lea_room') | float) | float | round(1) }}
+
+    - name: "Lea Room Wall Surface Humidity"
+      unique_id: lea_room_wall_surface_humidity
+      default_entity_id: sensor.lea_room_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.lea_room_temperature')
+           and has_value('sensor.lea_room_humidity')
+           and has_value('sensor.lea_room_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.lea_room_temperature') | float,
+                           states('sensor.lea_room_humidity') | float,
+                           states('sensor.lea_room_wall_temperature') | float) | float | round(1) }}
+
+- binary_sensor:
+    - name: "Lea Room Condensation Risk"
+      unique_id: lea_room_condensation_risk
+      default_entity_id: binary_sensor.lea_room_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.lea_room_wall_temperature') and has_value('sensor.lea_room_dew_point') }}
+      state: >
+        {{ states('sensor.lea_room_wall_temperature') | float
+           <= states('sensor.lea_room_dew_point') | float }}
+
+    - name: "Lea Room Mold Risk"
+      unique_id: lea_room_mold_risk
+      default_entity_id: binary_sensor.lea_room_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.lea_room_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.lea_room_wall_surface_humidity_24h') | float >= 80 }}"
+
+    - name: "Lea Room Ventilation Recommended"
+      unique_id: lea_room_ventilation_recommended
+      default_entity_id: binary_sensor.lea_room_ventilation_recommended
+      icon: mdi:window-open-variant
+      availability: >
+        {{ has_value('sensor.lea_room_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {% set d = states('sensor.lea_room_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
+
+# --------------------------- ANNA ROOM ---------------------------------
+- sensor:
+    - name: "Anna Room Absolute Humidity"
+      unique_id: anna_room_absolute_humidity
+      default_entity_id: sensor.anna_room_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.anna_room_temperature') and has_value('sensor.anna_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.anna_room_temperature') | float,
+                        states('sensor.anna_room_humidity') | float) | float | round(2) }}
+
+    - name: "Anna Room Dew Point"
+      unique_id: anna_room_dew_point
+      default_entity_id: sensor.anna_room_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.anna_room_temperature') and has_value('sensor.anna_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.anna_room_temperature') | float,
+                     states('sensor.anna_room_humidity') | float) | float | round(1) }}
+
+    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    - name: "Anna Room Wall Temperature"
+      unique_id: anna_room_wall_temperature
+      default_entity_id: sensor.anna_room_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.anna_room_temperature') and has_value('sensor.outdoor_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
+        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
+                              states('sensor.anna_room_temperature') | float,
+                              f_rsi('anna_room') | float) | float | round(1) }}
+
+    - name: "Anna Room Wall Surface Humidity"
+      unique_id: anna_room_wall_surface_humidity
+      default_entity_id: sensor.anna_room_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.anna_room_temperature')
+           and has_value('sensor.anna_room_humidity')
+           and has_value('sensor.anna_room_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.anna_room_temperature') | float,
+                           states('sensor.anna_room_humidity') | float,
+                           states('sensor.anna_room_wall_temperature') | float) | float | round(1) }}
+
+- binary_sensor:
+    - name: "Anna Room Condensation Risk"
+      unique_id: anna_room_condensation_risk
+      default_entity_id: binary_sensor.anna_room_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.anna_room_wall_temperature') and has_value('sensor.anna_room_dew_point') }}
+      state: >
+        {{ states('sensor.anna_room_wall_temperature') | float
+           <= states('sensor.anna_room_dew_point') | float }}
+
+    - name: "Anna Room Mold Risk"
+      unique_id: anna_room_mold_risk
+      default_entity_id: binary_sensor.anna_room_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.anna_room_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.anna_room_wall_surface_humidity_24h') | float >= 80 }}"
+
+    - name: "Anna Room Ventilation Recommended"
+      unique_id: anna_room_ventilation_recommended
+      default_entity_id: binary_sensor.anna_room_ventilation_recommended
+      icon: mdi:window-open-variant
+      availability: >
+        {{ has_value('sensor.anna_room_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {% set d = states('sensor.anna_room_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
+

@@ -1,0 +1,174 @@
+# =====================================================================
+# ePaper-Feeder-Sensoren (display-livingroom-01)
+# Die default_entity_id entspricht exakt den IDs, die die bestehende
+# ESPHome-Firmware abonniert -> Display läuft ohne Firmware-Änderung.
+# Datenquellen sind die neuen Berechnungs-Sensoren (outdoor.yaml/rooms.yaml).
+# Dezimal-Komma: die Firmware erwartet deutsches Zahlenformat.
+#
+# Noch OHNE Quelle (siehe "03 - ePaper Reaktivierung.md"):
+#   Bad-Klima, Lea/Radiator-Temperaturen (Tado X), Watermeter-/Power-History,
+#   Aurora, Batterie-Liste, Fenster-Binärsensoren
+# =====================================================================
+
+# Wettervorhersage (Trigger-basiert, alle 2 h / bei Start / manuell)
+- trigger:
+    - trigger: time_pattern
+      hours: /2
+    - trigger: homeassistant
+      event: start
+    - trigger: state
+      entity_id: input_boolean.trigger_forecast_update
+      to: "on"
+  action:
+    - action: weather.get_forecasts
+      data:
+        type: daily
+      target:
+        entity_id: weather.forecast_home
+      response_variable: daily
+  sensor:
+    - name: "Forecast next days"
+      unique_id: forecast_next_days
+      default_entity_id: sensor.forecast_next_days
+      state: >
+        {% if daily is defined and 'weather.forecast_home' in daily %}
+          {{ daily['weather.forecast_home'].forecast[0].condition }}
+        {% else %}
+          unavailable
+        {% endif %}
+      attributes:
+        forecast: >
+          {% if daily is defined and 'weather.forecast_home' in daily %}
+            {{ daily['weather.forecast_home'].forecast }}
+          {% else %}
+            []
+          {% endif %}
+
+- sensor:
+    - name: "ePaper Weather Actual"
+      unique_id: epaper_weather_actual
+      default_entity_id: sensor.aktuelles_wetter
+      availability: "{{ has_value('weather.forecast_home') }}"
+      state: >-
+        {{ states('weather.forecast_home') }};{{ state_attr('weather.forecast_home', 'temperature') | string | replace('.', ',') }};{{ state_attr('weather.forecast_home', 'humidity') | string | replace('.', ',') }};{{ state_attr('weather.forecast_home', 'pressure') | string | replace('.', ',') }};{{ state_attr('weather.forecast_home', 'wind_speed') | string | replace('.', ',') }}
+
+    - name: "ePaper Weather Forecast"
+      unique_id: epaper_weather_forecast
+      default_entity_id: sensor.epaper_weather_forecast
+      state: >
+        {% set forecast = state_attr('sensor.forecast_next_days', 'forecast') %}
+        {% if forecast and forecast | count >= 5 %}
+          {%- for i in range(5) -%}
+            {{ as_timestamp(forecast[i].datetime) | timestamp_custom('%a') }};{{ forecast[i].condition }};{{ forecast[i].temperature | string | replace('.', ',') }};{{ forecast[i].templow | string | replace('.', ',') }}{{ ';' if not loop.last }}
+          {%- endfor -%}
+        {% else %}
+          Keine Daten
+        {% endif %}
+
+    - name: "ePaper Sunrise"
+      unique_id: epaper_sunrise
+      default_entity_id: sensor.epaper_sunrise
+      state: "{{ as_timestamp(state_attr('sun.sun', 'next_dawn')) | timestamp_custom('%H:%M') }}"
+
+    - name: "ePaper Sunset"
+      unique_id: epaper_sunset
+      default_entity_id: sensor.epaper_sunset
+      state: "{{ as_timestamp(state_attr('sun.sun', 'next_dusk')) | timestamp_custom('%H:%M') }}"
+
+    - name: "ePaper Temperature Outside"
+      unique_id: epaper_temperature_outside
+      default_entity_id: sensor.epaper_temperature_outside_2
+      availability: "{{ has_value('sensor.outdoor_temperature') }}"
+      state: "{{ states('sensor.outdoor_temperature') | replace('.', ',') }}"
+
+    - name: "ePaper Humidity Outside"
+      unique_id: epaper_humidity_outside
+      default_entity_id: sensor.epaper_humidity_outside
+      availability: "{{ has_value('sensor.outdoor_humidity') }}"
+      state: "{{ states('sensor.outdoor_humidity') }}"
+
+    - name: "ePaper Temperature Inside"
+      unique_id: epaper_temperature_inside
+      default_entity_id: sensor.epaper_temperature_inside
+      icon: mdi:sun-clock-outline
+      availability: "{{ has_value('sensor.living_room_temperature') }}"
+      state: "{{ states('sensor.living_room_temperature') | replace('.', ',') }}"
+
+    - name: "ePaper Humidity Inside"
+      unique_id: epaper_humidity_inside
+      default_entity_id: sensor.epaper_humidity_inside
+      availability: "{{ has_value('sensor.living_room_humidity') }}"
+      state: "{{ states('sensor.living_room_humidity') }}"
+
+    # Delta absolute Feuchte innen (Wohnzimmer) - außen [g/m³]
+    # Positiv = drinnen feuchter -> Lüften bringt Trocknung.
+    # (Ersetzt die ESP32-interne Berechnung; dort war das Vorzeichen invertiert.)
+    - name: "ePaper Humidity Delta"
+      unique_id: epaper_humidity_delta
+      default_entity_id: sensor.epaper_humidity_delta
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-plus-outline
+      availability: >
+        {{ has_value('sensor.living_room_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {{ (states('sensor.living_room_absolute_humidity') | float
+            - states('sensor.outdoor_absolute_humidity') | float) | round(1) }}
+
+    # Bad-Klima (Quelle: sonoff_th_08 -> bathroom_*)
+    - name: "ePaper Temperature Bathroom"
+      unique_id: epaper_temperature_bathroom
+      default_entity_id: sensor.epaper_temperature_bathroom
+      availability: "{{ has_value('sensor.bathroom_temperature') }}"
+      state: "{{ states('sensor.bathroom_temperature') | replace('.', ',') }}"
+
+    - name: "ePaper Humidity Bathroom"
+      unique_id: epaper_humidity_bathroom
+      default_entity_id: sensor.epaper_humidity_bathroom
+      availability: "{{ has_value('sensor.bathroom_humidity') }}"
+      state: "{{ states('sensor.bathroom_humidity') }}"
+
+    # Lea-Temperatur (Raumklima statt Tado-Ventil, Quelle sonoff_th_06)
+    - name: "ePaper Temperature Lea"
+      unique_id: epaper_temperature_lea
+      default_entity_id: sensor.epaper_temperature_lea
+      availability: "{{ has_value('sensor.lea_room_temperature') }}"
+      state: "{{ states('sensor.lea_room_temperature') | replace('.', ',') }}"
+
+    # Trockner-Status: Alias auf Home-Connect-Entity (alte Display-ID)
+    - name: "ePaper Dryer Operation State"
+      unique_id: epaper_dryer_operation_state
+      default_entity_id: sensor.trockner_operation_state
+      availability: "{{ has_value('sensor.laundry_room_dryer_operation_state') }}"
+      state: "{{ states('sensor.laundry_room_dryer_operation_state') }}"
+
+    # NEU: zusammengefasste Risiko-Übersicht für Display/Dashboard
+    # Zustand = Liste betroffener Räume oder "OK"
+    - name: "ePaper Mold Alert"
+      unique_id: epaper_mold_alert
+      default_entity_id: sensor.epaper_mold_alert
+      icon: mdi:home-alert
+      state: >
+        {% set rooms = ['living_room', 'bedroom', 'storage_room', 'bathroom', 'lea_room', 'anna_room'] %}
+        {% set ns = namespace(hits=[]) %}
+        {% for r in rooms %}
+          {% if is_state('binary_sensor.' ~ r ~ '_mold_risk', 'on')
+                or is_state('binary_sensor.' ~ r ~ '_condensation_risk', 'on') %}
+            {% set ns.hits = ns.hits + [r] %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.hits | join(',') if ns.hits | count > 0 else 'OK' }}
+
+    - name: "ePaper Ventilation Advice"
+      unique_id: epaper_ventilation_advice
+      default_entity_id: sensor.epaper_ventilation_advice
+      icon: mdi:window-open-variant
+      state: >
+        {% set rooms = ['living_room', 'bedroom', 'storage_room', 'bathroom', 'lea_room', 'anna_room'] %}
+        {% set ns = namespace(hits=[]) %}
+        {% for r in rooms %}
+          {% if is_state('binary_sensor.' ~ r ~ '_ventilation_recommended', 'on') %}
+            {% set ns.hits = ns.hits + [r] %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.hits | join(',') if ns.hits | count > 0 else 'OK' }}

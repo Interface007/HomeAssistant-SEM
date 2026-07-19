@@ -1,0 +1,79 @@
+# =====================================================================
+# Energiezähler fürs Energy Dashboard (Riemann-Integral über Leistung).
+# Nur für den Akku nötig - der Solar-Ertrag kommt nativ von
+# sensor.terrace_anker_solix_ertrag_gesamt (Lebenszeit-Zähler).
+# =====================================================================
+- platform: integration
+  name: solarbank_01_charge_energy
+  unique_id: solarbank_01_charge_energy
+  source: sensor.anker_solarbank_01_charge_power  # nach Anwendung von renames.csv
+  method: left
+  unit_prefix: k
+  unit_time: h
+
+- platform: integration
+  name: solarbank_01_discharge_energy
+  unique_id: solarbank_01_discharge_energy
+  source: sensor.anker_solarbank_01_discharge_power  # nach Anwendung von renames.csv
+  method: left
+  unit_prefix: k
+  unit_time: h
+
+# =====================================================================
+# Statistik-Sensoren: gleitendes 24-h-Mittel der Wandoberflächen-Feuchte.
+# Grundlage für mold_risk (Schimmel braucht dauerhaft >= 80 %,
+# kurze Spitzen z. B. nach dem Duschen sollen nicht alarmieren).
+# =====================================================================
+- platform: statistics
+  name: "living_room_wall_surface_humidity_24h"
+  unique_id: living_room_wall_surface_humidity_24h
+  entity_id: sensor.living_room_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500
+
+- platform: statistics
+  name: "bedroom_wall_surface_humidity_24h"
+  unique_id: bedroom_wall_surface_humidity_24h
+  entity_id: sensor.bedroom_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500
+
+- platform: statistics
+  name: "storage_room_wall_surface_humidity_24h"
+  unique_id: storage_room_wall_surface_humidity_24h
+  entity_id: sensor.storage_room_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500
+
+- platform: statistics
+  name: "bathroom_wall_surface_humidity_24h"
+  unique_id: bathroom_wall_surface_humidity_24h
+  entity_id: sensor.bathroom_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500
+
+- platform: statistics
+  name: "lea_room_wall_surface_humidity_24h"
+  unique_id: lea_room_wall_surface_humidity_24h
+  entity_id: sensor.lea_room_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500
+
+- platform: statistics
+  name: "anna_room_wall_surface_humidity_24h"
+  unique_id: anna_room_wall_surface_humidity_24h
+  entity_id: sensor.anna_room_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500

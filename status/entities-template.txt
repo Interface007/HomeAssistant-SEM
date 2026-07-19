@@ -1,0 +1,4 @@
+entity_id;name;area;device;state;unit
+{% for s in states -%}
+{{ s.entity_id }};{{ s.name }};{{ area_name(s.entity_id) or '' }};{{ device_attr(s.entity_id, 'name_by_user') or device_attr(s.entity_id, 'name') or '' }};{{ s.state }};{{ s.attributes.unit_of_measurement | default('') }}
+{% endfor %}

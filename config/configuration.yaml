@@ -1,3 +1,4 @@
+
 # Loads default set of integrations. Do not remove.
 default_config:
 
@@ -6,70 +7,46 @@ frontend:
   themes: !include_dir_merge_named themes
 
 automation: !include automations.yaml
+
+# Dateibasierte Automationen, thematisch gruppiert (im UI sichtbar, aber nur
+# per Datei editierbar; Reload: Entwicklerwerkzeuge -> YAML -> Automationen)
+automation manual: !include_dir_merge_list automations/
 script: !include scripts.yaml
 scene: !include scenes.yaml
-template: !include templates.yaml
+
+# Alle Template-Sensoren liegen als Dateien unter templates/
+# (outdoor.yaml, rooms.yaml, epaper.yaml)
+template: !include_dir_merge_list templates/
+
+# Klassische Plattform-Sensoren (statistics für 24-h-Mittelwerte)
+sensor: !include sensors.yaml
 
 rest_command: !include rest_commands.yaml
 
-utility_meter:
-  power_main_daily:
-    source: sensor.power_main_total_active_energy
-    cycle: daily
-
-sensor:
-  - platform: sensor_history
-    entity_id: sensor.watermeter_value
-    name: "epaper_watermeter_history"
-    bearertoken: !secret bearer_token
-  - platform: sensor_history
-    entity_id: sensor.power_main_total_active_power
-    name: "epaper_power_history"
-    factor: 1
-    mode: "absolute"
-    aggregate: "sum"
-    aggregate_key: "hour"
-    bearertoken: !secret bearer_token
-  - platform: filter
-    name: "Panel 1 (Moving Average)"
-    entity_id: sensor.solarbank_3_e2700_pro_solar_pv1
-    filters:
-      - filter: time_simple_moving_average
-        window_size: "00:30"
-        precision: 0
-  - platform: filter
-    name: "Panel 2 (Moving Average)"
-    entity_id: sensor.solarbank_3_e2700_pro_solar_pv2
-    filters:
-      - filter: time_simple_moving_average
-        window_size: "00:30"
-        precision: 0
-  - platform: filter
-    name: "Panel 3 (Moving Average)"
-    entity_id: sensor.solarbank_3_e2700_pro_solar_pv3
-    filters:
-      - filter: time_simple_moving_average
-        window_size: "00:30"
-        precision: 0
-  - platform: filter
-    name: "Panel 4 (Moving Average)"
-    entity_id: sensor.solarbank_3_e2700_pro_solar_pv4
-    filters:
-      - filter: time_simple_moving_average
-        window_size: "00:30"
-        precision: 0
+# YAML-Dashboard (Datei: /config/dashboards/matzen.yaml)
+lovelace:
+  mode: storage
+  dashboards:
+    matzen-home:
+      mode: yaml
+      title: Matzen
+      icon: mdi:home-analytics
+      show_in_sidebar: true
+      filename: dashboards/matzen.yaml
 
 input_boolean:
   trigger_forecast_update:
     name: Trigger Forecast Update
-    initial: off
     icon: mdi:update
 
-http:
-
-logger:
-  default: info
-  logs:
-    homeassistant.components.python_script: debug
-    custom_components.sensor_history: debug
-    homeassistant.components.sensor: debug
+# Verbrauchszähler (Quelle: AI-on-the-Edge watermeter, Shelly 3EM)
+utility_meter:
+  water_daily:
+    source: sensor.watermeter_value
+    cycle: daily
+  water_monthly:
+    source: sensor.watermeter_value
+    cycle: monthly
+  power_main_daily:
+    source: sensor.power_main_energy
+    cycle: daily

@@ -1,0 +1,25 @@
+# =====================================================================
+# Haustür-Öffner (Shelly Plus Uni O1 an Siedle-Anlage)
+# Primärer 100-ms-Impuls: Auto-OFF-Timer IM SHELLY (0.1 s) - siehe Doku.
+# Diese Automation ist nur das Sicherheitsnetz, falls der Timer im
+# Gerät deaktiviert wurde und der Öffner hängen bleibt.
+# =====================================================================
+- id: front_door_opener_failsafe_off
+  alias: "Front door opener failsafe off"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: switch.front_door_opener
+      to: "on"
+      for:
+        seconds: 2
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.front_door_opener
+    - action: notify.handy_sven
+      data:
+        title: "Türöffner-Failsafe ausgelöst"
+        message: >
+          O1 war länger als 2 s an - Auto-OFF-Timer im Shelly Plus Uni
+          prüfen (soll: 0.1 s)!

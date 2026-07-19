@@ -1,0 +1,51 @@
+- id: epaper_tag_1_climate
+  alias: "Klima-Tag Außen/Wohnzimmer"
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/1"
+  actions:
+    - action: open_epaper_link.drawcustom
+      target:
+        device_id: d8c6b8db0ac4f32322dfa490b3deda64
+        entity_id: open_epaper_link.00007E1B8A31B293
+      data:
+        background: white
+        payload:
+          - type: text
+            value: "Außen:"
+            x: 10
+            y: 10
+            size: 45
+          - type: text
+            value: "{{ states('sensor.outdoor_temperature') }}°C"
+            x: 220
+            y: 10
+            size: 45
+          - type: text
+            value: "WohnZ:"
+            x: 10
+            y: 60
+            size: 45
+          - type: text
+            value: "{{ states('sensor.living_room_temperature') }}°C"
+            x: 220
+            y: 60
+            size: 45
+          - type: icon
+            value: water-percent
+            x: 5
+            y: 110
+            size: 50
+            color: black
+          - type: text
+            value: >
+              Out {{ states('sensor.outdoor_humidity') }}% | In
+              {{ states('sensor.living_room_humidity') }}%
+            x: 60
+            y: 120
+            size: 30
+        dry-run: false
+        rotate: 0
+        ttl: 60
+        dither: "0"

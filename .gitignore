@@ -2,3 +2,14 @@ __pycache__/
 config/custom_components/nodered/
 home-assistant_v2.db*
 implementation-details/
+
+# Home Assistant secrets and runtime artifacts
+config/secrets.yaml
+config/.storage/
+config/home-assistant.log*
+
+# ESPHome local secrets
+config/esphome/secrets.yaml
+
+# Generated status exports (can contain device/person metadata)
+status/entities.csv

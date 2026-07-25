@@ -1,13 +1,13 @@
 """
-Liest die erzeugten Gerber-Dateien zurueck und prueft sie gegen die
-Board-Definition. Damit haengt das Ergebnis nicht am Vertrauen in gerber.py.
+Reads generated Gerber files back in and verifies them against the
+board definition. This keeps results independent of trust in gerber.py.
 
-    python tools/pcb/check_gerber.py <ordner> [vorschau.svg]
+    python tools/pcb/check_gerber.py <folder> [preview.svg]
 
-Geprueft wird: Blenden vor erster Verwendung, alle Koordinaten innerhalb des
-Umrisses, Anzahl der Pad-Flashes je Lage, Bohrungen gegen die Padliste.
-Zusaetzlich wird eine SVG-Ansicht aus den geparsten Daten gerendert - was man
-dort sieht, steht wirklich in den Dateien.
+Checks: apertures used only after definition, all coordinates inside the
+outline, number of pad flashes per layer, drills against the pad list.
+Additionally, an SVG preview is rendered from parsed data - what you see
+there is what is actually present in the files.
 """
 import os
 import re
@@ -30,7 +30,7 @@ COLORS = {
 
 
 def parse(path):
-    """(items, problems) - items sind ('flash'|'draw'|'region', ...)."""
+    """(items, problems) - items are ('flash'|'draw'|'region', ...)."""
     items, problems = [], []
     aperture = {}
     current = None
@@ -77,7 +77,7 @@ def parse(path):
         m = re.fullmatch(r"(?:X(-?\d+))?(?:Y(-?\d+))?D0([123])\*", line)
         if m:
             if scale is None:
-                problems.append("keine %FSLAX...%-Zeile vor den Koordinaten")
+                problems.append("no %FSLAX...% line before coordinates")
                 scale = 1e6
             if m.group(1) is not None:
                 x = int(m.group(1)) / scale
@@ -95,10 +95,10 @@ def parse(path):
             continue
         if line in ("G01*", "M02*") or line.startswith(("G04", "%TF", "%MO")):
             continue
-        problems.append(f"unverstandene Zeile: {line}")
+        problems.append(f"unrecognized line: {line}")
 
     if seen_use_before_def:
-        problems.append("Blende wird vor ihrer Definition verwendet")
+        problems.append("aperture used before definition")
     return items, problems
 
 
@@ -194,16 +194,16 @@ if __name__ == "__main__":
         items, problems = parse(os.path.join(d, fn))
         layers[name] = items
         x0, y0, x1, y1 = bbox(items)
-        # Die Umrisslinie ist auf der Kante zentriert und ragt daher um halbe
-        # Linienbreite hinaus - das ist so korrekt.
+        # The outline is centered on the edge and therefore extends by half
+        # the line width beyond it - this is correct.
         tol = 0.01 if name != "Edge_Cuts" else EDGE_TOL
         inside = (x0 >= -tol and y0 >= -tol
                   and x1 <= B.BOARD_W + tol and y1 <= B.BOARD_H + tol)
         flash = sum(1 for i in items if i[0] == "flash")
         draw = sum(1 for i in items if i[0] == "draw")
-        print(f"{name:14s} {flash:4d} Flash  {draw:4d} Linien  "
+          print(f"{name:14s} {flash:4d} flashes  {draw:4d} lines  "
               f"({x0:5.2f},{y0:5.2f})-({x1:5.2f},{y1:5.2f})"
-              f"{'' if inside else '   AUSSERHALB'}")
+              f"{'' if inside else '   OUTSIDE'}")
         if not inside:
             ok = False
         for p in problems:
@@ -216,16 +216,16 @@ if __name__ == "__main__":
 
     for lay in ("F_Cu", "F_Mask", "B_Mask"):
         got = sum(1 for i in layers.get(lay, []) if i[0] == "flash")
-        mark = "ok" if got == expect else "FEHLT"
+        mark = "ok" if got == expect else "MISSING"
         if got != expect:
             ok = False
-        print(f"{lay}: {got} Pad-Flashes, erwartet {expect} -> {mark}")
+        print(f"{lay}: {got} pad flashes, expected {expect} -> {mark}")
 
     holes = parse_drill(os.path.join(d, "cellar-fan-01.drl"))
     nholes = sum(len(v) for v in holes.values())
     expect_h = npads + len(vias) + len(B.mount_holes())
-    print(f"Bohrungen: {nholes}, erwartet {expect_h} -> "
-          f"{'ok' if nholes == expect_h else 'FEHLT'}")
+        print(f"Drills: {nholes}, expected {expect_h} -> "
+            f"{'ok' if nholes == expect_h else 'MISSING'}")
     if nholes != expect_h:
         ok = False
 
@@ -236,13 +236,13 @@ if __name__ == "__main__":
             key = (round(x, 3), round(y, 3))
             if key in pads_by_pos and abs(pads_by_pos[key] - dia) > 1e-6:
                 ok = False
-                print(f"   ! Bohrung {key} hat {dia} mm, Pad will "
+                    print(f"   ! drill {key} is {dia} mm, pad requires "
                       f"{pads_by_pos[key]} mm")
 
     if len(sys.argv) > 2:
         with open(sys.argv[2], "w", encoding="utf-8") as f:
             f.write(svg(layers))
-        print("Vorschau:", sys.argv[2])
+        print("Preview:", sys.argv[2])
 
-    print("\n" + ("GERBER PLAUSIBEL" if ok else "GERBER FEHLERHAFT"))
+    print("\n" + ("GERBER PLAUSIBLE" if ok else "GERBER INVALID"))
     raise SystemExit(0 if ok else 1)

@@ -1,14 +1,14 @@
 # =====================================================================
-# display-livingroom-01 — 7.5" ePaper Statusdisplay (Wohnzimmer)
-# Angepasst an die neue Strategie (HomeAssistant-2.0):
-#   - ALLE Berechnungen (abs. Feuchte, Lüften, Schimmel) laufen in HA;
-#     der ESP32 zeigt nur noch fertige Werte an
-#   - Entity-IDs auf neue epaper_*-Feeder und Konventions-Namen umgestellt
-#   - Aurora-Zeile ersetzt durch Schimmelrisiko-Status (epaper_mold_alert)
-#   - Alte Lüftungslogik war invertiert (out-in statt in-out) -> behoben,
-#     Quelle jetzt binary_sensor.living_room_ventilation_recommended
-# TODO (siehe 03 - ePaper Reaktivierung und Berechnungen.md):
-#   - Watermeter-/Power-History: Quellen fehlen noch (sensor_history-Ersatz folgt)
+# display-livingroom-01 — 7.5" ePaper status display (living room)
+# Adapted to the new strategy (HomeAssistant 2.0):
+#   - ALL calculations (abs. humidity, ventilation, mold) run in HA;
+#     ESP32 now only displays ready-made values
+#   - Entity IDs migrated to new epaper_* feeders and convention names
+#   - Aurora line replaced by mold-risk status (epaper_mold_alert)
+#   - Old ventilation logic was inverted (out-in instead of in-out) -> fixed,
+#     source now binary_sensor.living_room_ventilation_recommended
+# TODO (see 03 - ePaper reactivation and calculations.md):
+#   - Water meter / power history: sources are still missing (sensor_history replacement pending)
 # =====================================================================
 substitutions:
   name: "display-livingroom-01"
@@ -130,7 +130,7 @@ font:
       "\U000F10C3"
       ]
 
-  # + F0026 (alert) und F05E0 (check-circle) für den Schimmel-Status
+  # + F0026 (alert) and F05E0 (check-circle) for mold status
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: materialdesign_icons_30
     size: 30
@@ -425,8 +425,8 @@ display:
 
       float temp_out = parse_number(outside_temp, 0.0f);
 
-      // NEU: Delta der absoluten Feuchte (innen - außen) kommt fertig aus HA
-      // (sensor.epaper_humidity_delta). Positiv = drinnen feuchter.
+      // NEW: Delta of absolute humidity (indoor - outdoor) comes precomputed from HA
+      // (sensor.epaper_humidity_delta). Positive = more humid indoors.
       char humidity_delta_buffer[16];
       if (id(humidity_delta).has_state()) {
         snprintf(humidity_delta_buffer, sizeof(humidity_delta_buffer), "%+.1f", id(humidity_delta).state);
@@ -437,11 +437,11 @@ display:
       const char *lea_window_icon = id(lea_room_window).state ? "\U000F081C" : "\U000F081B";
       const char *lea_window_text = id(lea_room_window).state ? "Fenster offen" : "Fenster zu";
 
-      // NEU: Lüftungsempfehlung direkt aus HA (mit Hysterese, korrektes Vorzeichen)
+      // NEW: Ventilation recommendation directly from HA (with hysteresis, correct sign)
       const char *vent_icon = id(vent_recommended).state ? "\U000F0974" : "\U000F0975";
       const char *vent_text = id(vent_recommended).state ? "Lueften sinnvoll" : "Drinnen trockener";
 
-      // NEU: Schimmelrisiko-Status statt Aurora
+      // NEW: Mold-risk status instead of Aurora
       std::string mold_state = id(mold_alert).has_state() ? id(mold_alert).state : "unknown";
       bool mold_ok = (mold_state == "OK");
       const char *mold_icon = mold_ok ? "\U000F05E0" : "\U000F0026";
@@ -611,7 +611,7 @@ display:
           atoi(&__TIME__[3])
       );
 
-      // Batterie-Leiste: Fenster (Shelly Blu) + Wasserleck-Sensoren
+      // Battery row: windows (Shelly Blu) + water-leak sensors
       int battery_x = 594;
       int battery_y = 444;
       battery_x += 28; my_tools.BatterySymbol(id(bathroom_window_battery),        battery_x, battery_y, "bf");
@@ -649,12 +649,12 @@ sensor:
     name: "WiFi Signal Sensor"
     id: wifisignal
     update_interval: 60s
-  # TODO: watermeter noch nicht installiert (AI on the Edge)
+  # TODO: water meter not installed yet (AI on the Edge)
   - platform: homeassistant
     id: watermeter_value
     name: "Water Statistic"
     entity_id: sensor.watermeter_value
-  # NEU: Delta absolute Feuchte (innen - außen) aus HA, positiv = drinnen feuchter
+  # NEW: Delta absolute humidity (indoor - outdoor) from HA, positive = more humid indoors
   - platform: homeassistant
     id: humidity_delta
     entity_id: sensor.epaper_humidity_delta
@@ -719,12 +719,12 @@ text_sensor:
     id: dryer_operation_state
     entity_id: sensor.trockner_operation_state
     internal: true
-  # NEU: Schimmel-Sammelstatus aus HA ("OK" oder Raumliste)
+  # NEW: Aggregated mold status from HA ("OK" or room list)
   - platform: homeassistant
     id: mold_alert
     entity_id: sensor.epaper_mold_alert
     internal: true
-  # Batterien der Wasserleck-Sensoren (neue Zigbee-Namen)
+  # Batteries of water-leak sensors (new Zigbee names)
   - platform: homeassistant
     id: kitchen_waterleak_battery
     entity_id: sensor.thirdreality_waterleak_04_battery
@@ -746,7 +746,7 @@ text_sensor:
     entity_id: sensor.thirdreality_waterleak_03_battery
     internal: true
 
-  # Fenster-Batterien (Shelly Blu)
+  # Window batteries (Shelly Blu)
   - platform: homeassistant
     id: bathroom_window_battery
     entity_id: sensor.shelly_dw_03_battery
@@ -765,7 +765,7 @@ binary_sensor:
     id: lea_room_window
     entity_id: binary_sensor.lea_room_window_south_contact
     internal: true
-  # NEU: Lüftungsempfehlung aus HA (Wohnzimmer, mit Hysterese)
+  # NEW: Ventilation recommendation from HA (living room, with hysteresis)
   - platform: homeassistant
     id: vent_recommended
     entity_id: binary_sensor.living_room_ventilation_recommended

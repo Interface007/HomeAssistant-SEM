@@ -1,46 +1,46 @@
 {#
-  Klima-Makros — zentrale Berechnungen für alle Template-Sensoren.
-  Magnus-Formel, Parameter nach Sonntag (1990), über Wasser:
-  a = 17.62, b = 243.12 °C  (gültig ca. -45…+60 °C)
+  Climate macros — central calculations for all template sensors.
+  Magnus formula, parameters after Sonntag (1990), over water:
+  a = 17.62, b = 243.12 °C  (valid approx. -45…+60 °C)
 #}
 
-{# Sättigungsdampfdruck in hPa bei Temperatur t [°C] #}
+{# Saturation vapor pressure in hPa at temperature t [°C] #}
 {% macro sat_vapor_pressure(t) -%}
   {{ 6.112 * e ** (17.62 * t / (243.12 + t)) }}
 {%- endmacro %}
 
-{# Taupunkt [°C] aus Lufttemperatur t [°C] und rel. Feuchte rh [%] #}
+{# Dew point [°C] from air temperature t [°C] and relative humidity rh [%] #}
 {% macro dew_point(t, rh) -%}
   {%- set alpha = log(rh / 100) + 17.62 * t / (243.12 + t) -%}
   {{ 243.12 * alpha / (17.62 - alpha) }}
 {%- endmacro %}
 
-{# Absolute Feuchte [g/m³] aus t [°C] und rh [%] #}
+{# Absolute humidity [g/m³] from t [°C] and rh [%] #}
 {% macro abs_humidity(t, rh) -%}
   {%- set e_hpa = rh / 100 * 6.112 * e ** (17.62 * t / (243.12 + t)) -%}
   {{ 216.679 * e_hpa / (273.15 + t) }}
 {%- endmacro %}
 
-{# Relative Feuchte an der Wandoberfläche [%]
-   aus Raumluft (t_air, rh_air) und Wandtemperatur t_wall.
-   >= 80 % über längere Zeit = Schimmelgefahr (DIN 4108-2) #}
+{# Relative humidity at the wall surface [%]
+  from room air (t_air, rh_air) and wall temperature t_wall.
+  >= 80% over longer periods = mold risk (DIN 4108-2) #}
 {% macro wall_surface_rh(t_air, rh_air, t_wall) -%}
   {%- set e_air  = rh_air / 100 * 6.112 * e ** (17.62 * t_air  / (243.12 + t_air))  -%}
   {%- set e_satw =              6.112 * e ** (17.62 * t_wall / (243.12 + t_wall)) -%}
   {{ e_air / e_satw * 100 }}
 {%- endmacro %}
 
-{# Wandtemperatur-Schätzung [°C] über Temperaturfaktor f_Rsi (DIN 4108-2):
-   T_wand = T_außen + f_Rsi * (T_innen - T_außen) #}
+{# Wall temperature estimate [°C] using temperature factor f_Rsi (DIN 4108-2):
+  T_wall = T_outdoor + f_Rsi * (T_indoor - T_outdoor) #}
 {% macro wall_temp_estimate(t_out, t_in, f_rsi) -%}
   {{ t_out + f_rsi * (t_in - t_out) }}
 {%- endmacro %}
 
-{# f_Rsi je Raum — PLATZHALTER!
-   TODO: Im Winter (ΔT >= 10 K, nachts) je Raum mit IR-Thermometer an der
-   kältesten Stelle messen und hier eintragen:
-   f_Rsi = (T_wand - T_außen) / (T_innen - T_außen)
-   Referenz: Live-Wert sensor.living_room_f_rsi_live (gemessene Wand). #}
+{# f_Rsi per room — PLACEHOLDER!
+  TODO: In winter (ΔT >= 10 K, at night), measure each room at the
+  coldest point with an IR thermometer and enter values here:
+  f_Rsi = (T_wall - T_outdoor) / (T_indoor - T_outdoor)
+  Reference: live value sensor.living_room_f_rsi_live (measured wall). #}
 {% macro f_rsi(room) -%}
   {{ {
     'living_room':  0.90,

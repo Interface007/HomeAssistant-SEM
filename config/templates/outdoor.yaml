@@ -1,7 +1,7 @@
 # =====================================================================
-# Außenwerte (kombiniert aus garden_north = sonoff_th_03
-#                        und terrace     = sonoff_th_05)
-# Plausibilitätsbereich Temperatur: -30…+45 °C
+# Outdoor values (combined from garden_north = sonoff_th_03
+#                         and terrace     = sonoff_th_05)
+# Plausibility range for temperature: -30…+45 °C
 # =====================================================================
 - sensor:
     - name: "Outdoor Temperature"
@@ -22,8 +22,8 @@
         {% endfor %}
         {{ (ns.vals | min) | round(1) if ns.vals | count > 0 else 'unavailable' }}
 
-    # Rel. Feuchte: Mittelwert nur als grober Anzeigewert (Ziel-Doku).
-    # Für alle Entscheidungslogik outdoor_absolute_humidity verwenden!
+    # Relative humidity: average only as a rough display value (goal documentation).
+    # Use outdoor_absolute_humidity for all decision logic!
     - name: "Outdoor Humidity"
       unique_id: outdoor_humidity
       default_entity_id: sensor.outdoor_humidity

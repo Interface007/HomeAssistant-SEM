@@ -34,7 +34,7 @@ font:
        'u', 'v', 'w', 'x', 'y', 'z', 'å', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '/', '€', '’', 'ß', '³']
  
 i2c:
-  id: i2c_bus            # ID hinzufügen
+  id: i2c_bus            # Add ID
   sda: GPIO22
   scl: GPIO23
   frequency: 50kHz
@@ -66,7 +66,7 @@ display:
         
         if (std::isnan(value)) {
           ESP_LOGI("mold", "Sensorwert noch nicht verfügbar");
-          return y;  // Nichts zeichnen, y nicht erhöhen
+          return y;  // Draw nothing, do not increase y
         }
         
         ESP_LOGI("mold", "Sensorwert %s: %f", msg, value);

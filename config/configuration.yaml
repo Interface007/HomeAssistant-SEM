@@ -8,22 +8,22 @@ frontend:
 
 automation: !include automations.yaml
 
-# Dateibasierte Automationen, thematisch gruppiert (im UI sichtbar, aber nur
-# per Datei editierbar; Reload: Entwicklerwerkzeuge -> YAML -> Automationen)
+# File-based automations, grouped by topic (visible in UI, but editable only
+# via file; reload: Developer Tools -> YAML -> Automations)
 automation manual: !include_dir_merge_list automations/
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
-# Alle Template-Sensoren liegen als Dateien unter templates/
+# All template sensors are stored as files under templates/
 # (outdoor.yaml, rooms.yaml, epaper.yaml)
 template: !include_dir_merge_list templates/
 
-# Klassische Plattform-Sensoren (statistics für 24-h-Mittelwerte)
+# Classic platform sensors (statistics for 24h rolling averages)
 sensor: !include sensors.yaml
 
 rest_command: !include rest_commands.yaml
 
-# YAML-Dashboard (Datei: /config/dashboards/matzen.yaml)
+# YAML dashboard (file: /config/dashboards/matzen.yaml)
 lovelace:
   mode: storage
   dashboards:
@@ -46,7 +46,7 @@ input_text:
     max: 255
     unit_of_measurement: "m³"
 
-# Verbrauchszähler (Quelle: AI-on-the-Edge watermeter, Shelly 3EM)
+# Consumption meters (source: AI-on-the-Edge water meter, Shelly 3EM)
 utility_meter:
   water_daily:
     source: sensor.watermeter_value

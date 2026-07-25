@@ -13,3 +13,8 @@ config/esphome/secrets.yaml
 
 # Generated status exports (can contain device/person metadata)
 status/entities.csv
+
+# Generierte Fertigungsdaten (aus tools/pcb/ reproduzierbar)
+tools/pcb/out/
+tools/pcb/__pycache__/
+tools/3dp/out/

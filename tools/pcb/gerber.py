@@ -1,23 +1,23 @@
 """
-Erzeugt Fertigungsdaten aus board.py + router.py.
+Generates manufacturing data from board.py + router.py.
 
-    python tools/pcb/gerber.py [ausgabeordner]
+    python tools/pcb/gerber.py [output_folder]
 
-Ausgabe (RS-274X, mm, Format 4.6, Nullen fuehrend weggelassen):
-    *-F_Cu.gbr          obere Kupferlage
-    *-B_Cu.gbr          untere Lage: Masseflaeche mit Freistellungen
-    *-F_Mask.gbr        Loetstoppmaske oben
-    *-B_Mask.gbr        Loetstoppmaske unten
-    *-F_Silkscreen.gbr  Bestueckungsdruck oben
-    *-Edge_Cuts.gbr     Platinenumriss
-    *.drl               Excellon-Bohrdatei
+Output (RS-274X, mm, format 4.6, leading zeros omitted):
+    *-F_Cu.gbr          top copper layer
+    *-B_Cu.gbr          bottom layer: ground plane with clearances
+    *-F_Mask.gbr        top solder mask
+    *-B_Mask.gbr        bottom solder mask
+    *-F_Silkscreen.gbr  top silkscreen
+    *-Edge_Cuts.gbr     board outline
+    *.drl               Excellon drill file
 
-Die Masseflaeche entsteht als Region (G36/G37) in Dunkelpolaritaet, danach
-werden die Freistellungen in Hellpolaritaet (%LPC*%) ausgestanzt und zuletzt
-die Padringe, Vias und Signalbahnen der Unterseite wieder aufgetragen.
+The ground plane is created as a region (G36/G37) in dark polarity, then
+clearances are cut in light polarity (%LPC*%), and finally bottom-side pad
+rings, vias, and signal tracks are written back.
 
-Der Umriss ist an den Ecken polygonal angenaehert (kein G02/G03) - das
-akzeptiert jeder Fertiger und vermeidet Bogen-Interpretationsfehler.
+Corners in the outline are polygon-approximated (no G02/G03) - supported by
+all manufacturers and avoids arc interpretation differences.
 """
 import os
 import sys
@@ -26,7 +26,7 @@ import board as B
 import font
 import router as R
 
-MASK_EXPANSION = 0.05      # pro Seite
+MASK_EXPANSION = 0.05      # per side
 SILK_WIDTH = 0.15
 EDGE_WIDTH = 0.10
 POUR_INSET = 0.5
@@ -35,7 +35,7 @@ NAME = "cellar-fan-01"
 
 
 def c(v):
-    """mm -> Gerberkoordinate im Format 4.6"""
+    """mm -> Gerber coordinate in 4.6 format."""
     return f"{round(v * 1e6):d}"
 
 
@@ -54,13 +54,13 @@ class Gerber:
         self._next = 10
 
     def ap(self, spec):
-        """D-Code fuer eine Blende, z.B. 'C,0.400000' - bei Bedarf anlegen."""
+        """D-code for an aperture, e.g. 'C,0.400000' - create on demand."""
         if spec not in self.apertures:
             code = self._next
             self._next += 1
             self.apertures[spec] = code
-            # Blendendefinitionen muessen vor der ersten Nutzung stehen; sie
-            # werden hier gesammelt und in write() vorne eingefuegt.
+            # Aperture definitions must appear before first use;
+            # they are collected here and inserted at the top in write().
         return self.apertures[spec]
 
     def flash(self, x, y, diameter):
@@ -97,7 +97,7 @@ class Gerber:
 
 
 def outline(inset=0.0):
-    """Platinenumriss als Polygon, Ecken polygonal angenaehert."""
+    """Board outline as polygon, corners approximated polygonally."""
     import math
     r = max(0.0, B.BOARD_CORNER_R - inset)
     x0, y0 = inset, inset
@@ -177,7 +177,7 @@ def silkscreen():
             for poly in font.text_strokes(text, sx, sy, size * 0.8, anchor):
                 g.draw(poly, SILK_WIDTH)
 
-    # Pin-1-Markierung: kleiner Strich neben Pad 0 jedes Steckverbinders
+    # Pin-1 marker: short line next to pad 0 of each connector
     for ref, comp in B.COMPONENTS.items():
         if not ref.startswith("J"):
             continue
@@ -207,7 +207,7 @@ def excellon(vias, path):
         holes.setdefault(B.MOUNT_HOLE_D, []).append((hx, hy))
 
     sizes = sorted(holes)
-    out = ["M48", "; Excellon, metrisch, absolut, dezimal", "FMAT,2",
+    out = ["M48", "; Excellon, metric, absolute, decimal", "FMAT,2",
            "METRIC,TZ"]
     for i, d in enumerate(sizes, start=1):
         out.append(f"T{i:02d}C{d:.3f}")
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     routed, vias, failed = R.route()
     if failed:
-        print("ABBRUCH: Routing unvollstaendig -",
+          print("ABORT: routing incomplete -",
               ", ".join(n for n, _ in failed))
         raise SystemExit(1)
 
@@ -242,12 +242,12 @@ if __name__ == "__main__":
     }
     for fname, g in files.items():
         g.write(os.path.join(outdir, fname))
-        print(f"  {fname:34s} {len(g.lines):5d} Zeilen, "
-              f"{len(g.apertures)} Blende(n)")
+          print(f"  {fname:34s} {len(g.lines):5d} lines, "
+              f"{len(g.apertures)} aperture(s)")
 
     counts = excellon(vias, os.path.join(outdir, f"{NAME}.drl"))
     total = sum(counts.values())
-    print(f"  {NAME + '.drl':34s} {total} Bohrungen")
+    print(f"  {NAME + '.drl':34s} {total} drill holes")
     for d, n in sorted(counts.items()):
         print(f"      {d:.3f} mm  x{n}")
-    print(f"\n{len(files) + 1} Dateien in {outdir}/")
+    print(f"\n{len(files) + 1} files in {outdir}/")

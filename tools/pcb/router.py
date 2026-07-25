@@ -1,15 +1,15 @@
 """
-Gitter-Router fuer die Trageplatine.
+Grid router for the carrier board.
 
-Untere Lage ist grundsaetzlich Masseflaeche - GND wird daher nicht geroutet,
-alle GND-Pads haengen als Durchkontaktierung automatisch am Kupfer. Signale
-laufen bevorzugt oben, duerfen aber ueber ein Via nach unten wechseln; die
-Masseflaeche wird um solche Bahnen herum freigestellt (siehe gerber.py).
+Bottom layer is generally a ground plane - GND is therefore not routed,
+all GND pads are automatically tied to copper through plated holes. Signals
+prefer top layer, but may switch to bottom via a via; the ground plane is
+cleared around such tracks (see gerber.py).
 
-Dijkstra auf einem 0.25-mm-Raster mit 8 Nachbarn und Knickstrafe. Hindernisse
-sind fremde Pads, Befestigungsloecher, der Platinenrand und bereits verlegte
-Bahnen - jeweils aufgeblasen um halbe Bahnbreite plus Mindestabstand. Findet
-der Router keinen Weg, meldet er das statt stillschweigend zu pfuschen.
+Dijkstra on a 0.25 mm grid with 8 neighbors and bend penalty. Obstacles
+are foreign pads, mounting holes, board edge, and already routed tracks -
+each expanded by half track width plus minimum clearance. If no path is found,
+the router reports it instead of silently faking a route.
 
     python tools/pcb/router.py
 """
@@ -21,12 +21,11 @@ import board as B
 
 GRID = 0.25
 BEND_PENALTY = 0.6
-EDGE_KEEPOUT = 0.5      # Kupferabstand zur Platinenkante
+EDGE_KEEPOUT = 0.5      # Copper clearance to board edge
 
-# Der Router prueft nur Rasterzellen, die Bahn zwischen zwei Zellen ist
-# aber eine durchgehende Diagonale und kann naeher an einem Hindernis
-# vorbeilaufen als beide Endpunkte. Halbe Rasterdiagonale als Zuschlag auf
-# jeden Hindernisradius deckt diesen Fall ab.
+# The router checks only grid cells, but the segment between two cells is
+# a continuous diagonal and may pass closer to an obstacle than both
+# endpoints. Adding half a grid diagonal to each obstacle radius covers this case.
 SAFETY = GRID * math.sqrt(2) / 2
 
 VIA_DRILL = 0.4
@@ -68,9 +67,9 @@ def _segment(blocked, x1, y1, x2, y2, r):
 
 
 def build_obstacles(net, width, routed, vias):
-    """(blocked_top, blocked_bottom, blocked_via) fuer das Routen von `net`.
-    blocked_via gilt fuer Zellen, in denen kein Via sitzen darf - ein Via ist
-    breiter als die Bahn und braucht daher mehr Platz."""
+    """(blocked_top, blocked_bottom, blocked_via) for routing `net`.
+    blocked_via marks cells where no via may be placed - a via is wider
+    than a track and therefore needs more clearance."""
     half = width / 2
     vhalf = VIA_COPPER / 2
     top, bot, via = set(), set(), set()
@@ -83,7 +82,7 @@ def build_obstacles(net, width, routed, vias):
                 if not (m <= x <= B.BOARD_W - m and m <= y <= B.BOARD_H - m):
                     sink.add((gx, gy))
 
-    # Bohrungen und fremde Pads sind Durchkontaktierungen: beide Lagen.
+    # Holes and foreign pads are plated through: both layers.
     for hx, hy in B.mount_holes():
         for sink, h in ((top, half), (bot, half), (via, vhalf)):
             _disc(sink, hx, hy, B.MOUNT_HOLE_D / 2 + B.MIN_CLEARANCE + h + SAFETY)
@@ -115,9 +114,9 @@ def build_obstacles(net, width, routed, vias):
 
 
 def dijkstra(blocked, sources, targets):
-    """Kuerzester Weg im Zustandsraum (Zelle, Lage, Richtung).
-    `blocked` ist (top, bottom, via); Quellen und Ziele sind Zellen und
-    gelten auf beiden Lagen, weil Pads durchkontaktiert sind."""
+    """Shortest path in state space (cell, layer, direction).
+    `blocked` is (top, bottom, via); sources and targets are cells and
+    apply to both layers because pads are plated through."""
     btop, bbot, bvia = blocked
     per_layer = (btop, bbot)
     tset = set(targets)
@@ -175,7 +174,7 @@ def dijkstra(blocked, sources, targets):
 
 
 def simplify(cells):
-    """Kollineare Rasterpunkte zusammenfassen, Ergebnis in mm."""
+    """Collapse collinear grid points, return result in mm."""
     if len(cells) < 2:
         return [to_mm(*c) for c in cells]
     out = [cells[0]]
@@ -190,9 +189,8 @@ def simplify(cells):
 
 
 def default_order(nets):
-    """Versorgungsnetze zuerst: sie sind breit, vielpolig und brauchen
-    durchgehende Schienen. Danach die Signale, kurze vor langen - so
-    weichen die langen Signale aus und nicht umgekehrt."""
+    """Power nets first: they are wide, multi-pin, and need continuous rails.
+    Then signals, short before long - so long signals adapt, not vice versa."""
     def spread(n):
         xs = [x for _, _, x, _ in nets[n]]
         ys = [y for _, _, _, y in nets[n]]
@@ -205,8 +203,8 @@ def default_order(nets):
 
 
 def route(max_passes=8, verbose=False):
-    """Routet alles; scheitert ein Netz, kommt es im naechsten Durchlauf
-    zuerst dran (Rip-up-and-retry). Gibt den besten Versuch zurueck."""
+    """Routes everything; if a net fails, it is routed first in the next pass
+    (rip-up-and-retry). Returns the best attempt."""
     nets = B.netlist()
     order = default_order(nets)
     best = None
@@ -228,8 +226,8 @@ def route(max_passes=8, verbose=False):
 
 
 def route_once(order):
-    """Ein Routing-Durchlauf in der gegebenen Netzreihenfolge.
-    Rueckgabe: ([(net, path, width, layer), ...], [(net, x, y) vias], failed)"""
+    """One routing pass in the given net order.
+    Returns: ([(net, path, width, layer), ...], [(net, x, y) vias], failed)"""
     nets = B.netlist()
     routed, vias, failed = [], [], []
 
@@ -243,8 +241,8 @@ def route_once(order):
                 break
             blocked = build_obstacles(net, width, routed, vias)
 
-            # Startpunkte: eigene Pads gelten auf beiden Lagen (durch-
-            # kontaktiert), bereits verlegte Bahnen nur auf ihrer Lage.
+            # Start points: own pads apply on both layers (plated through),
+            # already routed tracks only on their current layer.
             sources = [(c, L) for c in connected for L in (TOP, BOTTOM)]
             for rnet, path, _w, layer in routed:
                 if rnet != net:
@@ -305,4 +303,4 @@ if __name__ == "__main__":
         for net, pins in failed:
             print(f"  {net}: {pins}")
     else:
-        print("Alle Netze ausser GND geroutet (GND liegt auf der Masseflaeche).")
+        print("All nets except GND routed (GND is on the ground plane).")

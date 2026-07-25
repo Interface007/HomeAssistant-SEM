@@ -1,12 +1,12 @@
 # =====================================================================
-# Raumklima-Berechnungen pro Raum
-#   living_room  -> sonoff_th_02 + gemessene Wandtemperatur (ESP32)
-#   bedroom      -> sonoff_th_01 (Wand geschätzt über f_Rsi)
-#   storage_room -> sonoff_th_04 (Keller; Wand geschätzt, Sonderlogik Lüften)
+# Room-climate calculations per room
+#   living_room  -> sonoff_th_02 + measured wall temperature (ESP32)
+#   bedroom      -> sonoff_th_01 (wall estimated via f_Rsi)
+#   storage_room -> sonoff_th_04 (basement; wall estimated, special ventilation logic)
 #
-# Muster für weitere Räume: Block kopieren, Entities + Raumname ändern,
-# f_Rsi in custom_templates/climate.jinja ergänzen.
-# mold_risk nutzt den 24-h-Mittelwert (statistics-Sensor in sensors.yaml).
+# Pattern for additional rooms: copy block, change entities + room name,
+# add f_Rsi in custom_templates/climate.jinja.
+# mold_risk uses the 24h average (statistics sensor in sensors.yaml).
 # =====================================================================
 
 # ------------------------- LIVING ROOM -------------------------------
@@ -37,7 +37,7 @@
         {{ dew_point(states('sensor.living_room_temperature') | float,
                      states('sensor.living_room_humidity') | float) | float | round(1) }}
 
-    # Gemessene Wandtemperatur -> einheitlicher Name nach Konvention
+    # Measured wall temperature -> unified name according to convention
     - name: "Living Room Wall Temperature"
       unique_id: living_room_wall_temperature
       default_entity_id: sensor.living_room_wall_temperature
@@ -63,8 +63,8 @@
                            states('sensor.living_room_humidity') | float,
                            states('sensor.living_room_wall_temperature') | float) | float | round(1) }}
 
-    # Diagnose: live gemessener f_Rsi als Referenz für die Schätz-Räume.
-    # Nur gültig bei ΔT >= 10 K (sonst unavailable).
+    # Diagnostics: live-measured f_Rsi as reference for estimated rooms.
+    # Valid only for ΔT >= 10 K (otherwise unavailable).
     - name: "Living Room f_Rsi Live"
       unique_id: living_room_f_rsi_live
       default_entity_id: sensor.living_room_f_rsi_live
@@ -100,7 +100,7 @@
       availability: "{{ has_value('sensor.living_room_wall_surface_humidity_24h') }}"
       state: "{{ states('sensor.living_room_wall_surface_humidity_24h') | float >= 80 }}"
 
-    # Lüften sinnvoll? AH innen - AH außen; Hysterese: ein > 0.7, aus < 0.3
+    # Ventilation useful? AH indoors - AH outdoors; hysteresis: on > 0.7, off < 0.3
     - name: "Living Room Ventilation Recommended"
       unique_id: living_room_ventilation_recommended
       default_entity_id: binary_sensor.living_room_ventilation_recommended
@@ -140,7 +140,7 @@
         {{ dew_point(states('sensor.bedroom_temperature') | float,
                      states('sensor.bedroom_humidity') | float) | float | round(1) }}
 
-    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    # Estimated wall temperature via f_Rsi (calibration see climate.jinja)
     - name: "Bedroom Wall Temperature"
       unique_id: bedroom_wall_temperature
       default_entity_id: sensor.bedroom_wall_temperature
@@ -200,9 +200,9 @@
                  - states('sensor.outdoor_absolute_humidity') | float %}
         {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
 
-# ------------------------- STORAGE ROOM (Keller) ----------------------
-# Achtung: Kellerwände grenzen ans Erdreich -> f_Rsi-Schätzung über die
-# Außentemperatur ist hier nur eine Näherung. Geplant: eigener Wandsensor.
+# ------------------------- STORAGE ROOM (Basement) --------------------
+# Note: basement walls border soil -> f_Rsi estimation via
+# outdoor temperature is only an approximation here. Planned: dedicated wall sensor.
 - sensor:
     - name: "Storage Room Absolute Humidity"
       unique_id: storage_room_absolute_humidity
@@ -278,10 +278,10 @@
       availability: "{{ has_value('sensor.storage_room_wall_surface_humidity_24h') }}"
       state: "{{ states('sensor.storage_room_wall_surface_humidity_24h') | float >= 80 }}"
 
-    # Keller-Sonderlogik (Basis für spätere Ventilator-Automation):
-    #  1. AH außen deutlich niedriger als innen (Hysterese wie oben)
-    #  2. UND Taupunkt außen < Kellerwand-Temperatur - 2 K
-    #     (sonst Sommer-Kondensation an kühlen Kellerwänden)
+    # Basement special logic (basis for later fan automation):
+    #  1. AH outdoors significantly lower than indoors (same hysteresis as above)
+    #  2. AND outdoor dew point < basement wall temperature - 2 K
+    #     (otherwise summer condensation on cool basement walls)
     - name: "Storage Room Ventilation Recommended"
       unique_id: storage_room_ventilation_recommended
       default_entity_id: binary_sensor.storage_room_ventilation_recommended
@@ -299,7 +299,7 @@
                     < states('sensor.storage_room_wall_temperature') | float - 2 %}
         {{ drier and safe }}
 
-# Blöcke generiert nach bedroom-Muster (geschätzte Wandtemperatur via f_Rsi)
+# Blocks generated from bedroom pattern (estimated wall temperature via f_Rsi)
 # --------------------------- BATHROOM ---------------------------------
 - sensor:
     - name: "Bathroom Absolute Humidity"
@@ -328,7 +328,7 @@
         {{ dew_point(states('sensor.bathroom_temperature') | float,
                      states('sensor.bathroom_humidity') | float) | float | round(1) }}
 
-    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    # Estimated wall temperature via f_Rsi (calibration see climate.jinja)
     - name: "Bathroom Wall Temperature"
       unique_id: bathroom_wall_temperature
       default_entity_id: sensor.bathroom_wall_temperature
@@ -416,7 +416,7 @@
         {{ dew_point(states('sensor.lea_room_temperature') | float,
                      states('sensor.lea_room_humidity') | float) | float | round(1) }}
 
-    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    # Estimated wall temperature via f_Rsi (calibration see climate.jinja)
     - name: "Lea Room Wall Temperature"
       unique_id: lea_room_wall_temperature
       default_entity_id: sensor.lea_room_wall_temperature
@@ -504,7 +504,7 @@
         {{ dew_point(states('sensor.anna_room_temperature') | float,
                      states('sensor.anna_room_humidity') | float) | float | round(1) }}
 
-    # Geschätzte Wandtemperatur über f_Rsi (Kalibrierung siehe climate.jinja)
+    # Estimated wall temperature via f_Rsi (calibration see climate.jinja)
     - name: "Anna Room Wall Temperature"
       unique_id: anna_room_wall_temperature
       default_entity_id: sensor.anna_room_wall_temperature

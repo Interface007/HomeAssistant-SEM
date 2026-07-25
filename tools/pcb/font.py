@@ -1,10 +1,10 @@
 """
-Strichfont fuer den Bestueckungsdruck. Gerber kennt keinen Text, jeder
-Buchstabe muss als Polylinie gezeichnet werden.
+Stroke font for silkscreen. Gerber has no text primitive, so every
+character must be drawn as a polyline.
 
-Alle Glyphen liegen in einem Kaestchen 0..4 breit, 0..7 hoch (Grundlinie 0).
-Nur Grossbuchstaben, Ziffern und ein paar Zeichen - Kleinbuchstaben werden
-beim Rendern hochgestellt, wie auf Platinen ueblich.
+All glyphs live in a 0..4 wide, 0..7 high box (baseline at 0).
+Uppercase letters, digits, and a few symbols only - lowercase is
+raised during rendering, as commonly used on PCBs.
 """
 
 GLYPH_W = 4.0
@@ -75,7 +75,7 @@ STROKES = {
 
 
 def text_strokes(s, x, y, size, anchor="start"):
-    """Polylinien in mm fuer `s`, Grundlinie auf y. `size` = Kappenhoehe."""
+       """Polylines in mm for `s`, baseline on y. `size` = cap height."""
     s = s.upper()
     scale = size / GLYPH_H
     adv = (GLYPH_W + GLYPH_GAP) * scale

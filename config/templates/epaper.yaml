@@ -1,16 +1,16 @@
 # =====================================================================
-# ePaper-Feeder-Sensoren (display-livingroom-01)
-# Die default_entity_id entspricht exakt den IDs, die die bestehende
-# ESPHome-Firmware abonniert -> Display läuft ohne Firmware-Änderung.
-# Datenquellen sind die neuen Berechnungs-Sensoren (outdoor.yaml/rooms.yaml).
-# Dezimal-Komma: die Firmware erwartet deutsches Zahlenformat.
+# ePaper feeder sensors (display-livingroom-01)
+# The default_entity_id exactly matches the IDs used by the existing
+# ESPHome firmware subscribes to -> display runs without firmware changes.
+# Data sources are the new computed sensors (outdoor.yaml/rooms.yaml).
+# Decimal comma: firmware expects German number formatting.
 #
-# Noch OHNE Quelle (siehe "03 - ePaper Reaktivierung.md"):
-#   Bad-Klima, Lea/Radiator-Temperaturen (Tado X), Watermeter-/Power-History,
-#   Aurora, Batterie-Liste, Fenster-Binärsensoren
+# Still WITHOUT source (see "03 - ePaper reactivation.md"):
+#   Bathroom climate, Lea/radiator temperatures (Tado X), water meter/power history,
+#   Aurora, battery list, window binary sensors
 # =====================================================================
 
-# Wettervorhersage (Trigger-basiert, alle 2 h / bei Start / manuell)
+# Weather forecast (trigger-based, every 2h / on startup / manual)
 - trigger:
     - trigger: time_pattern
       hours: /2
@@ -100,9 +100,9 @@
       availability: "{{ has_value('sensor.living_room_humidity') }}"
       state: "{{ states('sensor.living_room_humidity') }}"
 
-    # Delta absolute Feuchte innen (Wohnzimmer) - außen [g/m³]
-    # Positiv = drinnen feuchter -> Lüften bringt Trocknung.
-    # (Ersetzt die ESP32-interne Berechnung; dort war das Vorzeichen invertiert.)
+    # Delta absolute humidity indoor (living room) - outdoor [g/m³]
+    # Positive = more humid indoors -> ventilation helps drying.
+    # (Replaces ESP32-internal calculation; sign was inverted there.)
     - name: "ePaper Humidity Delta"
       unique_id: epaper_humidity_delta
       default_entity_id: sensor.epaper_humidity_delta
@@ -115,7 +115,7 @@
         {{ (states('sensor.living_room_absolute_humidity') | float
             - states('sensor.outdoor_absolute_humidity') | float) | round(1) }}
 
-    # Bad-Klima (Quelle: sonoff_th_08 -> bathroom_*)
+    # Bathroom climate (source: sonoff_th_08 -> bathroom_*)
     - name: "ePaper Temperature Bathroom"
       unique_id: epaper_temperature_bathroom
       default_entity_id: sensor.epaper_temperature_bathroom
@@ -128,7 +128,7 @@
       availability: "{{ has_value('sensor.bathroom_humidity') }}"
       state: "{{ states('sensor.bathroom_humidity') }}"
 
-    # Lea-Temperatur (Raumklima statt Tado-Ventil, Quelle sonoff_th_06)
+    # Lea temperature (room climate instead of Tado valve, source sonoff_th_06)
     - name: "ePaper Temperature Lea"
       unique_id: epaper_temperature_lea
       default_entity_id: sensor.epaper_temperature_lea
@@ -142,8 +142,8 @@
       availability: "{{ has_value('sensor.laundry_room_dryer_operation_state') }}"
       state: "{{ states('sensor.laundry_room_dryer_operation_state') }}"
 
-    # NEU: zusammengefasste Risiko-Übersicht für Display/Dashboard
-    # Zustand = Liste betroffener Räume oder "OK"
+    # NEW: aggregated risk overview for display/dashboard
+    # State = list of affected rooms or "OK"
     - name: "ePaper Mold Alert"
       unique_id: epaper_mold_alert
       default_entity_id: sensor.epaper_mold_alert
@@ -173,9 +173,9 @@
         {% endfor %}
         {{ ns.hits | join(',') if ns.hits | count > 0 else 'OK' }}
 
-    # Wasserzähler-Historie: letzte 14 Tage als CSV für ePaper-Balkendiagramm
-    # Quelle: input_text.water_meter_history (täglich aktualisiert durch Automation)
-    # Format: Semikolon-separierte Werte (oldest;...;newest)
+  # Water meter history: last 14 days as CSV for ePaper bar chart
+  # Source: input_text.water_meter_history (updated daily by automation)
+    # Format: semicolon-separated values (oldest;...;newest)
     - name: "ePaper Water Meter History"
       unique_id: epaper_watermeter_history
       default_entity_id: sensor.epaper_watermeter_history

@@ -42,9 +42,9 @@ i2s:
   bck_pin: GPIO6         # Serial Clock (SCK) → Board-Pin D4 → white
   ws_pin: GPIO5          # Word Select (WS)   → Board-Pin D3 → grey
   din_pin: GPIO7         # Serial Data (SD)   → Board-Pin D5 → brown
-  sample_rate: 44100     # 44.1 kHz (stabiler auf ESP32-C3)
+  sample_rate: 44100     # 44.1 kHz (more stable on ESP32-C3)
   bits_per_sample: 32    # 32 Bit (MIC liefert 24 Bit + 8 Bit Padding)
-  bits_shift: 8          # Rechts‐Shift um 8 Bit für 24→32 Bit Alignment
+  bits_shift: 8          # Right shift by 8 bits for 24→32 bit alignment
   channel: left          # INMP441 mit L/R=GND → left channel
   use_apll: false        # APLL is not supported on ESP32-C3
 

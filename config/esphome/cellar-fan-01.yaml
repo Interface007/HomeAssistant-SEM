@@ -1,37 +1,37 @@
 ###########################################################
-#  Kellerbelüftung 01 - taupunktgesteuerter Lüfter
+#  Basement Ventilation 01 - dew-point-controlled fan
 #
 #  Hardware:
 #    ESP32-S3-Zero (Waveshare, ESP32-S3FH4R2, 4 MB Flash)
-#    Arctic P12 PRO PST CO   (4-Pin-PWM-Lüfter, 12 V)
-#    12 V / 2 A Steckernetzteil  -> nur Lüfter
-#    USB-C-Netzteil              -> nur ESP32 (später Step-Down 12 V -> 5 V)
-#    DS18B20 wasserdicht         -> Kellerwand
+#    Arctic P12 PRO PST CO   (4-pin PWM fan, 12 V)
+#    12 V / 2 A power supply      -> fan only
+#    USB-C power supply           -> ESP32 only (later step-down 12 V -> 5 V)
+#    DS18B20 waterproof           -> basement wall
 #    R1 = 4,7 kΩ  Pull-up  GPIO6 -> 3V3  (1-Wire)
 #    R2 = 10  kΩ  Pull-up  GPIO4 -> 3V3  (Tacho, Open Collector)
 #
-#  Logik (läuft komplett auf dem ESP, HA liefert nur Messwerte):
-#    Lüften, wenn ALLE Bedingungen erfüllt sind
-#      1. Taupunkt innen - Taupunkt außen > Schwelle  (mit Hysterese)
-#      2. Taupunkt außen < Wandtemperatur - Reserve   (Sommerkondensation)
-#      3. Außentemperatur > Frostschutz-Grenze
-#      4. Kellertemperatur > Minimum (Keller nicht auskühlen)
-#      5. alle Eingangswerte gültig und nicht älter als 15 min
-#    Fällt HA oder WLAN aus, werden die HA-Werte "stale" -> Lüfter aus.
+#  Logic (runs fully on ESP, HA only provides measured values):
+#    Ventilate when ALL conditions are met
+#      1. Dew point indoor - dew point outdoor > threshold (with hysteresis)
+#      2. Dew point outdoor < wall temperature - margin (summer condensation)
+#      3. Outdoor temperature > frost-protection limit
+#      4. Basement temperature > minimum (do not cool basement too much)
+#      5. all input values valid and not older than 15 min
+#    If HA or Wi-Fi fails, HA values become "stale" -> fan off.
 ###########################################################
 
 substitutions:
   name: "cellar-fan-01"
   friendly_name: "Kellerlüftung 01"
-  static_ip: 192.168.2.48          # !! freie IP im Netz prüfen
+  static_ip: 192.168.2.48          # !! verify free IP in the network
 
-  # --- Quell-Entities aus Home Assistant (Innen = Keller = storage_room) ---
+  # --- Source entities from Home Assistant (indoor = basement = storage_room) ---
   src_outdoor_temp: sensor.outdoor_temperature
   src_outdoor_hum: sensor.outdoor_humidity
   src_indoor_temp: sensor.storage_room_temperature
   src_indoor_hum: sensor.storage_room_humidity
 
-  # --- Pins ESP32-S3-Zero (GPIO0/GPIO3 = Strapping, GPIO19/20 = USB, GPIO21 = RGB-LED) ---
+  # --- ESP32-S3-Zero pins (GPIO0/GPIO3 = strapping, GPIO19/20 = USB, GPIO21 = RGB LED) ---
   pin_fan_pwm: GPIO2
   pin_fan_tacho: GPIO4
   pin_onewire: GPIO6
@@ -44,7 +44,7 @@ esphome:
   includes:
     - ./includes/climate.h
   on_boot:
-    # Nach Reboot immer aus - erst nach dem ersten Regel-Durchlauf anlaufen.
+    # Always off after reboot - start only after the first control cycle.
     priority: -100
     then:
       - fan.turn_off: cellar_fan
@@ -56,7 +56,7 @@ esp32:
   framework:
     type: esp-idf
 
-# Kein USB-Serial-Chip auf dem S3-Zero -> Log läuft über USB-Serial-JTAG.
+# No USB-serial chip on S3-Zero -> logs run via USB-Serial-JTAG.
 logger:
   level: DEBUG
   hardware_uart: USB_SERIAL_JTAG
@@ -68,7 +68,7 @@ captive_portal:
 web_server: !include ./includes/web.yaml
 
 globals:
-  # millis() des letzten Updates eines HA-Sensors -> Stale-Erkennung
+  # millis() timestamp of last HA sensor update -> stale detection
   - id: last_ha_update
     type: uint32_t
     restore_value: false
@@ -87,7 +87,7 @@ globals:
     initial_value: '"Start"'
 
 ###########################################################
-#  Einstellbare Schwellwerte (in HA änderbar, überleben Reboot)
+#  Configurable thresholds (editable in HA, survive reboot)
 ###########################################################
 number:
   - platform: template
@@ -204,15 +204,15 @@ switch:
     entity_category: diagnostic
 
 ###########################################################
-#  Lüfter: 25 kHz PWM (Intel 4-Wire-Spezifikation)
+#  Fan: 25 kHz PWM (Intel 4-wire specification)
 ###########################################################
 output:
   - platform: ledc
     id: fan_pwm
     pin: ${pin_fan_pwm}
     frequency: 25000Hz
-    # Untergrenze bleibt bei 0 %, der Anlaufwert wird über
-    # fan_speed_min geregelt -> in HA einstellbar statt fest kompiliert.
+    # Lower bound stays at 0%; startup value is controlled via
+    # fan_speed_min -> configurable in HA instead of hard-coded.
     zero_means_zero: true
 
 fan:
@@ -229,10 +229,10 @@ one_wire:
     pin: ${pin_onewire}
 
 ###########################################################
-#  Sensoren
+#  Sensors
 ###########################################################
 sensor:
-  # --------------- lokal gemessen ---------------
+  # --------------- measured locally ---------------
   - platform: dallas_temp
     id: t_wall
     name: "Kellerwand Temperatur"
@@ -253,7 +253,7 @@ sensor:
       number: ${pin_fan_tacho}
       mode:
         input: true
-        pullup: false          # externer 10-kΩ-Pull-up auf 3V3
+        pullup: false          # external 10-kΩ pull-up to 3V3
     unit_of_measurement: "rpm"
     icon: mdi:speedometer
     accuracy_decimals: 0
@@ -452,7 +452,7 @@ script:
           const float dpi = sem_climate::dew_point(t_i, rh_i);
           const float diff = dpi - dpo;
 
-          // Hysterese: läuft der Lüfter, gilt die kleinere Ausschaltschwelle.
+          // Hysteresis: if the fan is running, use the lower switch-off threshold.
           const bool running = id(cellar_fan).state;
           const float thr_on = id(dp_diff_on).state;
           const float thr = running ? id(dp_diff_off).state : thr_on;
@@ -460,7 +460,7 @@ script:
           bool want = diff > thr;
           std::string reason = want ? "Lüften" : "Außenluft nicht trockener";
 
-          // Außenluft darf an der kalten Kellerwand nicht kondensieren.
+          // Outdoor air must not condense on the cold basement wall.
           if (want && dpo >= t_w - id(wall_margin).state) {
             want = false;
             reason = "Kondensationsgefahr Wand";

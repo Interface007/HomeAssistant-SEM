@@ -17,9 +17,9 @@ public:
   semTools(esphome::display::Display &display, esphome::font::Font *symbolFont, esphome::font::Font *labelFont)
       : display_(display), symbolFont_(symbolFont), labelFont_(labelFont) {}
 
-  // FIX 2026-07: std::stoi("unknown"/"unavailable") warf eine Exception und
-  // brachte den ESP in eine Reboot-Schleife. Jetzt: strikte Validierung,
-  // nicht-numerische Zustände zeigen das "?"-Symbol (F125E).
+  // FIX 2026-07: std::stoi("unknown"/"unavailable") threw an exception and
+  // caused an ESP reboot loop. Now: strict validation,
+  // non-numeric states show the "?" symbol (F125E).
   static bool is_numeric(const std::string &value)
   {
     if (value.empty())
@@ -84,8 +84,8 @@ public:
     display_.line(x1, y1 - dy, x1, y1);
     display_.line(x1, y1, x1 + dx, y1);
 
-    // FIX 2026-07: vorher Zeigervergleich (csv.c_str() == "unavailable") statt
-    // Inhaltsvergleich; außerdem crashte std::stoi bei nicht-numerischen Tokens.
+    // FIX 2026-07: previously pointer comparison (csv.c_str() == "unavailable") instead of
+    // content comparison; std::stoi also crashed on non-numeric tokens.
     if (
         sensor->has_state() &&
         !sensor->state.empty() &&

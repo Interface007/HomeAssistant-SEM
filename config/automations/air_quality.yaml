@@ -1,6 +1,6 @@
 # =====================================================================
-# Automationen: Luftqualität / Luftreiniger
-#       Konvention benannt sind; fan-Entity nach Miio-Einrichtung prüfen.
+# Automations: air quality / air purifier
+#       follow naming conventions; verify fan entity after Miio setup.
 # =====================================================================
 - id: air_purifier_pause_on_open_window
   alias: "Air purifier pause on open window"

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Entity-IDs in Home Assistant per CSV umbenennen (Vorher;Nachher).
+"""Rename Home Assistant entity IDs from CSV (before;after).
 
-Nutzung:
+Usage:
   pip install websockets
-  python rename_entities.py renames.csv            # Dry-Run (zeigt nur an)
-  python rename_entities.py renames.csv --apply    # führt die Umbenennung aus
+    python rename_entities.py renames.csv            # Dry run (show only)
+    python rename_entities.py renames.csv --apply    # perform the rename
 
-CSV-Format (Semikolon, eine Zeile pro Umbenennung, # = Kommentar):
+CSV format (semicolon, one rename per line, # = comment):
   binary_sensor.bthome_sensor_3e90_window;binary_sensor.bedroom_window_north_contact
   sensor.bthome_sensor_3e90_rotation;sensor.bedroom_window_north_tilt_angle
 
-Konfiguration über Umgebungsvariablen:
+Configuration via environment variables:
   HA_URL   (Default: http://192.168.2.3:8123)
-  HA_TOKEN (Long-lived Access Token: HA-Profil -> Sicherheit -> Token erstellen)
+    HA_TOKEN (Long-lived access token: HA profile -> security -> create token)
 
-Hinweis: Referenzen in Automationen/Templates werden NICHT mitgeändert -
-IDs daher möglichst korrigieren, bevor sie irgendwo verwendet werden.
+Note: references in automations/templates are NOT updated automatically -
+therefore correct IDs before they are used elsewhere.
 """
 
 import asyncio
@@ -40,7 +40,7 @@ def load_renames(path: str) -> list[tuple[str, str]]:
             if not row or row[0].lstrip().startswith("#"):
                 continue
             if len(row) < 2 or not row[0].strip() or not row[1].strip():
-                sys.exit(f"Zeile {lineno}: erwartet 'alt;neu', bekommen: {row}")
+                sys.exit(f"Line {lineno}: expected 'old;new', got: {row}")
             old, new = row[0].strip(), row[1].strip()
             if "." not in old or "." not in new:
                 sys.exit(f"Zeile {lineno}: '{old}' / '{new}' ist keine Entity-ID")
@@ -70,7 +70,7 @@ async def run(renames: list[tuple[str, str]], apply: bool) -> None:
                 if resp.get("id") == payload["id"]:
                     return resp
 
-        # Bestand laden für Validierung
+        # Load current entities for validation
         resp = await call({"type": "config/entity_registry/list"})
         existing = {e["entity_id"] for e in resp["result"]}
 

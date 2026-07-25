@@ -1,8 +1,8 @@
 # =====================================================================
-# Haustür-Öffner (Shelly Plus Uni O1 an Siedle-Anlage)
-# Primärer 100-ms-Impuls: Auto-OFF-Timer IM SHELLY (0.1 s) - siehe Doku.
-# Diese Automation ist nur das Sicherheitsnetz, falls der Timer im
-# Gerät deaktiviert wurde und der Öffner hängen bleibt.
+# Front door opener (Shelly Plus Uni O1 on Siedle system)
+# Primary 100ms pulse: AUTO-OFF timer IN SHELLY (0.1 s) - see docs.
+# This automation is only a safety net in case the timer on the
+# device is disabled and the opener remains on.
 # =====================================================================
 - id: front_door_opener_failsafe_off
   alias: "Front door opener failsafe off"

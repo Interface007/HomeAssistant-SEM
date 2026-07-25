@@ -1,18 +1,18 @@
 """
-Elektrische Pruefung des Layouts - ersetzt den DRC, den es ohne EDA-Tool
-nicht gibt. Prueft das Ergebnis, nicht die Absicht.
+Electrical layout verification - replaces the DRC that does not exist
+without an EDA tool. Verifies the result, not the intention.
 
-Jedes Kupferelement ist ein Kreis (Pad, Via) oder eine Kapsel (Leiterbahn)
-und gilt auf einer oder beiden Lagen: Pads und Vias sind durchkontaktiert,
-Bahnen liegen nur auf ihrer Lage. Fuer jedes Paar mit gemeinsamer Lage wird
-der echte Abstand berechnet - keine Rasterung, keine Rundungsfehler.
-  - gleiches Netz, Abstand <= 0            -> verbunden
-  - anderes Netz, Abstand < MIN_CLEARANCE  -> Verstoss
-Jedes Netz muss danach genau eine Zusammenhangskomponente bilden.
+Each copper element is a circle (pad, via) or a capsule (track)
+and applies on one or both layers: pads and vias are plated through,
+tracks exist only on their own layer. For each pair sharing a layer,
+the true distance is computed - no rasterization, no rounding errors.
+    - same net, distance <= 0            -> connected
+    - different net, distance < MIN_CLEARANCE  -> violation
+Each net must then form exactly one connected component.
 
-Die Masseflaeche auf der Unterseite kann durch die Freistellungen um fremde
-Pads, Vias und Signalbahnen in Inseln zerfallen. Das ist am Paarabstand
-nicht zu sehen, deshalb dafuer ein Flutfuellen auf 0.1-mm-Raster.
+The bottom ground plane can split into islands due to clearances around foreign
+pads, vias, and signal tracks. Pairwise spacing does not reveal this,
+so a flood-fill on a 0.1 mm grid is used.
 
     python tools/pcb/verify.py
 """
@@ -35,7 +35,7 @@ def _seg_point_dist(px, py, ax, ay, bx, by):
 
 
 def _seg_seg_dist(a1, a2, b1, b2):
-    """Abstand zweier Strecken, inklusive Schnittfall."""
+    """Distance between two line segments, including intersection case."""
     def cross(o, a, b):
         return ((a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]))
 
@@ -52,7 +52,7 @@ def _seg_seg_dist(a1, a2, b1, b2):
 
 
 def primitives(routed, vias):
-    """[(net, kind, geometrie, radius, label, layers), ...]"""
+    """[(net, kind, geometry, radius, label, layers), ...]"""
     out = []
     for ref, idx, p, net in B.all_pads():
         out.append((net, "pad", (p["x"], p["y"]), p["copper"] / 2,
@@ -106,7 +106,7 @@ def check_copper(routed, vias):
         for j in range(i + 1, len(prims)):
             a, b = prims[i], prims[j]
             if not (a[5] & b[5]):
-                continue          # keine gemeinsame Lage - kann nicht kollidieren
+                continue          # no shared layer - cannot collide
             d = distance(a, b)
             if a[0] == b[0]:
                 if d <= 1e-9:
@@ -129,11 +129,11 @@ def check_copper(routed, vias):
     opens = []
     for net, idxs in by_net.items():
         if net == "GND":
-            continue              # Planlage - check_pour() prueft das getrennt
+            continue              # plane net - check_pour() verifies this separately
         if net is None:
-            continue              # bewusst unbelegte Pads (U1-Restpins, J5.2)
-                                  # muessen nichts verbinden - dass sie auch
-                                  # nichts BERUEHREN, prueft `bridged` unten
+            continue              # intentionally unassigned pads (U1 spare pins, J5.2)
+                                  # do not have to connect - and that they also
+                                  # do not TOUCH is checked by `bridged` below
         groups = {}
         for i in idxs:
             groups.setdefault(uf.find(i), []).append(prims[i][4])
@@ -149,12 +149,12 @@ def check_copper(routed, vias):
 
 
 def check_pour(routed, vias):
-    """Masseflaeche unten: eine Insel, und alle GND-Pads liegen darin."""
+    """Bottom ground plane: one island, with all GND pads connected to it."""
     nx = int(B.BOARD_W / POUR_GRID) + 1
     ny = int(B.BOARD_H / POUR_GRID) + 1
     cu = bytearray(nx * ny)
 
-    m = 0.5   # Kupferrueckzug von der Platinenkante
+    m = 0.5   # Copper setback from board edge
     for gy in range(ny):
         y = gy * POUR_GRID
         if not (m <= y <= B.BOARD_H - m):
@@ -202,7 +202,7 @@ def check_pour(routed, vias):
 
     start = int(gnd[0][1] / POUR_GRID) * nx + int(gnd[0][0] / POUR_GRID)
     if not cu[start]:
-        return [f"{gnd[0][2]} liegt nicht auf der Masseflaeche"], 0.0
+        return [f"{gnd[0][2]} is not on the ground plane"], 0.0
 
     seen = bytearray(nx * ny)
     seen[start] = 1
@@ -224,14 +224,14 @@ def check_pour(routed, vias):
     problems = []
     for x, y, label in gnd[1:]:
         if not seen[int(y / POUR_GRID) * nx + int(x / POUR_GRID)]:
-            problems.append(f"{label} haengt nicht an der durchgehenden "
-                            f"Masseflaeche")
+            problems.append(f"{label} is not connected to the continuous "
+                            f"ground plane")
     total = sum(cu)
     stray = total - count
-    if stray > 20:      # winzige Restinseln sind unvermeidlich und harmlos
-        problems.append(f"Masseflaeche zerfaellt: {stray} von {total} Zellen "
-                        f"({stray * POUR_GRID ** 2:.1f} mm2) haengen nicht an "
-                        f"der Hauptinsel")
+    if stray > 20:      # tiny leftover islands are unavoidable and harmless
+        problems.append(f"Ground plane split: {stray} of {total} cells "
+                f"({stray * POUR_GRID ** 2:.1f} mm2) are not connected "
+                f"to the main island")
     return problems, count * POUR_GRID ** 2
 
 
@@ -241,48 +241,48 @@ if __name__ == "__main__":
 
     if failed:
         ok = False
-        print("ROUTING UNVOLLSTAENDIG:")
+        print("ROUTING INCOMPLETE:")
         for net, pins in failed:
             print(f"  {net}: {pins}")
 
     npads = sum(len(c["pads"]) for c in B.COMPONENTS.values())
-    print(f"Kupfer: {len(routed)} Bahnabschnitte, {npads} Pads, "
+    print(f"Copper: {len(routed)} track segments, {npads} pads, "
           f"{len(vias)} Via(s)")
 
     violations, opens, bridged = check_copper(routed, vias)
 
     if violations:
         ok = False
-        print(f"\n{len(violations)} ABSTANDSVERSTOSS (< {B.MIN_CLEARANCE} mm):")
+        print(f"\n{len(violations)} CLEARANCE VIOLATIONS (< {B.MIN_CLEARANCE} mm):")
         for na, la, nb, lb, d in sorted(violations, key=lambda v: v[4])[:20]:
             print(f"  {na}/{la}  <->  {nb}/{lb}   {d:+.3f} mm")
     else:
-        print(f"  Abstaende:   alle >= {B.MIN_CLEARANCE} mm")
+        print(f"  Clearance:   all >= {B.MIN_CLEARANCE} mm")
 
     if opens:
         ok = False
-        print("\nNETZ NICHT DURCHVERBUNDEN:")
+        print("\nNET NOT FULLY CONNECTED:")
         for net, groups in opens:
-            print(f"  {net}: {len(groups)} getrennte Gruppen {groups}")
+            print(f"  {net}: {len(groups)} disconnected groups {groups}")
     else:
-        print("  Durchgang:   jedes Netz haengt zusammen")
+        print("  Continuity:  each net is fully connected")
 
     if bridged:
         ok = False
-        print("\nKURZSCHLUSS:")
+        print("\nSHORT CIRCUIT:")
         for nets in bridged:
             print(f"  {nets}")
     else:
-        print("  Kurzschluss: keiner")
+        print("  Short:       none")
 
     problems, area = check_pour(routed, vias)
     if problems:
         ok = False
-        print("\nMASSEFLAECHE:")
+        print("\nGROUND PLANE:")
         for p in problems:
             print("  -", p)
     else:
-        print(f"  Masse:       eine Insel, {area:.0f} mm2, alle GND-Pads dran")
+        print(f"  Ground:      one island, {area:.0f} mm2, all GND pads connected")
 
-    print("\n" + ("PRUEFUNG BESTANDEN" if ok else "PRUEFUNG FEHLGESCHLAGEN"))
+    print("\n" + ("VERIFICATION PASSED" if ok else "VERIFICATION FAILED"))
     raise SystemExit(0 if ok else 1)

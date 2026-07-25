@@ -1,22 +1,22 @@
 #pragma once
 //
-// Klima-Berechnungen fuer ESPHome-Lambdas.
-// Bewusst identisch zu config/custom_templates/climate.jinja gehalten:
-// Magnus-Formel, Parameter nach Sonntag (1990), ueber Wasser
-//   a = 17.62, b = 243.12 degC   (gueltig ca. -45...+60 degC)
-// Wenn dort etwas geaendert wird, hier mitaendern - sonst weichen die
-// Werte auf dem ESP von den HA-Template-Sensoren ab.
+// Climate calculations for ESPHome lambdas.
+// Intentionally kept identical to config/custom_templates/climate.jinja:
+// Magnus formula, parameters after Sonntag (1990), over water
+//   a = 17.62, b = 243.12 degC   (valid approx. -45...+60 degC)
+// If changed there, update here as well - otherwise values
+// on the ESP will diverge from HA template sensors.
 //
 #include <cmath>
 
 namespace sem_climate {
 
-// Saettigungsdampfdruck [hPa] bei Temperatur t [degC]
+// Saturation vapor pressure [hPa] at temperature t [degC]
 inline float sat_vapor_pressure(float t) {
   return 6.112f * expf(17.62f * t / (243.12f + t));
 }
 
-// Taupunkt [degC] aus Temperatur t [degC] und rel. Feuchte rh [%]
+// Dew point [degC] from temperature t [degC] and rel. humidity rh [%]
 inline float dew_point(float t, float rh) {
   if (std::isnan(t) || std::isnan(rh) || rh <= 0.0f)
     return NAN;
@@ -26,7 +26,7 @@ inline float dew_point(float t, float rh) {
   return 243.12f * alpha / (17.62f - alpha);
 }
 
-// Absolute Feuchte [g/m3] aus t [degC] und rh [%]
+// Absolute humidity [g/m3] from t [degC] and rh [%]
 inline float abs_humidity(float t, float rh) {
   if (std::isnan(t) || std::isnan(rh))
     return NAN;
@@ -34,8 +34,8 @@ inline float abs_humidity(float t, float rh) {
   return 216.679f * e_hpa / (273.15f + t);
 }
 
-// Rel. Feuchte an der Wandoberflaeche [%] aus Raumluft (t_air, rh_air)
-// und Wandtemperatur t_wall. >= 80 % ueber laengere Zeit = Schimmelgefahr.
+// Relative humidity at the wall surface [%] from room air (t_air, rh_air)
+// and wall temperature t_wall. >= 80% over longer periods = mold risk.
 inline float wall_surface_rh(float t_air, float rh_air, float t_wall) {
   if (std::isnan(t_air) || std::isnan(rh_air) || std::isnan(t_wall))
     return NAN;

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Vollständigen Entity-Export aus Home Assistant als CSV erzeugen.
+"""Generate a complete entity export from Home Assistant as CSV.
 
-Ersetzt den Weg über den Template-Editor (der die Ausgabe abschneidet).
-Format identisch zu bisher: entity_id;name;area;device;state;unit
+Replaces the template-editor approach (which truncates output).
+Format unchanged: entity_id;name;area;device;state;unit
 
-Nutzung:
+Usage:
   pip install websockets
   $env:HA_TOKEN = "<Long-lived Access Token>"
-  python export_entities.py                # schreibt ../status/entities.csv
-  python export_entities.py meine.csv      # eigener Zielpfad
+    python export_entities.py                # writes ../status/entities.csv
+    python export_entities.py my.csv         # custom output path
 
-Konfiguration: HA_URL (Default http://192.168.2.3:8123), HA_TOKEN
+Configuration: HA_URL (default http://192.168.2.3:8123), HA_TOKEN
 """
 
 import asyncio
@@ -23,7 +23,7 @@ from pathlib import Path
 try:
     import websockets
 except ImportError:
-    sys.exit("Bitte zuerst: pip install websockets")
+    sys.exit("Please run: pip install websockets")
 
 HA_URL = os.environ.get("HA_URL", "http://192.168.2.3:8123")
 TOKEN = os.environ.get("HA_TOKEN")
@@ -36,7 +36,7 @@ async def run(out_path: Path) -> None:
         assert json.loads(await ws.recv())["type"] == "auth_required"
         await ws.send(json.dumps({"type": "auth", "access_token": TOKEN}))
         if json.loads(await ws.recv())["type"] != "auth_ok":
-            sys.exit("Authentifizierung fehlgeschlagen - HA_TOKEN prüfen")
+            sys.exit("Authentication failed - check HA_TOKEN")
 
         msg_id = 0
 
@@ -48,7 +48,7 @@ async def run(out_path: Path) -> None:
                 resp = json.loads(await ws.recv())
                 if resp.get("id") == msg_id:
                     if not resp.get("success", True):
-                        sys.exit(f"{msg_type} fehlgeschlagen: {resp.get('error')}")
+                        sys.exit(f"{msg_type} failed: {resp.get('error')}")
                     return resp["result"]
 
         entities = await call("config/entity_registry/list")
@@ -86,11 +86,11 @@ async def run(out_path: Path) -> None:
         writer.writerow(["entity_id", "name", "area", "device", "state", "unit"])
         writer.writerows(rows)
 
-    print(f"{len(rows)} Entities nach {out_path} exportiert.")
+    print(f"{len(rows)} entities exported to {out_path}.")
 
 
 if __name__ == "__main__":
     if not TOKEN:
-        sys.exit("Umgebungsvariable HA_TOKEN setzen (Long-lived Access Token)")
+        sys.exit("Set environment variable HA_TOKEN (long-lived access token)")
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_OUT
     asyncio.run(run(out))

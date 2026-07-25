@@ -1,5 +1,5 @@
 views:
-  # ------------------------------------------------------------ Übersicht
+  # ------------------------------------------------------------ Overview
   - type: sections
     title: Übersicht
     path: home
@@ -145,7 +145,7 @@ views:
           - type: tile
             entity: binary_sensor.lea_room_window_south_contact
             name: Lea Süd
-          # TODO nach Klärung der Orientierung (siehe renames.csv):
+          # TODO after orientation is clarified (see renames.csv):
           # - anna_room_window_<north|south_2|west>_contact (2 Sensoren)
 
       - type: grid

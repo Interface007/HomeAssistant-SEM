@@ -1,7 +1,7 @@
 # =====================================================================
-# Energiezähler fürs Energy Dashboard (Riemann-Integral über Leistung).
-# Nur für den Akku nötig - der Solar-Ertrag kommt nativ von
-# sensor.terrace_anker_solix_ertrag_gesamt (Lebenszeit-Zähler).
+# Energy counters for the Energy Dashboard (Riemann integral over power).
+# Only needed for the battery - solar yield comes natively from
+# sensor.terrace_anker_solix_ertrag_gesamt (lifetime counter).
 # =====================================================================
 - platform: integration
   name: solarbank_01_charge_energy
@@ -20,9 +20,9 @@
   unit_time: h
 
 # =====================================================================
-# Statistik-Sensoren: gleitendes 24-h-Mittel der Wandoberflächen-Feuchte.
-# Grundlage für mold_risk (Schimmel braucht dauerhaft >= 80 %,
-# kurze Spitzen z. B. nach dem Duschen sollen nicht alarmieren).
+# Statistics sensors: rolling 24h average of wall-surface humidity.
+# Basis for mold_risk (mold requires sustained >= 80%,
+# short peaks, e.g. after showering, should not trigger alerts).
 # =====================================================================
 - platform: statistics
   name: "living_room_wall_surface_humidity_24h"

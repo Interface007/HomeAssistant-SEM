@@ -1,24 +1,24 @@
 """
-Sichtpruefung und geometrische Plausibilitaetspruefung der Board-Definition.
+Visual inspection and geometric plausibility check of the board definition.
 
-    python tools/pcb/preview.py [ausgabe.svg]
+    python tools/pcb/preview.py [output.svg]
 
-Prueft: Bauteile ausserhalb der Platine, ueberlappende Bauteilbereiche,
-Pads zu nah an Befestigungsloechern, Pad-Abstand zwischen verschiedenen Netzen.
-Erzeugt danach eine SVG-Ansicht von oben.
+Checks: components outside board, overlapping component areas,
+pads too close to mounting holes, pad clearance between different nets.
+Then generates a top-view SVG.
 """
 import sys
 
 import board as B
 
-SCALE = 8.0        # px pro mm
+SCALE = 8.0        # px per mm
 MARGIN = 30.0      # px
 
 _cache = None
 
 
 def _routes():
-    """Routing-Ergebnis, einmal berechnet."""
+    """Routing result, computed once."""
     global _cache
     if _cache is None:
         import router
@@ -39,20 +39,20 @@ def check():
         for idx, p in enumerate(comp["pads"]):
             r = p["copper"] / 2
             if not (r < p["x"] < B.BOARD_W - r and r < p["y"] < B.BOARD_H - r):
-                problems.append(f"{ref}.{idx} liegt ausserhalb der Platine "
+                problems.append(f"{ref}.{idx} is outside the board "
                                 f"({p['x']:.2f}, {p['y']:.2f})")
         ko = comp.get("keepout")
         if ko and not (ko[0] >= 0 and ko[1] >= 0
                        and ko[0] + ko[2] <= B.BOARD_W
                        and ko[1] + ko[3] <= B.BOARD_H):
-            problems.append(f"{ref} Bauteilbereich ragt ueber den Rand")
+            problems.append(f"{ref} component area extends beyond board edge")
 
     refs = sorted(B.COMPONENTS)
     for i, a in enumerate(refs):
         for b in refs[i + 1:]:
             ka, kb = B.COMPONENTS[a].get("keepout"), B.COMPONENTS[b].get("keepout")
             if ka and kb and _rects_overlap(ka, kb):
-                problems.append(f"{a} und {b} ueberlappen sich mechanisch")
+                problems.append(f"{a} and {b} overlap mechanically")
 
     wr = B.MOUNT_WASHER_D / 2
     for hx, hy in B.mount_holes():
@@ -60,15 +60,15 @@ def check():
         for ref, comp in B.COMPONENTS.items():
             ko = comp.get("keepout")
             if ko and _rects_overlap(ko, washer):
-                problems.append(f"{ref} steht im Schraubenkopf-Bereich des "
-                                f"M3-Lochs bei ({hx:.1f}, {hy:.1f})")
+                problems.append(f"{ref} is in the screw-head area of "
+                                f"M3 hole at ({hx:.1f}, {hy:.1f})")
 
     for hx, hy in B.mount_holes():
         for ref, idx, p, _ in B.all_pads():
             d = ((p["x"] - hx) ** 2 + (p["y"] - hy) ** 2) ** 0.5
             need = B.MOUNT_HOLE_D / 2 + p["copper"] / 2 + 1.0
             if d < need:
-                problems.append(f"{ref}.{idx} zu nah an M3-Loch "
+                problems.append(f"{ref}.{idx} too close to M3 hole "
                                 f"({d:.2f} < {need:.2f} mm)")
 
     pads = list(B.all_pads())
@@ -79,7 +79,7 @@ def check():
             d = ((pa["x"] - pb["x"]) ** 2 + (pa["y"] - pb["y"]) ** 2) ** 0.5
             gap = d - pa["copper"] / 2 - pb["copper"] / 2
             if gap < B.MIN_CLEARANCE:
-                problems.append(f"{ra}.{ia} / {rb}.{ib} Kupferabstand "
+                problems.append(f"{ra}.{ia} / {rb}.{ib} copper clearance "
                                 f"{gap:.3f} mm < {B.MIN_CLEARANCE}")
     return problems
 
@@ -118,7 +118,7 @@ def svg():
                  f'stroke-width="{width * SCALE:.1f}" stroke-linecap="round" '
                  f'stroke-linejoin="round"/>')
 
-    # Nicht geroutete Verbindungen bleiben als rote Luftlinie sichtbar.
+    # Unrouted connections remain visible as red air-wires.
     nets = B.netlist()
     for net, pins in failed:
         _, _, ax, ay = nets[net][0]
@@ -157,11 +157,11 @@ if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "board-preview.svg"
     problems = check()
     if problems:
-        print(f"{len(problems)} Problem(e):")
+        print(f"{len(problems)} problem(s):")
         for p in problems:
             print("  -", p)
     else:
-        print("Geometriepruefung ohne Befund.")
+        print("Geometry check passed without findings.")
     with open(out, "w", encoding="utf-8") as f:
         f.write(svg())
-    print("geschrieben:", out)
+    print("written:", out)

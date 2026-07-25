@@ -1,14 +1,14 @@
 # =====================================================================
-# Wasserverbrauch-Historie für ePaper-Display
+# Water consumption history for ePaper display
 # 
-# Diese Automation sammelt täglich die Verbrauchsdaten (letzte 14 Tage)
-# und speichert sie als CSV-String für das RenderDiagram-Feature.
+# This automation collects daily consumption data (last 14 days)
+# and stores it as a CSV string for the RenderDiagram feature.
 # 
-# Ablauf:
-# 1. Jeden Tag um 23:55 Uhr wird utility_meter.water_daily ausgelesen
-# 2. Der Wert wird der bestehenden Liste hinzugefügt (in input_text.water_meter_history)
-# 3. Alte Werte (älter als 14 Tage) werden entfernt
-# 4. Das Ergebnis wird als `;`-separierte Werte gespeichert
+# Flow:
+# 1. Every day at 23:55, utility_meter.water_daily is read
+# 2. The value is appended to the existing list (in input_text.water_meter_history)
+# 3. Old values (older than 14 days) are removed
+# 4. The result is stored as `;`-separated values
 # =====================================================================
 
 - id: water_meter_daily_update
@@ -16,10 +16,10 @@
   description: "Speichert täglich den Wasserverbrauch für die 14-Tage-Anzeige"
   mode: single
   triggers:
-    # Täglich um 23:55 Uhr aktualisieren (nach letztem Verbrauch des Tages)
+    # Update daily at 23:55 (after the last consumption event of the day)
     - trigger: time
       at: "23:55:00"
-    # Beim Neustart des Systems
+    # On system startup
     - trigger: homeassistant
       event: start
   actions:
@@ -42,10 +42,10 @@
             {{- current_history -}}
           {%- endif -%}
 
-# Alternative: Diese Automation kann auch stündlich einen Schnappschuss machen
-# um Intra-Day-Trends zu zeigen (optional, später aktivierbar)
+# Alternative: this automation can also take an hourly snapshot
+# to show intraday trends (optional, can be enabled later)
 # - id: water_meter_hourly_snapshot
-#   alias: "Wasserzähler: Stündlicher Snapshot"
+#   alias: "Water meter: Hourly snapshot"
 #   triggers:
 #     - trigger: time_pattern
 #       minutes: "0"

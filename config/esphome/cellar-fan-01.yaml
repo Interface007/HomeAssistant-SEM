@@ -1,0 +1,509 @@
+###########################################################
+#  Kellerbelüftung 01 - taupunktgesteuerter Lüfter
+#
+#  Hardware:
+#    ESP32-S3-Zero (Waveshare, ESP32-S3FH4R2, 4 MB Flash)
+#    Arctic P12 PRO PST CO   (4-Pin-PWM-Lüfter, 12 V)
+#    12 V / 2 A Steckernetzteil  -> nur Lüfter
+#    USB-C-Netzteil              -> nur ESP32 (später Step-Down 12 V -> 5 V)
+#    DS18B20 wasserdicht         -> Kellerwand
+#    R1 = 4,7 kΩ  Pull-up  GPIO6 -> 3V3  (1-Wire)
+#    R2 = 10  kΩ  Pull-up  GPIO4 -> 3V3  (Tacho, Open Collector)
+#
+#  Logik (läuft komplett auf dem ESP, HA liefert nur Messwerte):
+#    Lüften, wenn ALLE Bedingungen erfüllt sind
+#      1. Taupunkt innen - Taupunkt außen > Schwelle  (mit Hysterese)
+#      2. Taupunkt außen < Wandtemperatur - Reserve   (Sommerkondensation)
+#      3. Außentemperatur > Frostschutz-Grenze
+#      4. Kellertemperatur > Minimum (Keller nicht auskühlen)
+#      5. alle Eingangswerte gültig und nicht älter als 15 min
+#    Fällt HA oder WLAN aus, werden die HA-Werte "stale" -> Lüfter aus.
+###########################################################
+
+substitutions:
+  name: "cellar-fan-01"
+  friendly_name: "Kellerlüftung 01"
+  static_ip: 192.168.2.48          # !! freie IP im Netz prüfen
+
+  # --- Quell-Entities aus Home Assistant (Innen = Keller = storage_room) ---
+  src_outdoor_temp: sensor.outdoor_temperature
+  src_outdoor_hum: sensor.outdoor_humidity
+  src_indoor_temp: sensor.storage_room_temperature
+  src_indoor_hum: sensor.storage_room_humidity
+
+  # --- Pins ESP32-S3-Zero (GPIO0/GPIO3 = Strapping, GPIO19/20 = USB, GPIO21 = RGB-LED) ---
+  pin_fan_pwm: GPIO2
+  pin_fan_tacho: GPIO4
+  pin_onewire: GPIO6
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.9.0
+  name_add_mac_suffix: false
+  includes:
+    - ./includes/climate.h
+  on_boot:
+    # Nach Reboot immer aus - erst nach dem ersten Regel-Durchlauf anlaufen.
+    priority: -100
+    then:
+      - fan.turn_off: cellar_fan
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+# Kein USB-Serial-Chip auf dem S3-Zero -> Log läuft über USB-Serial-JTAG.
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+web_server: !include ./includes/web.yaml
+
+globals:
+  # millis() des letzten Updates eines HA-Sensors -> Stale-Erkennung
+  - id: last_ha_update
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: vent_recommended
+    type: bool
+    restore_value: false
+    initial_value: "false"
+  - id: target_speed
+    type: int
+    restore_value: false
+    initial_value: "0"
+  - id: status_text
+    type: std::string
+    restore_value: false
+    initial_value: '"Start"'
+
+###########################################################
+#  Einstellbare Schwellwerte (in HA änderbar, überleben Reboot)
+###########################################################
+number:
+  - platform: template
+    id: dp_diff_on
+    name: "Taupunktdifferenz Einschalten"
+    unit_of_measurement: "K"
+    icon: mdi:water-thermometer
+    entity_category: config
+    mode: box
+    min_value: 0.5
+    max_value: 10.0
+    step: 0.5
+    initial_value: 2.0
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: dp_diff_off
+    name: "Taupunktdifferenz Ausschalten"
+    unit_of_measurement: "K"
+    icon: mdi:water-thermometer-outline
+    entity_category: config
+    mode: box
+    min_value: 0.0
+    max_value: 9.5
+    step: 0.5
+    initial_value: 1.0
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: wall_margin
+    name: "Reserve zur Wandtemperatur"
+    unit_of_measurement: "K"
+    icon: mdi:wall
+    entity_category: config
+    mode: box
+    min_value: 0.0
+    max_value: 6.0
+    step: 0.5
+    initial_value: 2.0
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: outdoor_temp_min
+    name: "Frostschutz Außentemperatur"
+    unit_of_measurement: "°C"
+    icon: mdi:snowflake-alert
+    entity_category: config
+    mode: box
+    min_value: -10.0
+    max_value: 15.0
+    step: 0.5
+    initial_value: 1.0
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: indoor_temp_min
+    name: "Minimale Kellertemperatur"
+    unit_of_measurement: "°C"
+    icon: mdi:home-thermometer-outline
+    entity_category: config
+    mode: box
+    min_value: 0.0
+    max_value: 18.0
+    step: 0.5
+    initial_value: 8.0
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: fan_speed_min
+    name: "Minimale Lüfterleistung"
+    unit_of_measurement: "%"
+    icon: mdi:fan-speed-1
+    entity_category: config
+    mode: box
+    min_value: 10
+    max_value: 100
+    step: 5
+    initial_value: 30
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: dp_diff_full
+    name: "Taupunktdifferenz Volllast"
+    unit_of_measurement: "K"
+    icon: mdi:fan-speed-3
+    entity_category: config
+    mode: box
+    min_value: 1.0
+    max_value: 15.0
+    step: 0.5
+    initial_value: 6.0
+    optimistic: true
+    restore_value: true
+
+switch:
+  - platform: template
+    id: auto_mode
+    name: "Automatik"
+    icon: mdi:fan-auto
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_off_action:
+      - lambda: 'id(status_text) = "Manuell";'
+
+  - platform: restart
+    name: "Neustart"
+    entity_category: diagnostic
+
+###########################################################
+#  Lüfter: 25 kHz PWM (Intel 4-Wire-Spezifikation)
+###########################################################
+output:
+  - platform: ledc
+    id: fan_pwm
+    pin: ${pin_fan_pwm}
+    frequency: 25000Hz
+    # Untergrenze bleibt bei 0 %, der Anlaufwert wird über
+    # fan_speed_min geregelt -> in HA einstellbar statt fest kompiliert.
+    zero_means_zero: true
+
+fan:
+  - platform: speed
+    id: cellar_fan
+    output: fan_pwm
+    name: "Lüfter"
+    icon: mdi:fan
+    speed_count: 100
+    restore_mode: ALWAYS_OFF
+
+one_wire:
+  - platform: gpio
+    pin: ${pin_onewire}
+
+###########################################################
+#  Sensoren
+###########################################################
+sensor:
+  # --------------- lokal gemessen ---------------
+  - platform: dallas_temp
+    id: t_wall
+    name: "Kellerwand Temperatur"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 60s
+    filters:
+      - filter_out: nan
+      - median:
+          window_size: 3
+          send_every: 1
+
+  - platform: pulse_meter
+    id: fan_rpm
+    name: "Lüfter Drehzahl"
+    pin:
+      number: ${pin_fan_tacho}
+      mode:
+        input: true
+        pullup: false          # externer 10-kΩ-Pull-up auf 3V3
+    unit_of_measurement: "rpm"
+    icon: mdi:speedometer
+    accuracy_decimals: 0
+    state_class: measurement
+    internal_filter: 100us
+    timeout: 3s
+    filters:
+      - multiply: 0.5          # 2 Impulse pro Umdrehung
+      - throttle_average: 60s
+
+  # --------------- Messwerte aus Home Assistant ---------------
+  - platform: homeassistant
+    id: t_out
+    entity_id: ${src_outdoor_temp}
+    internal: true
+    on_value:
+      - lambda: "id(last_ha_update) = millis();"
+
+  - platform: homeassistant
+    id: rh_out
+    entity_id: ${src_outdoor_hum}
+    internal: true
+    on_value:
+      - lambda: "id(last_ha_update) = millis();"
+
+  - platform: homeassistant
+    id: t_in
+    entity_id: ${src_indoor_temp}
+    internal: true
+    on_value:
+      - lambda: "id(last_ha_update) = millis();"
+
+  - platform: homeassistant
+    id: rh_in
+    entity_id: ${src_indoor_hum}
+    internal: true
+    on_value:
+      - lambda: "id(last_ha_update) = millis();"
+
+  # --------------- berechnet ---------------
+  - platform: template
+    id: dp_out
+    name: "Taupunkt Außen"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 30s
+    lambda: |-
+      return sem_climate::dew_point(id(t_out).state, id(rh_out).state);
+
+  - platform: template
+    id: dp_in
+    name: "Taupunkt Keller"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 30s
+    lambda: |-
+      return sem_climate::dew_point(id(t_in).state, id(rh_in).state);
+
+  - platform: template
+    id: dp_diff
+    name: "Taupunktdifferenz"
+    unit_of_measurement: "K"
+    icon: mdi:delta
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 30s
+    lambda: |-
+      return sem_climate::dew_point(id(t_in).state, id(rh_in).state) -
+             sem_climate::dew_point(id(t_out).state, id(rh_out).state);
+
+  - platform: template
+    id: ah_out
+    name: "Absolute Feuchte Außen"
+    unit_of_measurement: "g/m³"
+    icon: mdi:water-outline
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      return sem_climate::abs_humidity(id(t_out).state, id(rh_out).state);
+
+  - platform: template
+    id: ah_in
+    name: "Absolute Feuchte Keller"
+    unit_of_measurement: "g/m³"
+    icon: mdi:water-outline
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      return sem_climate::abs_humidity(id(t_in).state, id(rh_in).state);
+
+  - platform: template
+    id: wall_rh
+    name: "Kellerwand Oberflächenfeuchte"
+    unit_of_measurement: "%"
+    icon: mdi:water-percent-alert
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: |-
+      return sem_climate::wall_surface_rh(id(t_in).state, id(rh_in).state,
+                                         id(t_wall).state);
+
+  - platform: template
+    id: speed_setpoint
+    name: "Soll-Leistung"
+    unit_of_measurement: "%"
+    icon: mdi:fan-chevron-up
+    accuracy_decimals: 0
+    update_interval: 30s
+    lambda: |-
+      return (float) id(target_speed);
+
+  - platform: wifi_signal
+    name: "WiFi"
+    entity_category: diagnostic
+    update_interval: 60s
+
+  - platform: uptime
+    name: "Uptime"
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+
+  - platform: template
+    id: vent_ok
+    name: "Lüften empfohlen"
+    icon: mdi:fan
+    lambda: |-
+      return id(vent_recommended);
+
+  - platform: template
+    id: condensation_risk
+    name: "Kondensationsgefahr Wand"
+    device_class: moisture
+    lambda: |-
+      const float w = id(t_wall).state;
+      const float d = sem_climate::dew_point(id(t_in).state, id(rh_in).state);
+      if (std::isnan(w) || std::isnan(d))
+        return {};
+      return w <= d;
+
+  - platform: template
+    id: data_stale
+    name: "Messwerte veraltet"
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      return (millis() - id(last_ha_update)) > 900000UL;
+
+text_sensor:
+  - platform: template
+    id: status_reason
+    name: "Regelzustand"
+    icon: mdi:information-outline
+    update_interval: 30s
+    lambda: |-
+      return id(status_text);
+
+###########################################################
+#  Regelung
+###########################################################
+script:
+  - id: control_ventilation
+    mode: single
+    then:
+      - lambda: |-
+          const bool stale = (millis() - id(last_ha_update)) > 900000UL;
+          const float t_o = id(t_out).state;
+          const float rh_o = id(rh_out).state;
+          const float t_i = id(t_in).state;
+          const float rh_i = id(rh_in).state;
+          const float t_w = id(t_wall).state;
+
+          if (stale || std::isnan(t_o) || std::isnan(rh_o) ||
+              std::isnan(t_i) || std::isnan(rh_i) || std::isnan(t_w)) {
+            id(vent_recommended) = false;
+            id(target_speed) = 0;
+            id(status_text) = stale ? "Keine aktuellen Messwerte"
+                                    : "Sensorwert fehlt";
+            if (id(auto_mode).state) {
+              auto call = id(cellar_fan).turn_off();
+              call.perform();
+            }
+            return;
+          }
+
+          const float dpo = sem_climate::dew_point(t_o, rh_o);
+          const float dpi = sem_climate::dew_point(t_i, rh_i);
+          const float diff = dpi - dpo;
+
+          // Hysterese: läuft der Lüfter, gilt die kleinere Ausschaltschwelle.
+          const bool running = id(cellar_fan).state;
+          const float thr_on = id(dp_diff_on).state;
+          const float thr = running ? id(dp_diff_off).state : thr_on;
+
+          bool want = diff > thr;
+          std::string reason = want ? "Lüften" : "Außenluft nicht trockener";
+
+          // Außenluft darf an der kalten Kellerwand nicht kondensieren.
+          if (want && dpo >= t_w - id(wall_margin).state) {
+            want = false;
+            reason = "Kondensationsgefahr Wand";
+          }
+          if (want && t_o < id(outdoor_temp_min).state) {
+            want = false;
+            reason = "Frostschutz";
+          }
+          if (want && t_i < id(indoor_temp_min).state) {
+            want = false;
+            reason = "Keller zu kalt";
+          }
+
+          int speed = 0;
+          if (want) {
+            const float span = std::max(0.5f, id(dp_diff_full).state - thr_on);
+            const float f = std::min(1.0f, std::max(0.0f, (diff - thr_on) / span));
+            const float smin = id(fan_speed_min).state;
+            speed = (int) lroundf(smin + (100.0f - smin) * f);
+          }
+
+          id(vent_recommended) = want;
+          id(target_speed) = speed;
+
+          if (!id(auto_mode).state) {
+            id(status_text) = "Manuell";
+            return;
+          }
+          id(status_text) = reason;
+
+          ESP_LOGD("cellar", "Td innen %.1f / außen %.1f / diff %.1f K / Wand %.1f -> %s %d%%",
+                   dpi, dpo, diff, t_w, want ? "EIN" : "AUS", speed);
+
+          if (want) {
+            auto call = id(cellar_fan).turn_on();
+            call.set_speed(speed);
+            call.perform();
+          } else {
+            auto call = id(cellar_fan).turn_off();
+            call.perform();
+          }
+
+interval:
+  - interval: 30s
+    then:
+      - script.execute: control_ventilation

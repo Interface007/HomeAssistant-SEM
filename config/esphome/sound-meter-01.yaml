@@ -3,18 +3,11 @@ substitutions:
   friendly_name: "Sound Meter 01"
   static_ip: 192.168.2.232
 
-logger: !include ./includes/logger.yaml
-api: !include ./includes/api.yaml
-ota: !include ./includes/ota.yaml
-wifi: !include ./includes/wifi_common.yaml
-captive_portal:
-web_server: !include ./includes/web.yaml
-
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   min_version: 2024.7.0
-  name_add_mac_suffix: true
+  name_add_mac_suffix: false
   platformio_options:
     board_build.flash_mode: dio
     board_build.mcu: esp32c3
@@ -24,7 +17,14 @@ esp32:
   variant: esp32c3
   framework:
     type: arduino
-      
+
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+web_server: !include ./includes/web.yaml
+
 external_components:
   - source: github://stas-sl/esphome-sound-level-meter
 

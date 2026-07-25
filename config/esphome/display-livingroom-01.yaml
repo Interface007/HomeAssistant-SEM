@@ -703,12 +703,10 @@ text_sensor:
     id: bathroom_temperature
     entity_id: sensor.epaper_temperature_bathroom
     internal: true
-  # Quelle: Raumklima sonoff_th_06 (via epaper-Feeder)
   - platform: homeassistant
     id: lea_room_temperature
     entity_id: sensor.epaper_temperature_lea
     internal: true
-  # TODO: sensor_history-Komponente + watermeter noch nicht installiert
   - platform: homeassistant
     id: water_meter_history
     entity_id: sensor.epaper_watermeter_history

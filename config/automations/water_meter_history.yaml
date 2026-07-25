@@ -1,0 +1,58 @@
+# =====================================================================
+# Wasserverbrauch-Historie für ePaper-Display
+# 
+# Diese Automation sammelt täglich die Verbrauchsdaten (letzte 14 Tage)
+# und speichert sie als CSV-String für das RenderDiagram-Feature.
+# 
+# Ablauf:
+# 1. Jeden Tag um 23:55 Uhr wird utility_meter.water_daily ausgelesen
+# 2. Der Wert wird der bestehenden Liste hinzugefügt (in input_text.water_meter_history)
+# 3. Alte Werte (älter als 14 Tage) werden entfernt
+# 4. Das Ergebnis wird als `;`-separierte Werte gespeichert
+# =====================================================================
+
+- id: water_meter_daily_update
+  alias: "Wasserzähler: Tägliche Historie aktualisieren"
+  description: "Speichert täglich den Wasserverbrauch für die 14-Tage-Anzeige"
+  mode: single
+  triggers:
+    # Täglich um 23:55 Uhr aktualisieren (nach letztem Verbrauch des Tages)
+    - trigger: time
+      at: "23:55:00"
+    # Beim Neustart des Systems
+    - trigger: homeassistant
+      event: start
+  actions:
+    - action: input_text.set_value
+      entity_id: input_text.water_meter_history
+      data:
+        value: >
+          {%- set current_history = states('input_text.water_meter_history') | default('', true) -%}
+          {%- set daily_usage = states('sensor.water_daily') | default('0', true) | float(0) -%}
+          {%- if daily_usage > 0 -%}
+            {%- set parts = current_history.split(';') | list -%}
+            {%- if parts | count > 0 and parts[0] != '' -%}
+              {%- set updated = (parts[:13] | list) -%}
+              {%- set updated_str = ([daily_usage | int] + updated) | join(';') -%}
+              {{- updated_str -}}
+            {%- else -%}
+              {{- daily_usage | int -}}
+            {%- endif -%}
+          {%- else -%}
+            {{- current_history -}}
+          {%- endif -%}
+
+# Alternative: Diese Automation kann auch stündlich einen Schnappschuss machen
+# um Intra-Day-Trends zu zeigen (optional, später aktivierbar)
+# - id: water_meter_hourly_snapshot
+#   alias: "Wasserzähler: Stündlicher Snapshot"
+#   triggers:
+#     - trigger: time_pattern
+#       minutes: "0"
+#   actions:
+#     - action: input_text.set_value
+#       entity_id: input_text.water_meter_hourly
+#       data:
+#         value: >
+#           {%- set current_value = states('sensor.watermeter_value') | float(0) -%}
+#           {{- current_value -}}

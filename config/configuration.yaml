@@ -39,6 +39,13 @@ input_boolean:
     name: Trigger Forecast Update
     icon: mdi:update
 
+input_text:
+  water_meter_history:
+    name: "Water Meter History (14 Days)"
+    icon: mdi:water-percent
+    max: 255
+    unit_of_measurement: "m³"
+
 # Verbrauchszähler (Quelle: AI-on-the-Edge watermeter, Shelly 3EM)
 utility_meter:
   water_daily:

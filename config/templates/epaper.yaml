@@ -172,3 +172,16 @@
           {% endif %}
         {% endfor %}
         {{ ns.hits | join(',') if ns.hits | count > 0 else 'OK' }}
+
+    # Wasserzähler-Historie: letzte 14 Tage als CSV für ePaper-Balkendiagramm
+    # Quelle: input_text.water_meter_history (täglich aktualisiert durch Automation)
+    # Format: Semikolon-separierte Werte (oldest;...;newest)
+    - name: "ePaper Water Meter History"
+      unique_id: epaper_watermeter_history
+      default_entity_id: sensor.epaper_watermeter_history
+      unit_of_measurement: "m³"
+      icon: mdi:water-percent
+      availability: "{{ has_value('input_text.water_meter_history') }}"
+      state: >
+        {% set history = states('input_text.water_meter_history') | default('', true) %}
+        {{ history if history != '' else 'unavailable' }}

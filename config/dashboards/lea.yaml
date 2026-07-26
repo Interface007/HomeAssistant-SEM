@@ -1,0 +1,31 @@
+views:
+  - title: Lea
+    path: lea
+    icon: mdi:flower
+    cards:
+      - type: button
+        name: Türöffner
+        icon: mdi:door-open
+        entity: switch.front_door_opener
+        tap_action:
+          action: call-service
+          service: switch.turn_on
+          target:
+            entity_id: switch.front_door_opener
+        hold_action:
+          action: more-info
+
+      - type: thermostat
+        entity: climate.lea_room_tadotrv03
+        name: Heizung Lea
+
+      - type: entities
+        title: Klima Lea
+        show_header_toggle: false
+        entities:
+          - entity: sensor.lea_room_temperature
+            name: Temperatur
+          - entity: sensor.lea_room_humidity
+            name: Luftfeuchte
+          - entity: binary_sensor.lea_room_ventilation_recommended
+            name: Lüften?

@@ -33,6 +33,18 @@ lovelace:
       icon: mdi:home-analytics
       show_in_sidebar: true
       filename: dashboards/matzen.yaml
+    claudia-home:
+      mode: yaml
+      title: Claudia
+      icon: mdi:account
+      show_in_sidebar: true
+      filename: dashboards/claudia.yaml
+    lea-home:
+      mode: yaml
+      title: Lea
+      icon: mdi:flower
+      show_in_sidebar: true
+      filename: dashboards/lea.yaml
 
 input_boolean:
   trigger_forecast_update:

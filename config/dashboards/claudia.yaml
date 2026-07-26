@@ -1,0 +1,42 @@
+views:
+  - title: Claudia
+    path: home
+    icon: mdi:account
+    cards:
+      - type: button
+        name: Türöffner
+        icon: mdi:door-open
+        entity: switch.front_door_opener
+        tap_action:
+          action: call-service
+          service: switch.turn_on
+          target:
+            entity_id: switch.front_door_opener
+        hold_action:
+          action: more-info
+
+      - type: entities
+        title: Offene Fenster
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.bedroom_window_open
+            name: Schlafzimmer
+          - entity: binary_sensor.bathroom_window_open
+            name: Bad
+          - entity: binary_sensor.toilet_window_open
+            name: Toilette
+          - entity: binary_sensor.lea_room_window_open
+            name: Lea
+          - entity: binary_sensor.anna_room_window_open
+            name: Anna
+          - entity: binary_sensor.living_room_window_open
+            name: Wohnzimmer
+
+      - type: entities
+        title: Temperaturen
+        show_header_toggle: false
+        entities:
+          - entity: sensor.outdoor_temperature
+            name: Außen
+          - entity: sensor.living_room_temperature
+            name: Wohnzimmer

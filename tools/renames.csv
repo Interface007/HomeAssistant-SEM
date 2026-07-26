@@ -178,10 +178,18 @@ sensor.anker_solixe2700pro_01_solar_pv2;sensor.anker_solarbank_01_solar_pv2
 sensor.anker_solixe2700pro_01_solar_pv3;sensor.anker_solarbank_01_solar_pv3
 sensor.anker_solixe2700pro_01_solar_pv4;sensor.anker_solarbank_01_solar_pv4
 button.anker_solixe2700pro_01_details_aktualisieren;button.anker_solarbank_01_refresh_details
+
+# --- FYTA moisture status (position labels -> naming convention) -------
+# Keep area context and map German suffix to English.
+sensor.lea_room_fyta_g1_01_feuchtigkeitsstatus;sensor.lea_room_sulu_moisture_status
+sensor.lea_room_fyta_g1_03_feuchtigkeitsstatus;sensor.lea_room_ariana_moisture_status
+sensor.living_room_fyta_g1_02_feuchtigkeitsstatus;sensor.living_room_quentin_moisture_status
+
 # Price/AI/CO2 entities (anker_solix system device) intentionally not renamed.
 #
 # Intentionally NOT renamed: diagnostic entities (Synology, Shelly _neu_starten/
-# _uberhitzung, ESPHome Wi-Fi/IP, Fyta plant sensors, tado X _identifizieren/
+# _uberhitzung, ESPHome Wi-Fi/IP, FYTA diagnostics except moisture status,
+# tado X _identifizieren/
 # _anzahl_neustarts/_betriebszeit) - not used in any logic; renaming would be
 # effort without benefit. The tado X _anzahl_neustarts/_betriebszeit entities
 # are disabled anyway (state "not_loaded" in the export).

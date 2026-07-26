@@ -564,3 +564,95 @@
                  - states('sensor.outdoor_absolute_humidity') | float %}
         {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
 
+# --------------------------- LAUNDRY ROOM ------------------------------
+# Source: sonoff_th_09 -> laundry_room_*.
+# TODO: if the laundry room turns out to be below-grade/basement (like
+# storage_room), switch Ventilation Recommended to the storage_room-style
+# logic with the outdoor-dew-point safety check to avoid summer condensation.
+- sensor:
+    - name: "Laundry Room Absolute Humidity"
+      unique_id: laundry_room_absolute_humidity
+      default_entity_id: sensor.laundry_room_absolute_humidity
+      unit_of_measurement: "g/m³"
+      state_class: measurement
+      icon: mdi:water-outline
+      availability: >
+        {{ has_value('sensor.laundry_room_temperature') and has_value('sensor.laundry_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import abs_humidity %}
+        {{ abs_humidity(states('sensor.laundry_room_temperature') | float,
+                        states('sensor.laundry_room_humidity') | float) | float | round(2) }}
+
+    - name: "Laundry Room Dew Point"
+      unique_id: laundry_room_dew_point
+      default_entity_id: sensor.laundry_room_dew_point
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.laundry_room_temperature') and has_value('sensor.laundry_room_humidity') }}
+      state: >
+        {% from 'climate.jinja' import dew_point %}
+        {{ dew_point(states('sensor.laundry_room_temperature') | float,
+                     states('sensor.laundry_room_humidity') | float) | float | round(1) }}
+
+    # Estimated wall temperature via f_Rsi (calibration see climate.jinja)
+    - name: "Laundry Room Wall Temperature"
+      unique_id: laundry_room_wall_temperature
+      default_entity_id: sensor.laundry_room_wall_temperature
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      availability: >
+        {{ has_value('sensor.laundry_room_temperature') and has_value('sensor.outdoor_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
+        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
+                              states('sensor.laundry_room_temperature') | float,
+                              f_rsi('laundry_room') | float) | float | round(1) }}
+
+    - name: "Laundry Room Wall Surface Humidity"
+      unique_id: laundry_room_wall_surface_humidity
+      default_entity_id: sensor.laundry_room_wall_surface_humidity
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:water-percent-alert
+      availability: >
+        {{ has_value('sensor.laundry_room_temperature')
+           and has_value('sensor.laundry_room_humidity')
+           and has_value('sensor.laundry_room_wall_temperature') }}
+      state: >
+        {% from 'climate.jinja' import wall_surface_rh %}
+        {{ wall_surface_rh(states('sensor.laundry_room_temperature') | float,
+                           states('sensor.laundry_room_humidity') | float,
+                           states('sensor.laundry_room_wall_temperature') | float) | float | round(1) }}
+
+- binary_sensor:
+    - name: "Laundry Room Condensation Risk"
+      unique_id: laundry_room_condensation_risk
+      default_entity_id: binary_sensor.laundry_room_condensation_risk
+      device_class: moisture
+      availability: >
+        {{ has_value('sensor.laundry_room_wall_temperature') and has_value('sensor.laundry_room_dew_point') }}
+      state: >
+        {{ states('sensor.laundry_room_wall_temperature') | float
+           <= states('sensor.laundry_room_dew_point') | float }}
+
+    - name: "Laundry Room Mold Risk"
+      unique_id: laundry_room_mold_risk
+      default_entity_id: binary_sensor.laundry_room_mold_risk
+      device_class: problem
+      availability: "{{ has_value('sensor.laundry_room_wall_surface_humidity_24h') }}"
+      state: "{{ states('sensor.laundry_room_wall_surface_humidity_24h') | float >= 80 }}"
+
+    - name: "Laundry Room Ventilation Recommended"
+      unique_id: laundry_room_ventilation_recommended
+      default_entity_id: binary_sensor.laundry_room_ventilation_recommended
+      icon: mdi:window-open-variant
+      availability: >
+        {{ has_value('sensor.laundry_room_absolute_humidity') and has_value('sensor.outdoor_absolute_humidity') }}
+      state: >
+        {% set d = states('sensor.laundry_room_absolute_humidity') | float
+                 - states('sensor.outdoor_absolute_humidity') | float %}
+        {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
+

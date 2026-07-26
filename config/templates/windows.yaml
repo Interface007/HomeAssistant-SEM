@@ -1,0 +1,87 @@
+# =====================================================================
+# Aggregated window state per room.
+#
+# Each sensor is "on" as soon as ANY window contact in that area is open,
+# and only "off" once every window in the room is closed again. This is
+# what the TRV automations (automations/heating.yaml) trigger on, so rooms
+# with several windows (e.g. anna_room) are handled correctly without any
+# extra logic there.
+#
+# The member list is resolved dynamically from the area registry:
+# every binary_sensor in the area matching <area>_window_<orient>_contact
+# is included. Adding a new window sensor therefore only requires
+# assigning it to the right area - no change in this file.
+#
+# Adding a NEW ROOM: copy one block, replace the room name in name/
+# unique_id/default_entity_id and in area_entities().
+# Note: a room whose area currently has no window contact stays "off" and
+# only starts tracking after a template reload (nothing to listen to yet).
+# =====================================================================
+- binary_sensor:
+    - name: "Bedroom Window Open"
+      unique_id: bedroom_window_open
+      default_entity_id: binary_sensor.bedroom_window_open
+      device_class: window
+      state: >
+        {{ expand(
+             area_entities('bedroom')
+             | select('match', 'binary_sensor\.')
+             | select('search', '_window_.*_contact$')
+           ) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+
+    - name: "Bathroom Window Open"
+      unique_id: bathroom_window_open
+      default_entity_id: binary_sensor.bathroom_window_open
+      device_class: window
+      state: >
+        {{ expand(
+             area_entities('bathroom')
+             | select('match', 'binary_sensor\.')
+             | select('search', '_window_.*_contact$')
+           ) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+
+    - name: "Toilet Window Open"
+      unique_id: toilet_window_open
+      default_entity_id: binary_sensor.toilet_window_open
+      device_class: window
+      state: >
+        {{ expand(
+             area_entities('toilet')
+             | select('match', 'binary_sensor\.')
+             | select('search', '_window_.*_contact$')
+           ) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+
+    - name: "Lea Room Window Open"
+      unique_id: lea_room_window_open
+      default_entity_id: binary_sensor.lea_room_window_open
+      device_class: window
+      state: >
+        {{ expand(
+             area_entities('lea_room')
+             | select('match', 'binary_sensor\.')
+             | select('search', '_window_.*_contact$')
+           ) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+
+    - name: "Anna Room Window Open"
+      unique_id: anna_room_window_open
+      default_entity_id: binary_sensor.anna_room_window_open
+      device_class: window
+      state: >
+        {{ expand(
+             area_entities('anna_room')
+             | select('match', 'binary_sensor\.')
+             | select('search', '_window_.*_contact$')
+           ) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+
+    # No window contact installed yet - stays "off" until one is added to
+    # the living_room area (then reload templates once).
+    - name: "Living Room Window Open"
+      unique_id: living_room_window_open
+      default_entity_id: binary_sensor.living_room_window_open
+      device_class: window
+      state: >
+        {{ expand(
+             area_entities('living_room')
+             | select('match', 'binary_sensor\.')
+             | select('search', '_window_.*_contact$')
+           ) | selectattr('state', 'eq', 'on') | list | count > 0 }}

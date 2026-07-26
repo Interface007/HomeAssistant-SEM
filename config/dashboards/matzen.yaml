@@ -85,6 +85,12 @@ views:
           - type: tile
             entity: sensor.anna_room_humidity
             name: Anna rF
+          - type: tile
+            entity: sensor.laundry_room_temperature
+            name: Waschraum
+          - type: tile
+            entity: sensor.laundry_room_humidity
+            name: Waschraum rF
 
       - type: grid
         cards:
@@ -110,6 +116,9 @@ views:
             entity: binary_sensor.anna_room_mold_risk
             name: Anna Schimmel
           - type: tile
+            entity: binary_sensor.laundry_room_mold_risk
+            name: Waschraum Schimmel
+          - type: tile
             entity: binary_sensor.living_room_ventilation_recommended
             name: Wohnzimmer lüften?
           - type: tile
@@ -127,6 +136,9 @@ views:
           - type: tile
             entity: binary_sensor.anna_room_ventilation_recommended
             name: Anna lüften?
+          - type: tile
+            entity: binary_sensor.laundry_room_ventilation_recommended
+            name: Waschraum lüften?
 
       - type: grid
         cards:
@@ -145,8 +157,12 @@ views:
           - type: tile
             entity: binary_sensor.lea_room_window_south_contact
             name: Lea Süd
-          # TODO after orientation is clarified (see renames.csv):
-          # - anna_room_window_<north|south_2|west>_contact (2 Sensoren)
+          - type: tile
+            entity: binary_sensor.anna_room_window_north_contact
+            name: Anna Fenster Norden
+          - type: tile
+            entity: binary_sensor.anna_room_window_west_left_contact
+            name: Anna Fenster Westen links
 
       - type: grid
         cards:
@@ -191,14 +207,20 @@ views:
             entity: sensor.ikea_plug_01_power
             name: Waschmaschine
           - type: tile
-            entity: binary_sensor.laundry_room_water_leak
-            name: Leck Waschraum
+            entity: binary_sensor.toilet_water_leak
+            name: Leck Toilette
+          - type: tile
+            entity: binary_sensor.bathroom_water_leak
+            name: Leck Bad
           - type: tile
             entity: binary_sensor.kitchen_water_leak
             name: Leck Küche
           - type: tile
-            entity: binary_sensor.bathroom_water_leak
-            name: Leck Bad
+            entity: binary_sensor.living_room_water_leak
+            name: Leck Aquarium
+          - type: tile
+            entity: binary_sensor.laundry_room_water_leak
+            name: Leck Waschraum
 
   # ------------------------------------------------------- Klima-Details
   - type: sections
@@ -220,6 +242,7 @@ views:
               - sensor.bathroom_absolute_humidity
               - sensor.lea_room_absolute_humidity
               - sensor.anna_room_absolute_humidity
+              - sensor.laundry_room_absolute_humidity
               - sensor.outdoor_absolute_humidity
       - type: grid
         cards:
@@ -234,6 +257,7 @@ views:
               - sensor.bathroom_wall_surface_humidity_24h
               - sensor.lea_room_wall_surface_humidity_24h
               - sensor.anna_room_wall_surface_humidity_24h
+              - sensor.laundry_room_wall_surface_humidity_24h
       - type: grid
         cards:
           - type: heading

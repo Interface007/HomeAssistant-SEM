@@ -149,7 +149,7 @@
       default_entity_id: sensor.epaper_mold_alert
       icon: mdi:home-alert
       state: >
-        {% set rooms = ['living_room', 'bedroom', 'storage_room', 'bathroom', 'lea_room', 'anna_room'] %}
+        {% set rooms = ['living_room', 'bedroom', 'storage_room', 'bathroom', 'lea_room', 'anna_room', 'laundry_room'] %}
         {% set ns = namespace(hits=[]) %}
         {% for r in rooms %}
           {% if is_state('binary_sensor.' ~ r ~ '_mold_risk', 'on')
@@ -164,7 +164,7 @@
       default_entity_id: sensor.epaper_ventilation_advice
       icon: mdi:window-open-variant
       state: >
-        {% set rooms = ['living_room', 'bedroom', 'storage_room', 'bathroom', 'lea_room', 'anna_room'] %}
+        {% set rooms = ['living_room', 'bedroom', 'storage_room', 'bathroom', 'lea_room', 'anna_room', 'laundry_room'] %}
         {% set ns = namespace(hits=[]) %}
         {% for r in rooms %}
           {% if is_state('binary_sensor.' ~ r ~ '_ventilation_recommended', 'on') %}
@@ -173,8 +173,8 @@
         {% endfor %}
         {{ ns.hits | join(',') if ns.hits | count > 0 else 'OK' }}
 
-  # Water meter history: last 14 days as CSV for ePaper bar chart
-  # Source: input_text.water_meter_history (updated daily by automation)
+    # Water meter history: last 14 days as CSV for ePaper bar chart
+    # Source: input_text.water_meter_history (updated daily by automation)
     # Format: semicolon-separated values (oldest;...;newest)
     - name: "ePaper Water Meter History"
       unique_id: epaper_watermeter_history

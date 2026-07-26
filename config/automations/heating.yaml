@@ -1,0 +1,101 @@
+# =====================================================================
+# Heating: switch TRVs off while a room is being aired.
+#
+# Trigger source is the aggregated per-room window state from
+# templates/windows.yaml, so a room with several windows only produces one
+# on/off cycle per airing session.
+#
+# The TRVs of the room are resolved dynamically via the area registry
+# (area_entities -> climate.*). Rooms with several TRVs (living_room,
+# anna_room) are therefore handled without any extra configuration, and a
+# newly added TRV works as soon as it is assigned to the right area.
+#
+# The room is derived from the entity_id by convention:
+#   binary_sensor.<area>_window_open  ->  area <area>
+# Adding a room = add one line to both trigger lists (and one block in
+# templates/windows.yaml).
+#
+# Instead of a plain "turn on" the previous TRV state is snapshotted into a
+# scene and restored afterwards. That preserves setpoint and mode, and it
+# keeps the heating off outside the heating season: if a TRV was already
+# off when the window opened, it is restored to off.
+#
+# NOTE: the tado X TRVs are integrated via Matter (local), so tado's own
+# cloud-side open-window detection is not available as an entity here.
+# If a tado schedule is active it may re-apply a setpoint while the window
+# is open - check this once during the heating season.
+# =====================================================================
+- id: trv_off_on_window_open
+  alias: "TRV off on window open"
+  description: >
+    Turns off all TRVs of a room once one of its windows has been open for
+    30 s. The previous state is stored in scene.trv_restore_<area>.
+  mode: queued
+  max: 10
+  triggers:
+    - trigger: state
+      entity_id:
+        - binary_sensor.anna_room_window_open
+        - binary_sensor.bathroom_window_open
+        - binary_sensor.bedroom_window_open
+        - binary_sensor.lea_room_window_open
+        - binary_sensor.living_room_window_open
+        - binary_sensor.toilet_window_open
+      to: "on"
+      for: "00:00:30"
+  variables:
+    area: "{{ trigger.entity_id.split('.')[1] | replace('_window_open', '') }}"
+    trvs: >
+      {{ area_entities(area) | select('match', 'climate\.') | list }}
+  conditions:
+    # Nothing to do in rooms without TRVs (also catches a typo in the
+    # sensor name, because the area would then resolve to nothing).
+    - condition: template
+      value_template: "{{ trvs | count > 0 }}"
+  actions:
+    - action: scene.create
+      data:
+        scene_id: "trv_restore_{{ area }}"
+        snapshot_entities: "{{ trvs }}"
+    - action: climate.turn_off
+      target:
+        entity_id: "{{ trvs }}"
+
+- id: trv_restore_on_window_closed
+  alias: "TRV restore on window closed"
+  description: >
+    Restores the TRV state saved by "TRV off on window open" once every
+    window of the room has been closed for 30 s.
+  mode: queued
+  max: 10
+  triggers:
+    - trigger: state
+      entity_id:
+        - binary_sensor.anna_room_window_open
+        - binary_sensor.bathroom_window_open
+        - binary_sensor.bedroom_window_open
+        - binary_sensor.lea_room_window_open
+        - binary_sensor.living_room_window_open
+        - binary_sensor.toilet_window_open
+      to: "off"
+      for: "00:00:30"
+  variables:
+    area: "{{ trigger.entity_id.split('.')[1] | replace('_window_open', '') }}"
+    scene_id: "scene.trv_restore_{{ area }}"
+    open_seconds: >
+      {{ (trigger.to_state.last_changed
+          - trigger.from_state.last_changed).total_seconds() }}
+  conditions:
+    # The window must have been open long enough for the off-automation to
+    # have run. Without this check a short airing (< 30 s) would restore a
+    # snapshot that belongs to an earlier cycle.
+    - condition: template
+      value_template: "{{ open_seconds | float(0) >= 30 }}"
+    # Scenes created at runtime do not survive a HA restart - in that case
+    # there is nothing to restore and the TRVs stay off.
+    - condition: template
+      value_template: "{{ has_value(scene_id) }}"
+  actions:
+    - action: scene.turn_on
+      target:
+        entity_id: "{{ scene_id }}"

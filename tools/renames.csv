@@ -1,6 +1,7 @@
 # Before;After  (semicolon-separated, # = comment)
-# After --apply: copy updated templates/rooms.yaml, templates/epaper.yaml and
-# automations/front_door.yaml to HA and reload YAML
+# After --apply: copy updated templates/rooms.yaml, templates/epaper.yaml,
+# templates/outdoor.yaml, sensors.yaml, custom_templates/climate.jinja,
+# dashboards/matzen.yaml and automations/front_door.yaml to HA and reload YAML
 # (source references there are already adjusted to the new IDs).
 
 # --- Window sensors (devices already named shelly_dw_01..06) ---
@@ -33,6 +34,8 @@ sensor.bthome_sensor_f3b0_beleuchtungsstarke;sensor.shelly_dw_06_illuminance
 # sensor.bthome_sensor_aeac_drehung;sensor.anna_room_window_<orient>_tilt_angle
 # binary_sensor.bthome_sensor_f3b0_fenster;binary_sensor.anna_room_window_<orient>_contact
 # (f3b0: _tilt entity is only created on the first tilt event)
+# Interim (until orientation is clarified): both contacts are shown in the
+# dashboard under their raw entity_id, see dashboards/matzen.yaml "Fenster".
 
 # --- Room-climate measurements as location values (Sonoff TH) ----------
 # Battery/calibration/comfort numbers remain device-specific.
@@ -48,6 +51,51 @@ sensor.sonoff_th_04_temperature;sensor.storage_room_temperature
 sensor.sonoff_th_04_humidity;sensor.storage_room_humidity
 sensor.sonoff_th_05_temperature;sensor.terrace_temperature
 sensor.sonoff_th_05_humidity;sensor.terrace_humidity
+sensor.sonoff_th_06_temperature;sensor.lea_room_temperature
+sensor.sonoff_th_06_humidity;sensor.lea_room_humidity
+sensor.sonoff_th_07_temperature;sensor.anna_room_temperature
+sensor.sonoff_th_07_humidity;sensor.anna_room_humidity
+sensor.sonoff_th_08_temperature;sensor.bathroom_temperature
+sensor.sonoff_th_08_humidity;sensor.bathroom_humidity
+sensor.sonoff_th_09_temperature;sensor.laundry_room_temperature
+sensor.sonoff_th_09_humidity;sensor.laundry_room_humidity
+
+# --- tado X TRVs (Matter) ---------------------------------------------
+# tadotrv01/03/04 already follow the convention <area>_tadotrvNN (device
+# rename cascaded to their entity IDs); the remaining five are still on the
+# generic "smart_radiator_thermostat_x" IDs. Convention used here:
+#   climate.<area>_tadotrvNN                 (climate keeps no suffix)
+#   <domain>.<area>_tadotrvNN_<suffix>       (German suffix kept as-is,
+#                                             matching tadotrv01/03/04)
+# The device number stays in the ID, so rooms with two TRVs (living_room,
+# anna_room) stay unambiguous.
+# NOTE: automations/heating.yaml resolves TRVs via the area registry, not by
+# name - so it keeps working before and after this rename, no file to copy.
+#   tadotrv02 -> toilet
+binary_sensor.smart_radiator_thermostat_x_batteriestand;binary_sensor.toilet_tadotrv02_batteriestand
+climate.smart_radiator_thermostat_x;climate.toilet_tadotrv02
+sensor.smart_radiator_thermostat_x_luftfeuchtigkeit;sensor.toilet_tadotrv02_luftfeuchtigkeit
+sensor.smart_radiator_thermostat_x_temperatur;sensor.toilet_tadotrv02_temperatur
+#   tadotrv05 -> living_room
+binary_sensor.smart_radiator_thermostat_x_batteriestand_2;binary_sensor.living_room_tadotrv05_batteriestand
+climate.smart_radiator_thermostat_x_2;climate.living_room_tadotrv05
+sensor.smart_radiator_thermostat_x_luftfeuchtigkeit_2;sensor.living_room_tadotrv05_luftfeuchtigkeit
+sensor.smart_radiator_thermostat_x_temperatur_2;sensor.living_room_tadotrv05_temperatur
+#   tadotrv06 -> anna_room
+binary_sensor.smart_radiator_thermostat_x_batteriestand_3;binary_sensor.anna_room_tadotrv06_batteriestand
+climate.smart_radiator_thermostat_x_3;climate.anna_room_tadotrv06
+sensor.smart_radiator_thermostat_x_luftfeuchtigkeit_3;sensor.anna_room_tadotrv06_luftfeuchtigkeit
+sensor.smart_radiator_thermostat_x_temperatur_3;sensor.anna_room_tadotrv06_temperatur
+#   tadotrv07 -> anna_room
+binary_sensor.smart_radiator_thermostat_x_batteriestand_4;binary_sensor.anna_room_tadotrv07_batteriestand
+climate.smart_radiator_thermostat_x_4;climate.anna_room_tadotrv07
+sensor.smart_radiator_thermostat_x_luftfeuchtigkeit_4;sensor.anna_room_tadotrv07_luftfeuchtigkeit
+sensor.smart_radiator_thermostat_x_temperatur_4;sensor.anna_room_tadotrv07_temperatur
+#   tadotrv08 -> bathroom
+binary_sensor.smart_radiator_thermostat_x_batteriestand_5;binary_sensor.bathroom_tadotrv08_batteriestand
+climate.smart_radiator_thermostat_x_5;climate.bathroom_tadotrv08
+sensor.smart_radiator_thermostat_x_luftfeuchtigkeit_5;sensor.bathroom_tadotrv08_luftfeuchtigkeit
+sensor.smart_radiator_thermostat_x_temperatur_5;sensor.bathroom_tadotrv08_temperatur
 
 # --- Terrace sound sensor (convention: <area>_noise_level) ------------
 sensor.terrace_esp32_soundmeter_01_leq_1s;sensor.terrace_noise_level
@@ -133,5 +181,7 @@ button.anker_solixe2700pro_01_details_aktualisieren;button.anker_solarbank_01_re
 # Price/AI/CO2 entities (anker_solix system device) intentionally not renamed.
 #
 # Intentionally NOT renamed: diagnostic entities (Synology, Shelly _neu_starten/
-# _uberhitzung, ESPHome Wi-Fi/IP, Fyta plant sensors) - not used in any
-# logic; renaming would be effort without benefit.
+# _uberhitzung, ESPHome Wi-Fi/IP, Fyta plant sensors, tado X _identifizieren/
+# _anzahl_neustarts/_betriebszeit) - not used in any logic; renaming would be
+# effort without benefit. The tado X _anzahl_neustarts/_betriebszeit entities
+# are disabled anyway (state "not_loaded" in the export).

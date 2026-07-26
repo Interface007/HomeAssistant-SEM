@@ -77,3 +77,12 @@
   max_age:
     hours: 24
   sampling_size: 1500
+
+- platform: statistics
+  name: "laundry_room_wall_surface_humidity_24h"
+  unique_id: laundry_room_wall_surface_humidity_24h
+  entity_id: sensor.laundry_room_wall_surface_humidity
+  state_characteristic: mean
+  max_age:
+    hours: 24
+  sampling_size: 1500

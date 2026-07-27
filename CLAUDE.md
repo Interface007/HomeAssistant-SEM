@@ -4,9 +4,13 @@ These instructions apply to all files in this repository.
 
 ## Mandatory language policy
 
+- Code, identifiers, comments, docstrings, commit messages, PR descriptions: English.
 - All code comments must be written in English.
 - All docstrings must be written in English.
 - All inline code explanations must be written in English.
+- Reason in English regardless of output language.
+- ISMS documents, client-facing deliverables, Behördenschreiben: German.
+- Chat responses to me: German.
 
 ## Important exceptions
 

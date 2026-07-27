@@ -4,10 +4,13 @@ Scope: entire repository.
 
 ## Language Rules
 
-- Write all code comments in English.
-- Write all docstrings in English.
-- Write inline explanatory notes in English.
-- Keep identifiers and API names as-is unless a refactor is explicitly requested.
+- Code, identifiers, comments, docstrings, commit messages, PR descriptions: English.
+- All code comments must be written in English.
+- All docstrings must be written in English.
+- All inline code explanations must be written in English.
+- Reason in English regardless of output language.
+- ISMS documents, client-facing deliverables, Behördenschreiben: German.
+- Chat responses to me: German.
 
 ## Existing Non-English Text
 

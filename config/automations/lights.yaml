@@ -1,0 +1,51 @@
+# =====================================================================
+# Light control via Aqara Opple switch (Zigbee2MQTT).
+#
+# Supports both common publish styles:
+# 1) zigbee2mqtt/<device>/action  -> payload: button_1_single
+# 2) zigbee2mqtt/<device>         -> JSON with field "action"
+#
+# If your payload differs, only adjust the list in btn2_actions.
+# =====================================================================
+- id: aqaraopple_switch_01_button_actions
+  alias: "Aqara Opple switch 01 button actions"
+  description: "Button 1 toggles Shelly Mini G3, button 2 toggles light.ikea_light_03."
+  mode: single
+  triggers:
+    - trigger: mqtt
+      topic: zigbee2mqtt/aqaraopple_switch_01/action
+    - trigger: mqtt
+      topic: zigbee2mqtt/aqaraopple_switch_01
+  variables:
+    action_payload: >
+      {% if trigger.topic == 'zigbee2mqtt/aqaraopple_switch_01/action' %}
+        {{ trigger.payload }}
+      {% else %}
+        {{ trigger.payload_json.action | default('', true) }}
+      {% endif %}
+    btn1_actions:
+      - button_1_single
+      - single_1
+      - 1_single
+      - button_1
+    btn2_actions:
+      - button_2_single
+      - single_2
+      - 2_single
+      - button_2
+  actions:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ action_payload in btn1_actions }}"
+          sequence:
+            - action: switch.toggle
+              target:
+                entity_id: switch.living_room_shelly_minig3_01
+        - conditions:
+            - condition: template
+              value_template: "{{ action_payload in btn2_actions }}"
+          sequence:
+            - action: light.toggle
+              target:
+                entity_id: light.ikea_light_03

@@ -1,0 +1,59 @@
+views:
+  - title: Anna
+    path: anna
+    icon: mdi:account
+    cards:
+      - type: button
+        name: Türöffner
+        icon: mdi:door-open
+        entity: switch.front_door_opener
+        tap_action:
+          action: call-service
+          service: switch.turn_on
+          target:
+            entity_id: switch.front_door_opener
+        hold_action:
+          action: more-info
+
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Licht Anna
+            icon: mdi:lightbulb-group
+          - type: tile
+            entity: light.ikea_light_01
+            name: Licht 1
+            tap_action:
+              action: toggle
+            features_position: bottom
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+          - type: tile
+            entity: light.ikea_light_02
+            name: Licht 2
+            tap_action:
+              action: toggle
+            features_position: bottom
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+
+      - type: thermostat
+        entity: climate.anna_room_tadotrv06
+        name: Heizkörper Anna 1
+
+      - type: thermostat
+        entity: climate.anna_room_tadotrv07
+        name: Heizkörper Anna 2
+
+      - type: entities
+        title: Klima Anna
+        show_header_toggle: false
+        entities:
+          - entity: sensor.anna_room_temperature
+            name: Temperatur
+          - entity: sensor.anna_room_humidity
+            name: Luftfeuchte
+          - entity: binary_sensor.anna_room_ventilation_recommended
+            name: Lüften?

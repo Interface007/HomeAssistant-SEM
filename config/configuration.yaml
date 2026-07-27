@@ -45,6 +45,18 @@ lovelace:
       icon: mdi:flower
       show_in_sidebar: true
       filename: dashboards/lea.yaml
+    anna-home:
+      mode: yaml
+      title: Anna
+      icon: mdi:account
+      show_in_sidebar: true
+      filename: dashboards/anna.yaml
+    sven-home:
+      mode: yaml
+      title: Sven
+      icon: mdi:account
+      show_in_sidebar: true
+      filename: dashboards/sven.yaml
 
 input_boolean:
   trigger_forecast_update:

@@ -1,0 +1,73 @@
+views:
+  - title: Sven
+    path: sven
+    icon: mdi:account
+    cards:
+      - type: button
+        name: Türöffner
+        icon: mdi:door-open
+        entity: switch.front_door_opener
+        tap_action:
+          action: call-service
+          service: switch.turn_on
+          target:
+            entity_id: switch.front_door_opener
+        hold_action:
+          action: more-info
+
+      - type: entities
+        title: Offene Fenster
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.bedroom_window_open
+            name: Schlafzimmer
+          - entity: binary_sensor.bathroom_window_open
+            name: Bad
+          - entity: binary_sensor.toilet_window_open
+            name: Toilette
+          - entity: binary_sensor.lea_room_window_open
+            name: Lea
+          - entity: binary_sensor.anna_room_window_open
+            name: Anna
+          - entity: binary_sensor.living_room_window_open
+            name: Wohnzimmer
+
+      - type: entities
+        title: Status der Lichter
+        show_header_toggle: false
+        entities:
+          - entity: light.ikea_light_01
+            name: Licht Anna 1
+          - entity: light.ikea_light_02
+            name: Licht Anna 2
+          - entity: light.ikea_light_03
+            name: Licht Wohnzimmer
+
+      - type: entities
+        title: Schimmelgefahren (Ja/Nein)
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.living_room_mold_risk
+            name: Wohnzimmer
+          - entity: binary_sensor.bedroom_mold_risk
+            name: Schlafzimmer
+          - entity: binary_sensor.storage_room_mold_risk
+            name: Vorratsraum
+          - entity: binary_sensor.bathroom_mold_risk
+            name: Bad
+          - entity: binary_sensor.lea_room_mold_risk
+            name: Lea
+          - entity: binary_sensor.anna_room_mold_risk
+            name: Anna
+          - entity: binary_sensor.laundry_room_mold_risk
+            name: Waschraum
+
+      - type: tile
+        entity: sensor.anker_solarbank_01_solar_power
+        name: Aktuelle Strom-Produktion Solar
+
+      - type: history-graph
+        title: Strom-Produktion Solar (letzte 30 Tage)
+        hours_to_show: 720
+        entities:
+          - sensor.anker_solix_solar_energy_total

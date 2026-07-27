@@ -70,4 +70,4 @@ views:
         title: Strom-Produktion Solar (letzte 30 Tage)
         hours_to_show: 720
         entities:
-          - sensor.anker_solix_solar_energy_total
+          - sensor.solar_daily

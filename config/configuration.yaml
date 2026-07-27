@@ -75,6 +75,9 @@ utility_meter:
   water_daily:
     source: sensor.watermeter_value
     cycle: daily
+  solar_daily:
+    source: sensor.anker_solix_solar_energy_total
+    cycle: daily
   water_monthly:
     source: sensor.watermeter_value
     cycle: monthly

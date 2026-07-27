@@ -5,7 +5,7 @@
 # 1) zigbee2mqtt/<device>/action  -> payload: button_1_single
 # 2) zigbee2mqtt/<device>         -> JSON with field "action"
 #
-# If your payload differs, only adjust the list in btn2_actions.
+# If your payload differs, only adjust the action lists.
 # =====================================================================
 - id: aqaraopple_switch_01_button_actions
   alias: "Aqara Opple switch 01 button actions"
@@ -49,3 +49,55 @@
             - action: light.toggle
               target:
                 entity_id: light.ikea_light_03
+
+- id: enforce_ikea_lights_power_on_behavior_on
+  alias: "Enforce IKEA lights power-on behavior ON"
+  description: "Ensures IKEA lights turn on immediately when mains power returns."
+  mode: single
+  triggers:
+    - trigger: homeassistant
+      event: start
+    - trigger: state
+      entity_id:
+        - select.ikea_light_01_power_on_behavior
+        - select.ikea_light_02_power_on_behavior
+        - select.ikea_light_03_power_on_behavior
+  actions:
+    - action: select.select_option
+      continue_on_error: true
+      target:
+        entity_id: select.ikea_light_01_power_on_behavior
+      data:
+        option: "on"
+    - action: select.select_option
+      continue_on_error: true
+      target:
+        entity_id: select.ikea_light_02_power_on_behavior
+      data:
+        option: "on"
+    - action: select.select_option
+      continue_on_error: true
+      target:
+        entity_id: select.ikea_light_03_power_on_behavior
+      data:
+        option: "on"
+
+- id: enforce_shelly_minig3_on_after_power_restore
+  alias: "Enforce Shelly Mini G3 ON after power restore"
+  description: "Turns switch.living_room_shelly_minig3_01 on when Home Assistant starts or the device comes back online."
+  mode: restart
+  triggers:
+    - trigger: homeassistant
+      event: start
+    - trigger: state
+      entity_id: switch.living_room_shelly_minig3_01
+      from: "unavailable"
+    - trigger: state
+      entity_id: switch.living_room_shelly_minig3_01
+      from: "unknown"
+  actions:
+    - delay: "00:00:02"
+    - action: switch.turn_on
+      continue_on_error: true
+      target:
+        entity_id: switch.living_room_shelly_minig3_01

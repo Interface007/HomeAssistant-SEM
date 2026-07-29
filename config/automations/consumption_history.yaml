@@ -1,0 +1,76 @@
+# =====================================================================
+# Daily consumption history for the ePaper bar charts.
+#
+# Each evening at 23:55 - just before the utility meters roll over at
+# midnight - the day's consumption is appended to an input_text helper as
+# a ";"-separated list of integers (oldest ... newest, last 14 days).
+# templates/epaper.yaml publishes those helpers as the sensors the display
+# subscribes to; semTools.h RenderDiagram scales the bars to the maximum
+# of the list, so only integer values matter, not the unit.
+#
+# Stored as: water in litres (m³ x 1000), power in Wh (kWh x 1000).
+# Storing the raw m³/kWh floats does not work - RenderDiagram parses
+# integers, and truncating 0.35 m³ with |int yields 0, which is why every
+# water value used to be 0 and no bar was ever drawn.
+#
+# The build_history template drops any non-numeric leftovers from the
+# existing list, so earlier "unknown" entries clean themselves up.
+#
+# Note: no "homeassistant start" trigger. It used to append the current,
+# still-incomplete daily value on every restart, which corrupted the
+# series. A day with HA down at 23:55 is simply skipped.
+# =====================================================================
+
+- id: water_meter_daily_update
+  alias: "Wasserzähler: Tägliche Historie aktualisieren"
+  description: "Hängt den Tagesverbrauch (Liter) an die 14-Tage-Historie an."
+  mode: single
+  triggers:
+    - trigger: time
+      at: "23:55:00"
+  variables:
+    keep_days: 14
+    # m³ -> litres
+    today: "{{ (states('sensor.water_daily') | float(0) * 1000) | round(0) | int }}"
+    history: >-
+      {%- set raw = states('input_text.water_meter_history') -%}
+      {%- set parts = raw.split(';') if raw not in ['unknown', 'unavailable', ''] else [] -%}
+      {%- set clean = parts | map('trim') | select('match', '^-?[0-9]+$') | list -%}
+      {{ (clean + [today | string])[-keep_days:] | join(';') }}
+  conditions:
+    # Guard against a source that is unavailable at 23:55 - better to skip a
+    # day than to write a bogus 0 into the series.
+    - condition: template
+      value_template: "{{ has_value('sensor.water_daily') }}"
+  actions:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.water_meter_history
+      data:
+        value: "{{ history }}"
+
+- id: power_daily_update
+  alias: "Stromzähler: Tägliche Historie aktualisieren"
+  description: "Hängt den Tagesverbrauch (Wh) an die 14-Tage-Historie an."
+  mode: single
+  triggers:
+    - trigger: time
+      at: "23:55:00"
+  variables:
+    keep_days: 14
+    # kWh -> Wh
+    today: "{{ (states('sensor.power_main_daily') | float(0) * 1000) | round(0) | int }}"
+    history: >-
+      {%- set raw = states('input_text.power_history') -%}
+      {%- set parts = raw.split(';') if raw not in ['unknown', 'unavailable', ''] else [] -%}
+      {%- set clean = parts | map('trim') | select('match', '^-?[0-9]+$') | list -%}
+      {{ (clean + [today | string])[-keep_days:] | join(';') }}
+  conditions:
+    - condition: template
+      value_template: "{{ has_value('sensor.power_main_daily') }}"
+  actions:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.power_history
+      data:
+        value: "{{ history }}"

@@ -1,9 +1,76 @@
+# =====================================================================
+# OpenEPaperLink Tag01 (outdoor / living room climate).
+#
+# Redraw policy - the tag is only refreshed when it is worth it:
+#   * immediately  when a tracked value moved more than 5 % relative to the
+#                  value currently shown on the tag, or
+#   * after 15 min when at least one tracked value changed at all.
+# If nothing changed at all, no redraw happens - identical content would
+# only cost tag battery and e-ink refresh cycles.
+#
+# The percentage rule alone breaks down near 0 °C (5 % of 0.2 °C is
+# meaningless, and 0 °C would divide by zero), so every value additionally
+# has to move by min_delta in absolute terms. Near freezing the rule
+# therefore degrades gracefully into "0.5 K absolute".
+#
+# The values currently shown on the tag are kept in input_number helpers
+# (see configuration.yaml); the time of the last redraw comes from the
+# automation's own last_triggered attribute.
+# =====================================================================
 - id: epaper_tag_1_climate
   alias: "Klima-Tag Außen/Wohnzimmer"
   mode: single
+  max_exceeded: silent
   triggers:
+    # React straight away to a big jump ...
+    - trigger: state
+      entity_id:
+        - sensor.outdoor_temperature
+        - sensor.living_room_temperature
+        - sensor.outdoor_humidity
+        - sensor.living_room_humidity
+    # ... and re-evaluate regularly so the 15 min rule can kick in.
     - trigger: time_pattern
       minutes: "/1"
+  variables:
+    # sensor            = live value
+    # store             = input_number holding the value shown on the tag
+    # min_delta         = absolute change required before the 5 % rule applies
+    tracked:
+      - sensor: sensor.outdoor_temperature
+        store: input_number.epaper_tag_1_outdoor_temperature
+        min_delta: 0.5
+      - sensor: sensor.living_room_temperature
+        store: input_number.epaper_tag_1_living_room_temperature
+        min_delta: 0.5
+      - sensor: sensor.outdoor_humidity
+        store: input_number.epaper_tag_1_outdoor_humidity
+        min_delta: 1
+      - sensor: sensor.living_room_humidity
+        store: input_number.epaper_tag_1_living_room_humidity
+        min_delta: 1
+  conditions:
+    - condition: template
+      value_template: >
+        {% set last = this.attributes.get('last_triggered') %}
+        {% set stale = last is none
+                       or (now() - last).total_seconds() >= 15 * 60 %}
+        {% set ns = namespace(significant=false, any_change=false) %}
+        {% for t in tracked %}
+          {% if has_value(t.sensor) and has_value(t.store) %}
+            {% set cur = states(t.sensor) | float %}
+            {% set shown = states(t.store) | float %}
+            {% set delta = (cur - shown) | abs %}
+            {% set base = [shown | abs, 0.1] | max %}
+            {% if delta > 0 %}
+              {% set ns.any_change = true %}
+            {% endif %}
+            {% if delta >= t.min_delta and delta / base > 0.05 %}
+              {% set ns.significant = true %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.significant or (stale and ns.any_change) }}
   actions:
     - action: open_epaper_link.drawcustom
       target:
@@ -49,3 +116,15 @@
         rotate: 0
         ttl: 60
         dither: "0"
+    # Remember what is now on the tag. Unavailable sensors keep their
+    # previous value so they do not trigger a bogus redraw afterwards.
+    - repeat:
+        for_each: "{{ tracked }}"
+        sequence:
+          - action: input_number.set_value
+            target:
+              entity_id: "{{ repeat.item.store }}"
+            data:
+              value: >
+                {{ states(repeat.item.sensor)
+                   | float(states(repeat.item.store) | float(0)) }}

@@ -63,12 +63,56 @@ input_boolean:
     name: Trigger Forecast Update
     icon: mdi:update
 
+# Consumption history for the ePaper bar charts, as ";"-separated integers
+# (oldest...newest, 14 values). Water in litres, power in Wh - see
+# automations/consumption_history.yaml. No unit_of_measurement here: the
+# content is a CSV string, not a measurement.
 input_text:
   water_meter_history:
     name: "Water Meter History (14 Days)"
-    icon: mdi:water-percent
+    icon: mdi:water
     max: 255
-    unit_of_measurement: "m³"
+  power_history:
+    name: "Power History (14 Days)"
+    icon: mdi:flash
+    max: 255
+
+# Values last rendered onto ePaper Tag01. The automation compares the live
+# sensors against these to decide whether a redraw is worth it
+# (see automations/epaper_tag_1.yaml).
+input_number:
+  epaper_tag_1_outdoor_temperature:
+    name: "Tag01 shown outdoor temperature"
+    icon: mdi:thermometer
+    min: -50
+    max: 60
+    step: 0.1
+    unit_of_measurement: "°C"
+    mode: box
+  epaper_tag_1_living_room_temperature:
+    name: "Tag01 shown living room temperature"
+    icon: mdi:thermometer
+    min: -50
+    max: 60
+    step: 0.1
+    unit_of_measurement: "°C"
+    mode: box
+  epaper_tag_1_outdoor_humidity:
+    name: "Tag01 shown outdoor humidity"
+    icon: mdi:water-percent
+    min: 0
+    max: 100
+    step: 0.1
+    unit_of_measurement: "%"
+    mode: box
+  epaper_tag_1_living_room_humidity:
+    name: "Tag01 shown living room humidity"
+    icon: mdi:water-percent
+    min: 0
+    max: 100
+    step: 0.1
+    unit_of_measurement: "%"
+    mode: box
 
 # Consumption meters (source: AI-on-the-Edge water meter, Shelly 3EM)
 utility_meter:

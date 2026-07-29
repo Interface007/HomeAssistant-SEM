@@ -1,0 +1,137 @@
+# =====================================================================
+# Notification building blocks.
+#
+# All alerting automations go through these scripts, so the list of
+# recipients lives in exactly one place. Both phones are Android, so the
+# payload uses the Android-specific options (channel/importance/priority).
+#
+# IMPORTANT - verify once before relying on the leak alarm:
+# the mobile_app integration registers its legacy notify services as
+# notify.mobile_app_<device slug>. The device names here are "Handy-Sven"
+# and "handy-claudia", which gives the two services used below. If your
+# instance uses different names, correct them HERE (and nowhere else) -
+# run script.notify_test once and check that both phones buzz.
+#
+# continue_on_error is set on every send: if one recipient's service is
+# missing or the phone is unreachable, the other one must still be alerted.
+# =====================================================================
+
+notify_critical:
+  alias: "Notify: critical alert (all phones)"
+  description: >
+    High-priority alert that also shows up on a locked/quiet phone.
+    Used for events where minutes matter (water leak).
+  mode: parallel
+  max: 10
+  fields:
+    title:
+      description: "Notification title"
+      required: true
+      selector:
+        text:
+    message:
+      description: "Notification body"
+      required: true
+      selector:
+        text:
+    channel:
+      description: "Android notification channel (groups alerts of one kind)"
+      required: false
+      selector:
+        text:
+    tag:
+      description: "Replaces an earlier notification carrying the same tag"
+      required: false
+      selector:
+        text:
+  sequence:
+    - action: notify.mobile_app_handy_sven
+      continue_on_error: true
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        data:
+          ttl: 0
+          priority: high
+          channel: "{{ channel | default('Alarm', true) }}"
+          importance: high
+          sticky: true
+          color: "#c62828"
+          tag: "{{ tag | default('alarm', true) }}"
+    - action: notify.mobile_app_handy_claudia
+      continue_on_error: true
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        data:
+          ttl: 0
+          priority: high
+          channel: "{{ channel | default('Alarm', true) }}"
+          importance: high
+          sticky: true
+          color: "#c62828"
+          tag: "{{ tag | default('alarm', true) }}"
+
+notify_info:
+  alias: "Notify: informational message (all phones)"
+  description: >
+    Normal-priority message for things that can wait (battery digest,
+    window left open).
+  mode: parallel
+  max: 10
+  fields:
+    title:
+      description: "Notification title"
+      required: true
+      selector:
+        text:
+    message:
+      description: "Notification body"
+      required: true
+      selector:
+        text:
+    channel:
+      description: "Android notification channel"
+      required: false
+      selector:
+        text:
+    tag:
+      description: "Replaces an earlier notification carrying the same tag"
+      required: false
+      selector:
+        text:
+  sequence:
+    - action: notify.mobile_app_handy_sven
+      continue_on_error: true
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        data:
+          channel: "{{ channel | default('Hinweis', true) }}"
+          tag: "{{ tag | default('hinweis', true) }}"
+    - action: notify.mobile_app_handy_claudia
+      continue_on_error: true
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        data:
+          channel: "{{ channel | default('Hinweis', true) }}"
+          tag: "{{ tag | default('hinweis', true) }}"
+
+notify_test:
+  alias: "Notify: send a test alert to all phones"
+  description: >
+    Run this once from the UI after installing the notification scripts -
+    both phones must receive it. Until they do, the leak alarm cannot be
+    trusted.
+  mode: single
+  sequence:
+    - action: script.notify_critical
+      data:
+        title: "✅ Test: Alarmierung"
+        message: >
+          Wenn diese Meldung auf beiden Handys ankommt, funktioniert die
+          Leck-Alarmierung. Kam sie nur auf einem an, stimmt in
+          scripts.yaml einer der beiden notify-Dienste nicht.
+        channel: "Alarm"
+        tag: "notify_test"

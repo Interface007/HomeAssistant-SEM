@@ -1,0 +1,200 @@
+# =====================================================================
+# Alerting: turn existing sensors into something that actually reaches a
+# phone. Delivery goes through script.notify_critical / script.notify_info
+# (see scripts.yaml) - recipients are configured there, not here.
+#
+#   1. water_leak_alert          - immediate, repeats while wet
+#   2. battery_low_weekly_digest - Sunday summary for safety-relevant sensors
+#   3. window_open_too_long      - heating season only, pairs with heating.yaml
+# =====================================================================
+
+# --------------------------------------------------------------------
+# 1. Water leak - the one case where minutes cost money.
+# Repeats every 5 minutes while the sensor stays wet (capped at 1 hour so
+# a defective sensor cannot notify forever) and sends an all-clear when it
+# dries up. Uses a per-sensor label because the living room sensor sits
+# under the aquarium - "Wohnzimmer" alone would be misleading.
+# Adding a sensor = one line in the trigger and one in the label map.
+# --------------------------------------------------------------------
+- id: water_leak_alert
+  alias: "Water leak alert"
+  description: "Immediate push on any water leak, repeated while wet."
+  mode: parallel
+  max: 10
+  triggers:
+    - trigger: state
+      entity_id:
+        - binary_sensor.bathroom_water_leak
+        - binary_sensor.kitchen_water_leak
+        - binary_sensor.laundry_room_water_leak
+        - binary_sensor.living_room_water_leak
+        - binary_sensor.toilet_water_leak
+      to: "on"
+  variables:
+    repeat_minutes: 5
+    max_reminders: 12
+    labels:
+      binary_sensor.bathroom_water_leak: "Bad"
+      binary_sensor.kitchen_water_leak: "Küche"
+      binary_sensor.laundry_room_water_leak: "Waschraum"
+      binary_sensor.living_room_water_leak: "Aquarium (Wohnzimmer)"
+      binary_sensor.toilet_water_leak: "Toilette"
+    place: >
+      {{ labels.get(trigger.entity_id,
+                    area_name(trigger.entity_id) or trigger.entity_id) }}
+  actions:
+    - repeat:
+        sequence:
+          - action: script.notify_critical
+            data:
+              title: "🚨 Wasserleck: {{ place }}"
+              message: >
+                {{ place }}: Feuchtigkeit erkannt.
+                {%- if repeat.index > 1 %}
+                  Immer noch nass ({{ repeat.index }}. Meldung,
+                  seit {{ (repeat.index - 1) * repeat_minutes }} min).
+                {%- endif %}
+              channel: "Wasserleck"
+              # Same tag per sensor: reminders replace each other instead of
+              # stacking up, but two different rooms stay visible separately.
+              tag: "leak_{{ trigger.entity_id }}"
+          - delay:
+              minutes: "{{ repeat_minutes }}"
+        while:
+          - condition: template
+            value_template: "{{ is_state(trigger.entity_id, 'on') }}"
+          - condition: template
+            value_template: "{{ repeat.index <= max_reminders }}"
+    - if:
+        - condition: template
+          value_template: "{{ is_state(trigger.entity_id, 'off') }}"
+      then:
+        - action: script.notify_info
+          data:
+            title: "✅ Entwarnung: {{ place }}"
+            message: "{{ place }}: Der Sensor meldet wieder trocken."
+            channel: "Wasserleck"
+            tag: "leak_{{ trigger.entity_id }}"
+      else:
+        - action: script.notify_critical
+          data:
+            title: "🚨 Wasserleck: {{ place }}"
+            message: >
+              {{ place }}: Meldet seit über
+              {{ max_reminders * repeat_minutes }} min Feuchtigkeit.
+              Weitere Erinnerungen sind abgeschaltet - bitte nachsehen.
+            channel: "Wasserleck"
+            tag: "leak_{{ trigger.entity_id }}"
+
+# --------------------------------------------------------------------
+# 2. Battery digest for safety-relevant sensors.
+# A leak or window sensor with an empty battery is a silently disabled
+# alarm, so these get watched even though nothing is "broken" yet.
+# The list is built by device_class + entity_id pattern, so additional
+# ThirdReality leak sensors or Shelly Door/Window contacts are picked up
+# automatically. Deliberately NOT included: phones, the Anker storage SoC
+# (a "battery_level" that is supposed to be low) and plant sensors.
+# --------------------------------------------------------------------
+- id: battery_low_weekly_digest
+  alias: "Battery low weekly digest"
+  description: "Sunday 09:00 summary of weak batteries in leak/window sensors."
+  mode: single
+  triggers:
+    - trigger: time
+      at: "09:00:00"
+  variables:
+    threshold: 25
+    pattern: "^sensor\\.(thirdreality_waterleak|shelly_dw)"
+    low: >-
+      {%- set ns = namespace(rows=[]) -%}
+      {%- for s in states.sensor -%}
+        {%- if s.attributes.get('device_class') == 'battery'
+               and s.entity_id is search(pattern)
+               and s.state | float(-1) >= 0
+               and s.state | float(-1) < threshold -%}
+          {%- set ns.rows = ns.rows + [
+                (s.state | float) | round(0) | int ~ '% - '
+                ~ (s.attributes.get('friendly_name') or s.entity_id)] -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.rows | sort }}
+  conditions:
+    - condition: time
+      weekday:
+        - sun
+    - condition: template
+      value_template: "{{ low | count > 0 }}"
+  actions:
+    - action: script.notify_info
+      data:
+        title: "🔋 Schwache Batterien ({{ low | count }})"
+        message: >
+          Diese Sicherheitssensoren sollten neue Batterien bekommen -
+          unter {{ threshold }} %:
+          {{ '\n' }}{{ low | join('\n') }}
+        channel: "Batterie"
+        tag: "battery_digest"
+
+# --------------------------------------------------------------------
+# 3. Window left open during the heating season.
+# Companion to automations/heating.yaml: that one switches the TRVs off
+# while a room is aired, so nobody notices a forgotten window until the
+# room is cold. Only nags when it is actually cold outside.
+# Triggers on the aggregated per-room sensors from templates/windows.yaml.
+# --------------------------------------------------------------------
+- id: window_open_too_long_alert
+  alias: "Window open too long alert"
+  description: "Reminder when a window stays open while it is cold outside."
+  mode: parallel
+  max: 10
+  triggers:
+    - trigger: state
+      entity_id:
+        - binary_sensor.anna_room_window_open
+        - binary_sensor.bathroom_window_open
+        - binary_sensor.bedroom_window_open
+        - binary_sensor.lea_room_window_open
+        - binary_sensor.living_room_window_open
+        - binary_sensor.toilet_window_open
+      to: "on"
+      for: "00:20:00"
+  variables:
+    outdoor_max: 12
+    repeat_minutes: 20
+    max_reminders: 4
+    labels:
+      binary_sensor.anna_room_window_open: "Anna"
+      binary_sensor.bathroom_window_open: "Bad"
+      binary_sensor.bedroom_window_open: "Schlafzimmer"
+      binary_sensor.lea_room_window_open: "Lea"
+      binary_sensor.living_room_window_open: "Wohnzimmer"
+      binary_sensor.toilet_window_open: "Toilette"
+    room: "{{ labels.get(trigger.entity_id, trigger.entity_id) }}"
+  conditions:
+    # Heating season only - in summer an open window is the point.
+    - condition: numeric_state
+      entity_id: sensor.outdoor_temperature
+      below: 12
+  actions:
+    - repeat:
+        sequence:
+          - action: script.notify_info
+            data:
+              title: "🪟 Fenster offen: {{ room }}"
+              message: >
+                {{ room }}: Fenster seit
+                {{ 20 + (repeat.index - 1) * repeat_minutes }} min offen,
+                draußen {{ states('sensor.outdoor_temperature') }} °C.
+                Die Heizung im Raum ist so lange aus.
+              channel: "Fenster"
+              tag: "window_open_{{ trigger.entity_id }}"
+          - delay:
+              minutes: "{{ repeat_minutes }}"
+        while:
+          - condition: template
+            value_template: "{{ is_state(trigger.entity_id, 'on') }}"
+          - condition: template
+            value_template: >
+              {{ states('sensor.outdoor_temperature') | float(99) < outdoor_max }}
+          - condition: template
+            value_template: "{{ repeat.index <= max_reminders }}"

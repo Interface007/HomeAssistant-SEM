@@ -173,15 +173,27 @@
         {% endfor %}
         {{ ns.hits | join(',') if ns.hits | count > 0 else 'OK' }}
 
-    # Water meter history: last 14 days as CSV for ePaper bar chart
-    # Source: input_text.water_meter_history (updated daily by automation)
-    # Format: semicolon-separated values (oldest;...;newest)
+    # Consumption history: last 14 days as CSV for the ePaper bar charts
+    # (semTools.h RenderDiagram). Format: oldest;...;newest, integers only.
+    # Water is stored in litres, power in Wh - the chart normalises to its
+    # own maximum, so the unit only has to be integral, not identical.
+    # Source: input_text helpers, filled daily by
+    # automations/consumption_history.yaml.
+    #
+    # Deliberately NO unit_of_measurement: a sensor that declares a unit is
+    # expected to hold a number, so HA rejects the CSV string as non-numeric
+    # and the state falls back to "unknown" - which is exactly why the water
+    # chart stayed empty.
     - name: "ePaper Water Meter History"
       unique_id: epaper_watermeter_history
       default_entity_id: sensor.epaper_watermeter_history
-      unit_of_measurement: "m³"
-      icon: mdi:water-percent
+      icon: mdi:water
       availability: "{{ has_value('input_text.water_meter_history') }}"
-      state: >
-        {% set history = states('input_text.water_meter_history') | default('', true) %}
-        {{ history if history != '' else 'unavailable' }}
+      state: "{{ states('input_text.water_meter_history') }}"
+
+    - name: "ePaper Power History"
+      unique_id: epaper_power_history
+      default_entity_id: sensor.epaper_power_history
+      icon: mdi:flash
+      availability: "{{ has_value('input_text.power_history') }}"
+      state: "{{ states('input_text.power_history') }}"

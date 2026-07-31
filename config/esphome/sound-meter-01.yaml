@@ -1,7 +1,7 @@
 substitutions:
   name: "sound-meter-01"
   friendly_name: "Sound Meter 01"
-  static_ip: 192.168.2.232
+  static_ip: 192.168.2.44
 
 esphome:
   name: ${name}

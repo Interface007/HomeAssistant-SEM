@@ -23,7 +23,7 @@
 substitutions:
   name: "cellar-fan-01"
   friendly_name: "Kellerlüftung 01"
-  static_ip: 192.168.2.48          # !! verify free IP in the network
+  static_ip: 192.168.2.42          # !! verify free IP in the network
 
   # --- Source entities from Home Assistant (indoor = basement = storage_room) ---
   src_outdoor_temp: sensor.outdoor_temperature

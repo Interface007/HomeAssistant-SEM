@@ -56,47 +56,42 @@ display:
     i2c_id: multiplex0channel0
     id: oled_display_0
     lambda: |-
-      auto write_mux_channel = [](uint8_t channel) {
-        uint8_t data = 1 << channel;
-        id(i2c_bus).write(0x70, &data, 1);
-      };
+      // Line 1: open window abbreviations (FBA FLE FAN FAW FSN FWC)
+      std::string win = "";
+      if (id(window_bathroom_north).state) win += "FBA-";
+      if (id(window_lea_south).state)      win += "FLE-";
+      if (id(window_anna_north).state)     win += "FAN-";
+      if (id(window_anna_west).state)      win += "FAW-";
+      if (id(window_bedroom_north).state)  win += "FSN-";
+      if (id(window_toilet_south).state)   win += "FWC-";
+      if (!win.empty()) win.pop_back();
+      it.print(0, 0, id(font12), win.c_str());
 
-      auto print_luften = [&](int y, float value, const char* msg) -> int {
-        int mold_risk_threshold = 80;
-        
-        if (std::isnan(value)) {
-          ESP_LOGI("mold", "Sensorwert noch nicht verfügbar");
-          return y;  // Draw nothing, do not increase y
-        }
-        
-        ESP_LOGI("mold", "Sensorwert %s: %f", msg, value);
-        if (value > mold_risk_threshold) {
-          it.print(0, y, id(font12), msg);
+      int y = 13;
+
+      if (win.empty()) {
+        it.print(0, y, id(font12), "alle Fenster sind zu");
+        y += 13;
+      }
+
+      // Mold risk: abbreviation summary line, then one detail line per room
+      std::string mold = "";
+      std::vector<std::string> details;
+      if (id(mold_living_room).state) { mold += "WZI-"; details.push_back("Wohnzimmer Lüften"); }
+      if (id(mold_bedroom).state)     { mold += "SZI-"; details.push_back("Schlafzimmer Lüften"); }
+      if (id(mold_anna).state)        { mold += "ANN-"; details.push_back("Anna Lüften"); }
+      if (id(mold_lea).state)         { mold += "LEA-"; details.push_back("Lea Lüften"); }
+      if (id(mold_bathroom).state)    { mold += "BAD-"; details.push_back("Bad Lüften"); }
+      if (!mold.empty()) {
+        mold.pop_back();
+        it.print(0, y, id(font12), mold.c_str());
+        y += 13;
+        for (const auto& line : details) {
+          if (y > 51) break;
+          it.print(0, y, id(font12), line.c_str());
           y += 13;
         }
-        return y;
-      };
-
-      std::string col1 = "";
-
-      auto y = 0;
-      
-      if(id(window_bathroom_og_north).state == true) { col1 += "FBA-"; ESP_LOGI("window", "FBA: open"); } else { ESP_LOGI("window", "FBA: closed"); }
-      if(id(window_lea_south).state == true)         { col1 += "FLE-"; ESP_LOGI("window", "FLE: open"); } else { ESP_LOGI("window", "FLE: closed"); }
-      if(id(window_anna_north).state == true)        { col1 += "FAN-"; ESP_LOGI("window", "FAN: open"); } else { ESP_LOGI("window", "FAN: closed"); }
-      if(id(window_anna_west).state == true)         { col1 += "FAW-"; ESP_LOGI("window", "FAW: open"); } else { ESP_LOGI("window", "FAW: closed"); }
-      if(id(window_sleep_north).state == true)       { col1 += "FSN-"; ESP_LOGI("window", "FSN: open"); } else { ESP_LOGI("window", "FSN: closed"); }
-      if(id(window_bathroom_eg_south).state == true) { col1 += "FLE-"; ESP_LOGI("window", "FLE: open"); } else { ESP_LOGI("window", "FLE: closed"); }
-      
-      if (col1.length() > 1) { col1.pop_back(); } else { y += 13; col1 = "alle Fenster sind zu"; }
-      it.print(0, 00, id(font12), col1.c_str()); 
-      y += 15;
-
-      y = print_luften(y, id(rel_humidity_livingroomwall).state, "Lueften: Wohnzimmer");
-      y = print_luften(y, id(rel_humidity_leawall).state, "Lueften: Lea");
-      y = print_luften(y, id(rel_humidity_annawall).state, "Lueften: Anna");
-      y = print_luften(y, id(rel_humidity_bedroomwall).state, "Lueften: Schlafzimmer");
-      if (y == 15) { it.print(0, y, id(font12), "Alles in Ordnung :)"); }
+      }
   
   - platform: ssd1306_i2c
     model: SSD1306_128X64
@@ -104,84 +99,83 @@ display:
     i2c_id: multiplex0channel1
     id: oled_display_1
     lambda: |-
-      auto write_mux_channel = [](uint8_t channel) {
-        uint8_t data = 1 << channel;
-        id(i2c_bus).write(0x70, &data, 1);
-      };
-
-      // write_mux_channel(1);
       it.print(10, 20, id(font12), "HELLO");
 
-# --- Sensors ------------------------------------------------------------------
-sensor:
-  - platform: homeassistant
-    id: rel_humidity_livingroomwall
-    entity_id: sensor.rel_humidity_livingroomwall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display_0).update();'
-  - platform: homeassistant
-    id: rel_humidity_bedroomwall
-    entity_id: sensor.rel_humidity_bedroomwall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display_0).update();'
-  - platform: homeassistant
-    id: rel_humidity_annawall
-    entity_id: sensor.rel_humidity_annawall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display_0).update();'
-  - platform: homeassistant
-    id: rel_humidity_leawall
-    entity_id: sensor.rel_humidity_leawall
-    internal: true
-    on_value:
-      then:
-        - lambda: 'id(oled_display_0).update();'
-
+# --- Binary sensors ----------------------------------------------------------
 binary_sensor:
   - platform: homeassistant
-    id: window_bathroom_og_north
-    entity_id: binary_sensor.bad_og_north_window
+    id: window_bathroom_north
+    entity_id: binary_sensor.bathroom_window_north_contact
     internal: true
     on_state:
       then:
         - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_lea_south
-    entity_id: binary_sensor.bthome_sensor_f2ba_window
+    entity_id: binary_sensor.lea_room_window_south_contact
     internal: true
     on_state:
       then:
         - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_anna_north
-    entity_id: binary_sensor.bthome_sensor_aeac_window
+    entity_id: binary_sensor.anna_room_window_north_contact
     internal: true
     on_state:
       then:
         - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
     id: window_anna_west
-    entity_id: binary_sensor.shelly_blu_door_window_f3b0_window
+    entity_id: binary_sensor.anna_room_window_west_left_contact
     internal: true
     on_state:
       then:
         - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
-    id: window_sleep_north
-    entity_id: binary_sensor.bthome_sensor_3e90_window
+    id: window_bedroom_north
+    entity_id: binary_sensor.bedroom_window_north_contact
     internal: true
     on_state:
       then:
         - lambda: 'id(oled_display_0).update();'
   - platform: homeassistant
-    id: window_bathroom_eg_south
-    entity_id: binary_sensor.bthome_sensor_fae8_window
+    id: window_toilet_south
+    entity_id: binary_sensor.toilet_window_south_contact
+    internal: true
+    on_state:
+      then:
+        - lambda: 'id(oled_display_0).update();'
+  - platform: homeassistant
+    id: mold_living_room
+    entity_id: binary_sensor.living_room_mold_risk
+    internal: true
+    on_state:
+      then:
+        - lambda: 'id(oled_display_0).update();'
+  - platform: homeassistant
+    id: mold_bedroom
+    entity_id: binary_sensor.bedroom_mold_risk
+    internal: true
+    on_state:
+      then:
+        - lambda: 'id(oled_display_0).update();'
+  - platform: homeassistant
+    id: mold_anna
+    entity_id: binary_sensor.anna_room_mold_risk
+    internal: true
+    on_state:
+      then:
+        - lambda: 'id(oled_display_0).update();'
+  - platform: homeassistant
+    id: mold_lea
+    entity_id: binary_sensor.lea_room_mold_risk
+    internal: true
+    on_state:
+      then:
+        - lambda: 'id(oled_display_0).update();'
+  - platform: homeassistant
+    id: mold_bathroom
+    entity_id: binary_sensor.bathroom_mold_risk
     internal: true
     on_state:
       then:

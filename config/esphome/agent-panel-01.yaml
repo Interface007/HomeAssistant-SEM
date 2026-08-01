@@ -350,9 +350,24 @@ voice_assistant:
         id: text_response
         state: ""
   on_error:
+    # Make the actual cause visible in the log - the error illustration alone
+    # does not say which pipeline stage failed.
+    - lambda: |-
+        ESP_LOGW("voice_assistant", "pipeline error: %s - %s",
+                 code.c_str(), message.c_str());
     - if:
         condition:
-          lambda: return !id(init_in_progress);
+          lambda: |-
+            // Not every "error" is a fault. Saying only the wake word and
+            // then staying quiet ends the pipeline with
+            // "stt-no-text-recognized"; showing the error illustration for
+            // that makes a perfectly working setup look broken.
+            if (code == "stt-no-text-recognized" ||
+                code == "wake-word-timeout" ||
+                code == "wake_word_detection_aborted") {
+              return false;
+            }
+            return !id(init_in_progress);
         then:
           - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};
           - script.execute: draw_display

@@ -214,6 +214,14 @@ output:
     # Lower bound stays at 0%; startup value is controlled via
     # fan_speed_min -> configurable in HA instead of hard-coded.
     zero_means_zero: true
+    # MUST match the JP1 solder bridge on the carrier board:
+    #   JP1 centre+right = via Q1 (open drain) -> inverted: true
+    #   JP1 left+centre  = GPIO drives PWM directly -> remove this line
+    # Wrong combination = fan runs at full speed whenever it should be off.
+    #
+    # Order in ESPHome is scale-then-invert, so level 0 becomes 100 % duty
+    # on GPIO2, Q1 conducts, the fan's PWM line is held low -> fan off.
+    inverted: true
 
 fan:
   - platform: speed

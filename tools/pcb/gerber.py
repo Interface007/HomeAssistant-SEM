@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     routed, vias, failed = R.route()
     if failed:
-          print("ABORT: routing incomplete -",
+        print("ABORT: routing incomplete -",
               ", ".join(n for n, _ in failed))
         raise SystemExit(1)
 
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     }
     for fname, g in files.items():
         g.write(os.path.join(outdir, fname))
-          print(f"  {fname:34s} {len(g.lines):5d} lines, "
+        print(f"  {fname:34s} {len(g.lines):5d} lines, "
               f"{len(g.apertures)} aperture(s)")
 
     counts = excellon(vias, os.path.join(outdir, f"{NAME}.drl"))

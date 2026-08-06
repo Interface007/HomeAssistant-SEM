@@ -327,19 +327,20 @@ if __name__ == "__main__":
     problems, vol, area, bbox = check(tris)
     want = analytic_volume()
 
-        print(f"Bezel {OUTER_W:.2f} x {OUTER_H:.2f} x {HEIGHT:.2f} mm, "
-            f"{len(tris)} triangles")
-        print(f"  Pocket       {POCKET_W:.2f} x {POCKET_H:.2f} x {POCKET_D:.2f} mm")
-        print(f"  Window       {WINDOW_W:.2f} x {WINDOW_H:.2f} mm, center "
-          f"({WIN_CX:.2f}, {WIN_CY:.2f})")
-        print(f"  Wall thickness {(OUTER_W - POCKET_W) / 2:.2f} mm on each side")
     _win_top = (OUTER_H - POCKET_H) / 2 + POCKET_H - (WIN_CY + WINDOW_H / 2)
     _win_bot = (WIN_CY - WINDOW_H / 2) - (OUTER_H - POCKET_H) / 2
-        print(f"  Web width    {(POCKET_W - WINDOW_W) / 2:.2f} mm left/right, "
-            f"{_win_top:.2f} mm top, {_win_bot:.2f} mm bottom")
-        print(f"  Volume       {vol:.2f} mm3 (analytic {want:.2f}, "
-            f"deviation {abs(vol - want):.4f})")
-        print(f"  Surface area {area:.1f} mm2")
+
+    print(f"Bezel {OUTER_W:.2f} x {OUTER_H:.2f} x {HEIGHT:.2f} mm, "
+          f"{len(tris)} triangles")
+    print(f"  Pocket       {POCKET_W:.2f} x {POCKET_H:.2f} x {POCKET_D:.2f} mm")
+    print(f"  Window       {WINDOW_W:.2f} x {WINDOW_H:.2f} mm, center "
+          f"({WIN_CX:.2f}, {WIN_CY:.2f})")
+    print(f"  Wall         {(OUTER_W - POCKET_W) / 2:.2f} mm on each side")
+    print(f"  Web width    {(POCKET_W - WINDOW_W) / 2:.2f} mm left/right, "
+          f"{_win_top:.2f} mm top, {_win_bot:.2f} mm bottom")
+    print(f"  Volume       {vol:.2f} mm3 (analytic {want:.2f}, "
+          f"deviation {abs(vol - want):.4f})")
+    print(f"  Surface area {area:.1f} mm2")
 
     if abs(vol - want) > 0.01:
         problems.append(f"Mesh volume deviates by {abs(vol - want):.3f} mm3 "

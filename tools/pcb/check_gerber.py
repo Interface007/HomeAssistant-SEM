@@ -201,7 +201,7 @@ if __name__ == "__main__":
                   and x1 <= B.BOARD_W + tol and y1 <= B.BOARD_H + tol)
         flash = sum(1 for i in items if i[0] == "flash")
         draw = sum(1 for i in items if i[0] == "draw")
-          print(f"{name:14s} {flash:4d} flashes  {draw:4d} lines  "
+        print(f"{name:14s} {flash:4d} flashes  {draw:4d} lines  "
               f"({x0:5.2f},{y0:5.2f})-({x1:5.2f},{y1:5.2f})"
               f"{'' if inside else '   OUTSIDE'}")
         if not inside:

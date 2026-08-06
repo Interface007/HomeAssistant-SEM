@@ -75,7 +75,7 @@ STROKES = {
 
 
 def text_strokes(s, x, y, size, anchor="start"):
-       """Polylines in mm for `s`, baseline on y. `size` = cap height."""
+    """Polylines in mm for `s`, baseline on y. `size` = cap height."""
     s = s.upper()
     scale = size / GLYPH_H
     adv = (GLYPH_W + GLYPH_GAP) * scale

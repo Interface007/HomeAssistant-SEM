@@ -181,13 +181,23 @@ COMPONENTS["R4"] = {
 }
 
 # --- Q1 + JP1: PWM driver ---------------------------------------------
-# 2N7000 TO-92, pin order with flat side front: 1 source, 2 drain, 3 gate
+# 2N7000 in TO-92: flat side towards the viewer, leads pointing down,
+# left to right pin 1 source, pin 2 GATE, pin 3 DRAIN.
+# NOTE: until 2026-08 this read S-D-G, which swapped gate and drain.
+# BS170 shares the same S-G-D order; 2N7002 in SOT-23 is G-S-D instead -
+# check the datasheet before substituting a different part.
+_Q1_X = (6.0, 8.54, 11.08)
+
 COMPONENTS["Q1"] = {
-    "desc": "2N7000 open-drain driver for PWM",
-    "pads": inline(6.0, 39.0, 3, 2.54, D_TO92),
-    "nets": {0: "GND", 1: "Q1_DRAIN", 2: "GPIO2"},
+    "desc": "2N7000 open-drain driver for PWM (TO-92, S-G-D)",
+    "pads": inline(_Q1_X[0], 39.0, 3, 2.54, D_TO92),
+    "nets": {0: "GND", 1: "GPIO2", 2: "Q1_DRAIN"},
+    # One label per pad, centred underneath it. A single "S G D" string
+    # cannot be aligned to the 2.54 mm pad pitch.
     "silk": [(4.5, 43.1, "Q1 2N7000", 1.0, "start"),
-             (4.5, 36.7, "S D G", 0.9, "start")],
+             (_Q1_X[0], 36.6, "S", 0.9, "middle"),
+             (_Q1_X[1], 36.6, "G", 0.9, "middle"),
+             (_Q1_X[2], 36.6, "D", 0.9, "middle")],
     "keepout": (4.5, 35.5, 8.0, 7.0),
 }
 

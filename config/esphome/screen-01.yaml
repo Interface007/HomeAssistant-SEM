@@ -70,7 +70,10 @@ display:
       int y = 13;
 
       if (win.empty()) {
-        it.print(0, y, id(font12), "alle Fenster sind zu");
+        // +2 px: without the abbreviation line above it, this text sat too
+        // high. Only this line moves - the cursor advance is unchanged, so
+        // everything below keeps its position.
+        it.print(0, y + 2, id(font12), "alle Fenster sind zu");
         y += 13;
       }
 

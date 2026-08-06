@@ -201,8 +201,10 @@
         {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
 
 # ------------------------- STORAGE ROOM (Basement) --------------------
-# Note: basement walls border soil -> f_Rsi estimation via
-# outdoor temperature is only an approximation here. Planned: dedicated wall sensor.
+# Wandtemperatur wird seit 2026-08-06 real gemessen (DS18B20 am ESPHome-
+# Geraet cellar-fan-01), nicht mehr ueber f_Rsi geschaetzt. Das war hier
+# ohnehin nur eine Naeherung, weil Kellerwaende ans Erdreich grenzen und
+# nicht an die Aussenluft.
 - sensor:
     - name: "Storage Room Absolute Humidity"
       unique_id: storage_room_absolute_humidity
@@ -230,19 +232,16 @@
         {{ dew_point(states('sensor.storage_room_temperature') | float,
                      states('sensor.storage_room_humidity') | float) | float | round(1) }}
 
+    # Gemessene Wandtemperatur -> einheitlicher Name nach Konvention.
+    # Quelle: DS18B20 an cellar-fan-01, in die Wand eingeklebt.
     - name: "Storage Room Wall Temperature"
       unique_id: storage_room_wall_temperature
       default_entity_id: sensor.storage_room_wall_temperature
       unit_of_measurement: "°C"
       device_class: temperature
       state_class: measurement
-      availability: >
-        {{ has_value('sensor.storage_room_temperature') and has_value('sensor.outdoor_temperature') }}
-      state: >
-        {% from 'climate.jinja' import wall_temp_estimate, f_rsi %}
-        {{ wall_temp_estimate(states('sensor.outdoor_temperature') | float,
-                              states('sensor.storage_room_temperature') | float,
-                              f_rsi('storage_room') | float) | float | round(1) }}
+      availability: "{{ has_value('sensor.storage_room_fan01_kellerwand_temperatur') }}"
+      state: "{{ states('sensor.storage_room_fan01_kellerwand_temperatur') | float | round(1) }}"
 
     - name: "Storage Room Wall Surface Humidity"
       unique_id: storage_room_wall_surface_humidity

@@ -40,7 +40,11 @@
   TODO: In winter (ΔT >= 10 K, at night), measure each room at the
   coldest point with an IR thermometer and enter values here:
   f_Rsi = (T_wall - T_outdoor) / (T_indoor - T_outdoor)
-  Reference: live value sensor.living_room_f_rsi_live (measured wall). #}
+  Reference: live value sensor.living_room_f_rsi_live (measured wall).
+
+  living_room and storage_room no longer use these values — both walls are
+  measured directly. Their entries stay as documentation of the previous
+  estimate; the remaining rooms still rely on them. #}
 {% macro f_rsi(room) -%}
   {{ {
     'living_room':  0.90,

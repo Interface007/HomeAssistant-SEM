@@ -266,7 +266,12 @@ sensor:
     icon: mdi:speedometer
     accuracy_decimals: 0
     state_class: measurement
-    internal_filter: 100us
+    # 1 ms rejects everything above 1 kHz. The tach line is high-impedance
+    # (10 k pull-up) and shares the fan cable with the 25 kHz PWM, whose
+    # edges couple in capacitively; with 100 us those spikes were counted
+    # and produced ~128000 rpm. A P12 tops out near 2000 rpm = 66 Hz, so
+    # 1 ms still leaves headroom up to 30000 rpm.
+    internal_filter: 1ms
     timeout: 3s
     filters:
       - multiply: 0.5          # 2 Impulse pro Umdrehung

@@ -143,6 +143,18 @@ views:
       - type: grid
         cards:
           - type: heading
+            heading: Kellerlüftung
+            icon: mdi:fan
+          - type: tile
+            entity: sensor.storage_room_fan01_kellerwand_temperatur
+            name: Kellerwand gemessen
+          - type: tile
+            entity: sensor.storage_room_fan01_lufter_drehzahl
+            name: Lüfter Drehzahl
+
+      - type: grid
+        cards:
+          - type: heading
             heading: Fenster
             icon: mdi:window-closed-variant
           - type: tile
@@ -269,6 +281,8 @@ views:
               - sensor.living_room_dew_point
               - sensor.bedroom_wall_temperature
               - sensor.bedroom_dew_point
+              - sensor.storage_room_fan01_kellerwand_temperatur
+              - sensor.storage_room_fan01_taupunkt_keller
       - type: grid
         cards:
           - type: heading

@@ -188,6 +188,23 @@ number:
     optimistic: true
     restore_value: true
 
+  # Below this the cellar counts as dry enough and ventilation stops even
+  # when the outside air would still remove moisture. Set high (80) to
+  # disable the cut-off and keep drying the structure.
+  - platform: template
+    id: target_humidity
+    name: "Zielfeuchte Keller"
+    unit_of_measurement: "%"
+    icon: mdi:water-check
+    entity_category: config
+    mode: box
+    min_value: 30
+    max_value: 80
+    step: 1
+    initial_value: 50
+    optimistic: true
+    restore_value: true
+
 switch:
   - platform: template
     id: auto_mode
@@ -472,6 +489,17 @@ script:
 
           bool want = diff > thr;
           std::string reason = want ? "Lüften" : "Außenluft nicht trockener";
+
+          // Target humidity reached -> stop, even though the outside air
+          // would still remove moisture. Hysteresis of 3 points because the
+          // humidity sensor only resolves 1 % steps; with a tighter band the
+          // fan would chatter on every single step.
+          const float RH_HYST = 3.0f;
+          const float rh_target = id(target_humidity).state;
+          if (want && rh_i <= (running ? rh_target : rh_target + RH_HYST)) {
+            want = false;
+            reason = "Zielfeuchte erreicht";
+          }
 
           // Outdoor air must not condense on the cold basement wall.
           if (want && dpo >= t_w - id(wall_margin).state) {

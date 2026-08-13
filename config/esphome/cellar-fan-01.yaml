@@ -188,6 +188,27 @@ number:
     optimistic: true
     restore_value: true
 
+  # Upper limit on fan speed, meant to be driven by a Home Assistant
+  # schedule (night-time noise reduction). Kept as a plain number instead
+  # of a time window on the device: HA already has a scheduler that
+  # handles weekdays, holidays and sun times, and the device would need a
+  # clock source for nothing. 0 stops the fan entirely while the limit is
+  # active. Survives reboots, so a lost HA connection cannot silently
+  # release the limit.
+  - platform: template
+    id: speed_max
+    name: "Maximale Lüfterleistung"
+    unit_of_measurement: "%"
+    icon: mdi:fan-speed-2
+    entity_category: config
+    mode: box
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 100
+    optimistic: true
+    restore_value: true
+
   # Below this the cellar counts as dry enough and ventilation stops even
   # when the outside air would still remove moisture. Set high (80) to
   # disable the cut-off and keep drying the structure.
@@ -515,12 +536,26 @@ script:
             reason = "Keller zu kalt";
           }
 
+          // Upper speed limit, e.g. driven by a night-time schedule in HA.
+          // Applied last so it caps the result of the dew-point ramp; a
+          // limit of 0 stops the fan rather than letting it stall at a
+          // duty cycle it cannot turn at.
+          const int cap = (int) lroundf(id(speed_max).state);
+          if (want && cap <= 0) {
+            want = false;
+            reason = "Drehzahl gesperrt";
+          }
+
           int speed = 0;
           if (want) {
             const float span = std::max(0.5f, id(dp_diff_full).state - thr_on);
             const float f = std::min(1.0f, std::max(0.0f, (diff - thr_on) / span));
             const float smin = id(fan_speed_min).state;
             speed = (int) lroundf(smin + (100.0f - smin) * f);
+            if (speed > cap) {
+              speed = cap;
+              reason = "Lüften, gedrosselt";
+            }
           }
 
           id(vent_recommended) = want;

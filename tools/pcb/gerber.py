@@ -167,26 +167,35 @@ def mask(side, vias):
 def silkscreen():
     g = Gerber("Top Silkscreen", "Legend,Top")
 
+    import math
+
     for ref, comp in B.COMPONENTS.items():
-        ko = comp.get("keepout")
-        if ko:
-            x, y, w, h = ko
-            g.draw([(x, y), (x + w, y), (x + w, y + h), (x, y + h), (x, y)],
-                   SILK_WIDTH)
+        shape = comp.get("outline")
+        if shape and shape[0] == "circle":
+            # Round body outline (electrolytic can) instead of the generic
+            # rectangle - shows the real diameter to check the part against.
+            _, cx, cy, r = shape
+            pts = [(cx + r * math.cos(2 * math.pi * i / 24),
+                    cy + r * math.sin(2 * math.pi * i / 24))
+                   for i in range(25)]
+            g.draw(pts, SILK_WIDTH)
+        else:
+            ko = comp.get("keepout")
+            if ko:
+                x, y, w, h = ko
+                g.draw([(x, y), (x + w, y), (x + w, y + h), (x, y + h),
+                        (x, y)], SILK_WIDTH)
         for sx, sy, text, size, anchor in comp.get("silk", []):
             for poly in font.text_strokes(text, sx, sy, size * 0.8, anchor):
                 g.draw(poly, SILK_WIDTH)
 
-    # Pin-1 marker: short line next to pad 0 of each connector
-    for ref, comp in B.COMPONENTS.items():
-        if not ref.startswith("J"):
-            continue
-        p = comp["pads"][0]
-        r = p["copper"] / 2 + 0.35
-        g.draw([(p["x"] - r, p["y"] - r), (p["x"] - r, p["y"] + r)],
-               SILK_WIDTH)
+    # No generic pin-1 tick any more: it landed underneath the connector
+    # bodies and was invisible once populated. Every connector now carries
+    # explicit labels ("+"/"-" on the screw terminals, "1" below the fan
+    # headers) placed outside its outline.
 
-    for poly in font.text_strokes(NAME, B.BOARD_W / 2, 1.4, 1.1, "middle"):
+    for poly in font.text_strokes(f"{NAME} {B.BOARD_REV}",
+                                  B.BOARD_W / 2, 1.4, 1.0, "middle"):
         g.draw(poly, SILK_WIDTH)
     return g
 

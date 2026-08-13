@@ -54,6 +54,37 @@ def check():
             if ka and kb and _rects_overlap(ka, kb):
                 problems.append(f"{a} and {b} overlap mechanically")
 
+    # Every connector needs a free corridor to a board edge, otherwise the
+    # cable has to cross another part. Checked in all four directions; one
+    # clear direction is enough.
+    for ref, comp in B.COMPONENTS.items():
+        # "J..." are connectors, "JP..." are solder jumpers - those carry
+        # no cable and need no corridor.
+        if not ref.startswith("J") or ref.startswith("JP"):
+            continue
+        ko = comp.get("keepout")
+        if not ko:
+            continue
+        x, y, w, h = ko
+        corridors = {
+            "links":  (0.0, y, x, h),
+            "rechts": (x + w, y, B.BOARD_W - (x + w), h),
+            "unten":  (x, 0.0, w, y),
+            "oben":   (x, y + h, w, B.BOARD_H - (y + h)),
+        }
+        free = []
+        for name, c in corridors.items():
+            if c[2] <= 0.1 or c[3] <= 0.1:
+                free.append(name)          # sits directly on the edge
+                continue
+            if not any(_rects_overlap(c, o["keepout"])
+                       for r, o in B.COMPONENTS.items()
+                       if r != ref and o.get("keepout")):
+                free.append(name)
+        if not free:
+            problems.append(f"{ref} hat keinen freien Kabelaustritt zu einer "
+                            f"Platinenkante - eingeschlossen von Nachbarn")
+
     wr = B.MOUNT_WASHER_D / 2
     for hx, hy in B.mount_holes():
         washer = (hx - wr, hy - wr, B.MOUNT_WASHER_D, B.MOUNT_WASHER_D)
@@ -103,6 +134,14 @@ def svg():
          f'rx="{B.BOARD_CORNER_R * SCALE:.1f}" fill="#1f6b3a" stroke="#0d3a1f"/>']
 
     for ref, comp in B.COMPONENTS.items():
+        shape = comp.get("outline")
+        if shape and shape[0] == "circle":
+            _, cx, cy, r = shape
+            o.append(f'<circle cx="{_x(cx):.1f}" cy="{_y(cy):.1f}" '
+                     f'r="{r * SCALE:.1f}" fill="none" stroke="#e8e4d8" '
+                     f'stroke-width="0.8" stroke-dasharray="3 2" '
+                     f'opacity="0.75"/>')
+            continue
         ko = comp.get("keepout")
         if ko:
             o.append(f'<rect x="{_x(ko[0]):.1f}" y="{_y(ko[1] + ko[3]):.1f}" '
@@ -110,13 +149,21 @@ def svg():
                      f'fill="none" stroke="#e8e4d8" stroke-width="0.8" '
                      f'stroke-dasharray="3 2" opacity="0.75"/>')
 
-    routed, failed = _routes()
-    for net, path, width in routed:
-        col = "#ffd24a" if net in B.POWER_NETS else "#d8b25a"
+    routed, vias, failed = _routes()
+    for net, path, width, layer in routed:
+        if net in B.POWER_NETS:
+            col = "#ffd24a"
+        else:
+            col = "#8fd4ff" if layer == 1 else "#d8b25a"
         pts = " ".join(f"{_x(x):.1f},{_y(y):.1f}" for x, y in path)
         o.append(f'<polyline points="{pts}" fill="none" stroke="{col}" '
                  f'stroke-width="{width * SCALE:.1f}" stroke-linecap="round" '
                  f'stroke-linejoin="round"/>')
+    for net, vx, vy in vias:
+        o.append(f'<circle cx="{_x(vx):.1f}" cy="{_y(vy):.1f}" '
+                 f'r="{0.4 * SCALE:.1f}" fill="#d8b25a"/>')
+        o.append(f'<circle cx="{_x(vx):.1f}" cy="{_y(vy):.1f}" '
+                 f'r="{0.2 * SCALE:.1f}" fill="#1f6b3a"/>')
 
     # Unrouted connections remain visible as red air-wires.
     nets = B.netlist()

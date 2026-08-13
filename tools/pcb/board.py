@@ -15,6 +15,8 @@ MODULE_PIN_PITCH and regenerate.
 
 # ---------------------------------------------------------------- Board
 
+BOARD_REV = "rev B"
+
 BOARD_W = 60.0
 BOARD_H = 55.0
 BOARD_CORNER_R = 2.0
@@ -109,7 +111,9 @@ COMPONENTS["J1"] = {
     "desc": "2-pin screw terminal 5.08 - 12 V input from PSU",
     "pads": inline(12.0, 6.0, 2, 5.08, D_SCREW_5MM),
     "nets": {0: "+12V", 1: "GND"},
-    "silk": [(10.0, 10.6, "J1  12V IN", 1.2, "start")],
+    "silk": [(12.0, 10.2, "+", 1.1, "middle"),
+             (17.08, 10.2, "-", 1.1, "middle"),
+             (9.0, 12.1, "J1 12V IN", 1.0, "start")],
     "keepout": (8.5, 2.5, 12.5, 7.0),
 }
 
@@ -118,19 +122,26 @@ COMPONENTS["J2"] = {
     "desc": "2-pin screw terminal 5.08 - 5 V input from MINI560 (external)",
     "pads": inline(26.0, 48.0, 2, 5.08, D_SCREW_5MM),
     "nets": {0: "+5V", 1: "GND"},
-    "silk": [(24.0, 52.0, "J2  5V IN", 1.2, "start")],
+    "silk": [(26.0, 52.3, "+", 1.1, "middle"),
+             (31.08, 52.3, "-", 1.1, "middle"),
+             (23.0, 42.7, "J2 5V IN", 1.0, "start")],
     "keepout": (22.5, 44.5, 12.5, 7.0),
 }
 
 # --- J3: DS18B20, 3-pin screw terminal 3.50 ---------------------------
 COMPONENTS["J3"] = {
     "desc": "3-pin screw terminal 3.50 - DS18B20 (3V3 / GND / DATA)",
-    "pads": inline(14.0, 28.0, 3, 3.5, D_SCREW_35MM, dx=0.0, dy=-1.0),
+    # Top edge, wires exit upwards off the board. Previously this sat in
+    # the middle of the board with J6/C1 to the west and J4/R1/R2 to the
+    # east - no direction for the sensor cable to leave without crossing
+    # another part. Connectors belong on an edge.
+    "pads": inline(11.0, 50.0, 3, 3.5, D_SCREW_35MM),
     "nets": {0: "+3V3", 1: "GND", 2: "GPIO6"},
-    "silk": [(10.5, 32.0, "J3  DS18B20", 1.2, "start"),
-             (16.5, 28.0, "+", 1.0, "start"),
-             (16.5, 21.0, "D", 1.0, "start")],
-    "keepout": (10.5, 19.5, 11.0, 11.5),
+    "silk": [(11.0, 45.4, "+", 1.0, "middle"),
+             (14.5, 45.4, "-", 1.0, "middle"),
+             (18.0, 45.4, "D", 1.0, "middle"),
+             (9.0, 43.2, "J3 DS18B20", 0.9, "start")],
+    "keepout": (9.0, 46.5, 11.0, 7.0),
 }
 
 # --- J4 / J5: fans, 4-pin header 2.54 ---------------------------------
@@ -139,8 +150,8 @@ COMPONENTS["J4"] = {
     "desc": "4-pin header 2.54 - fan 1 (with tach)",
     "pads": inline(24.0, 18.0, 4, 2.54, D_HEADER),
     "nets": {0: "GND", 1: "+12V", 2: "GPIO4", 3: "PWM_OUT"},
-    "silk": [(23.0, 21.0, "J4  FAN 1", 1.2, "start"),
-             (23.4, 15.2, "1", 1.0, "start")],
+    "silk": [(22.5, 22.7, "J4 FAN1", 1.0, "start"),
+             (24.0, 12.5, "1", 1.0, "middle")],
     "keepout": (22.5, 15.0, 11.5, 7.0),
 }
 
@@ -148,10 +159,40 @@ COMPONENTS["J5"] = {
     "desc": "4-pin header 2.54 - fan 2, tach NOT connected",
     "pads": inline(24.0, 8.0, 4, 2.54, D_HEADER),
     "nets": {0: "GND", 1: "+12V", 3: "PWM_OUT"},
-    "silk": [(23.0, 11.0, "J5  FAN 2", 1.2, "start"),
-             (23.4, 5.2, "1", 1.0, "start"),
-             (29.5, 5.2, "no tach", 0.9, "start")],
+    "silk": [(22.5, 12.7, "J5 FAN2 OHNE TACHO", 0.9, "start"),
+             (24.0, 2.5, "1", 1.0, "middle")],
     "keepout": (22.5, 5.0, 11.5, 7.0),
+}
+
+# --- J6: 12 V pass-through for the external MINI560 step-down ---------
+# Vertical on the left edge, wires exit to the left. Electrically in
+# parallel with J1 - saves doubling up two wires in one screw terminal.
+COMPONENTS["J6"] = {
+    "desc": "2-pin screw terminal 5.08 - 12 V pass-through to step-down",
+    "pads": inline(4.5, 29.08, 2, 5.08, D_SCREW_5MM, dx=0.0, dy=-1.0),
+    "nets": {0: "+12V", 1: "GND"},
+    "silk": [(9.2, 28.7, "+", 1.1, "start"),
+             (9.2, 23.6, "-", 1.1, "start"),
+             (9.2, 33.4, "J6 12V OUT", 0.9, "start")],
+    "keepout": (1.0, 20.5, 7.0, 12.5),
+}
+
+# --- C2: low-pass on the tach line ------------------------------------
+# 100 nF ceramic to GND. With R2 (10 k) the corner sits at 159 Hz:
+#   tach signal at 2000 rpm = 67 Hz  -> -0.7 dB, passes
+#   measured PWM crosstalk  = 558 Hz -> -11.2 dB, cut to 27 %
+# tau = 1 ms stays well below the 7.5 ms half period, so the edges stay
+# steep enough not to retrigger the input.
+# An earlier revision specified 10 nF - that put the corner at 1.6 kHz,
+# ABOVE the interference, and would have attenuated it by 0.5 dB, i.e.
+# not at all. Do not "optimise" this value downwards again.
+# Pitch 5.08 - parts with 2.54 just get their legs spread.
+COMPONENTS["C2"] = {
+    "desc": "100nF ceramic - low-pass on the tach line against PWM crosstalk",
+    "pads": inline(14.0, 15.5, 2, 5.08, D_RESISTOR),
+    "nets": {0: "GPIO4", 1: "GND"},
+    "silk": [(12.5, 17.7, "C2 100N", 0.9, "start")],
+    "keepout": (12.5, 13.5, 8.0, 4.0),
 }
 
 # --- Pull-ups: 3V3 end to west rail, signal end to east toward U1.
@@ -221,8 +262,11 @@ COMPONENTS["C1"] = {
     "desc": "100uF/25V radial, pitch 2.5, buffer for 12 V rail",
     "pads": inline(5.0, 14.0, 2, 2.5, D_ELKO, dx=0.0, dy=1.0),
     "nets": {0: "GND", 1: "+12V"},
-    "silk": [(1.8, 11.5, "C1 100u", 1.0, "start"),
-             (7.5, 16.5, "+", 1.2, "start")],
+    "silk": [(9.4, 16.1, "+", 1.2, "start"),
+             (1.2, 9.5, "C1 100U 35V", 0.85, "start")],
+    # Round outline instead of the generic rectangle: diameter of the
+    # largest can this footprint takes (8 mm) plus a little air.
+    "outline": ("circle", 5.0, 15.25, 4.3),
     "keepout": (1.5, 10.5, 7.5, 10.0),
 }
 

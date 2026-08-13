@@ -1,0 +1,79 @@
+# =====================================================================
+# ble-proxy-upstairs-01 - Bluetooth proxy for the upper floor.
+#
+# Purpose: the Shelly BLU Door/Window sensors (BTHome over BLE) are only
+# reachable by receivers on the ground floor, which puts them around
+# -84 dBm - far into the range where packets are lost and a contact can
+# get stuck in its last received state (this happened to shelly_dw_05).
+# The Shelly BLU gateway does not help here: it feeds the Shelly cloud,
+# not Home Assistant's Bluetooth stack.
+#
+# Board: ESP32-C6-WROOM-1. The C6 has no Arduino support in ESPHome, so
+# esp-idf is mandatory here (not a preference).
+#
+# Placement matters more than anything else in this file: put it on the
+# upper floor, roughly central between anna_room, lea_room, bathroom and
+# bedroom, out of a metal enclosure and not directly behind the router.
+# Target RSSI is better than -75 dBm; check
+# sensor.bthome_sensor_<id>_signal_strength after installing.
+# =====================================================================
+substitutions:
+  name: ble-proxy-upstairs-01
+  friendly_name: BLE Proxy Obergeschoss 01
+  # NOTE: verify this address is still free before flashing.
+  static_ip: 192.168.2.50
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32-c6-devkitc-1
+  framework:
+    type: esp-idf
+  variant: ESP32C6
+  
+logger: !include ./includes/logger.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+captive_portal:
+
+api:
+  encryption:
+    key: !secret api_enc_key
+
+# Passive scanning: the BLU sensors broadcast their BTHome data anyway, so
+# there is nothing to gain from scan requests - they would only make the
+# battery-powered sensors answer and drain them faster.
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
+
+# The proxy itself stays connectable so Home Assistant can reach BLE
+# devices that need a connection (none today, but it costs nothing).
+bluetooth_proxy:
+  active: true
+
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: diagnostic
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart"
+    entity_category: config

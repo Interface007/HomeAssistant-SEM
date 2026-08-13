@@ -1,0 +1,58 @@
+# =====================================================================
+# Automations: cellar ventilation (ESPHome cellar-fan-01)
+#
+# Nachtabsenkung der Luefterdrehzahl. Die Regelung selbst laeuft komplett
+# auf dem ESP; hier wird nur die Obergrenze gesetzt, die der Regler auf
+# das Ergebnis seiner Taupunkt-Rampe anwendet.
+#
+# 0 % haelt den Luefter waehrend des Fensters komplett an.
+# 100 % ist die Freigabe - der Regler entscheidet dann allein.
+#
+# Der Wert ueberlebt einen Reboot des ESP. Faellt HA aus, bleibt also die
+# zuletzt gesetzte Grenze stehen, statt sich still aufzuheben.
+# =====================================================================
+
+- id: cellar_fan_night_limit_on
+  alias: "Cellar fan: night speed limit on"
+  description: >
+    Drosselt den Kellerluefter nachts auf 40 %. Der Arctic P12 ist bei
+    dieser Drehzahl praktisch unhoerbar, entfeuchtet aber weiter.
+  triggers:
+    - trigger: time
+      at: "22:00:00"
+  actions:
+    - action: number.set_value
+      target:
+        entity_id: number.storage_room_fan01_maximale_lufterleistung
+      data:
+        value: 40
+
+- id: cellar_fan_night_limit_off
+  alias: "Cellar fan: night speed limit off"
+  description: Gibt die volle Drehzahl morgens wieder frei.
+  triggers:
+    - trigger: time
+      at: "10:00:00"
+  actions:
+    - action: number.set_value
+      target:
+        entity_id: number.storage_room_fan01_maximale_lufterleistung
+      data:
+        value: 100
+
+# Nach einem Neustart von HA die Grenze passend zur Uhrzeit nachziehen -
+# sonst bliebe sie bis zum naechsten Zeitpunkt auf dem alten Wert stehen,
+# wenn HA genau ueber einen der beiden Zeitpunkte hinweg neu startet.
+- id: cellar_fan_night_limit_sync
+  alias: "Cellar fan: sync night speed limit after restart"
+  triggers:
+    - trigger: homeassistant
+      event: start
+  actions:
+    - action: number.set_value
+      target:
+        entity_id: number.storage_room_fan01_maximale_lufterleistung
+      data:
+        value: >
+          {{ 40 if today_at('22:00') <= now() or now() < today_at('06:00')
+             else 100 }}

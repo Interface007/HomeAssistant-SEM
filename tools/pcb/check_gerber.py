@@ -224,8 +224,8 @@ if __name__ == "__main__":
     holes = parse_drill(os.path.join(d, "cellar-fan-01.drl"))
     nholes = sum(len(v) for v in holes.values())
     expect_h = npads + len(vias) + len(B.mount_holes())
-        print(f"Drills: {nholes}, expected {expect_h} -> "
-            f"{'ok' if nholes == expect_h else 'MISSING'}")
+    print(f"Drills: {nholes}, expected {expect_h} -> "
+          f"{'ok' if nholes == expect_h else 'MISSING'}")
     if nholes != expect_h:
         ok = False
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
             key = (round(x, 3), round(y, 3))
             if key in pads_by_pos and abs(pads_by_pos[key] - dia) > 1e-6:
                 ok = False
-                    print(f"   ! drill {key} is {dia} mm, pad requires "
+                print(f"   ! drill {key} is {dia} mm, pad requires "
                       f"{pads_by_pos[key]} mm")
 
     if len(sys.argv) > 2:

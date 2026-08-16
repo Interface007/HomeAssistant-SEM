@@ -88,8 +88,6 @@ logger:
 
 wifi: !include ./includes/wifi_common_display.yaml
 
-captive_portal:
-
 button:
   - platform: factory_reset
     id: factory_reset_btn

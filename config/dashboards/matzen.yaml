@@ -46,6 +46,25 @@ views:
       - type: grid
         cards:
           - type: heading
+            heading: Garten
+            icon: mdi:cctv
+          # camera_view: auto shows the still image that the ESP delivers at
+          # idle_framerate and only starts the live stream when the card is
+          # opened. "live" would keep the ESP32-CAM streaming permanently -
+          # it can only serve one stream client at a time.
+          - type: picture-entity
+            entity: camera.garden_north_cam_01_camera
+            name: Garten Nord
+            camera_view: auto
+            show_state: false
+            aspect_ratio: 4:3
+          - type: tile
+            entity: light.garden_north_cam_01_flash_led
+            name: Flash-LED
+
+      - type: grid
+        cards:
+          - type: heading
             heading: Klima Räume
             icon: mdi:thermometer
           - type: tile

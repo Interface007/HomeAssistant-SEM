@@ -38,7 +38,6 @@ esp32:
 logger: !include ./includes/logger.yaml
 ota: !include ./includes/ota.yaml
 wifi: !include ./includes/wifi_common.yaml
-captive_portal:
 
 api:
   encryption:

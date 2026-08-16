@@ -33,7 +33,6 @@ logger:
 
 ota: !include ./includes/ota.yaml
 wifi: !include ./includes/wifi_common.yaml
-captive_portal:
 web_server: !include ./includes/web.yaml
 
 api:

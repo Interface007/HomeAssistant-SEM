@@ -1,0 +1,190 @@
+# =====================================================================
+# camera-garden-01 - Garden surveillance camera.
+#
+# Hardware: diymore ESP32-CAM (https://www.amazon.de/dp/B08X3GRK22)
+#   This is an AI-Thinker ESP32-CAM clone: ESP32-WROOM-32 with 4 MB quad
+#   PSRAM, OV2640 sensor, microSD slot (unused here) and the micro-USB
+#   "ESP32-CAM-MB" programmer shield. Same board that runs the water
+#   meter reader (see components-and-devices.md).
+#
+# Power supply is the number one failure cause on this board: the camera
+# draws current spikes while the radio transmits. Use a 5 V / >=1 A
+# supply on the 5V pin (NOT 3V3) and a short, thick cable. Brownouts show
+# up as "Brownout detector was triggered" in the log or as a device that
+# reboots as soon as the stream starts.
+#
+# Placement: the PCB antenna is weak and the board sits in a plastic case
+# outdoors. Check the WiFi Signal sensor after mounting; below -75 dBm
+# the stream will stutter. The board has a u.FL connector - moving the
+# 0 ohm resistor next to it enables an external antenna.
+#
+# Wiring notes:
+#   GPIO0  = XCLK (also boot strapping pin - keep it free otherwise)
+#   GPIO16 = onboard PSRAM chip select. Using it triggers the watchdog.
+#   GPIO1/GPIO3 = UART0, used for serial logs
+#   Free for extras (microSD unused): GPIO2, GPIO4, GPIO12..GPIO15
+# =====================================================================
+substitutions:
+  name: camera-garden-01
+  friendly_name: Gartenkamera 01
+  # NOTE: verify this address is still free before flashing.
+  static_ip: 192.168.2.51
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.10.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32cam
+  variant: esp32
+  flash_size: 4MB
+  framework:
+    # esp-idf is the recommended framework for esp32_camera; the Arduino
+    # path is effectively unmaintained for this component upstream.
+    type: esp-idf
+
+# The camera cannot work without PSRAM - the frame buffers do not fit
+# into internal RAM. The ESP32 (classic) only supports quad mode.
+psram:
+  mode: quad
+  speed: 80MHz          # drop to 40MHz if the board reboots or shows PSRAM errors
+
+# Deviation from ./includes/logger.yaml on purpose: DEBUG level floods
+# UART0 while frames are being captured, which stalls the camera task and
+# can trip the watchdog. INFO keeps boot diagnostics without the noise.
+logger:
+  level: INFO
+
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+
+# ---------------------------------------------------------------------
+# Camera - OV2640 on the AI-Thinker pinout
+# ---------------------------------------------------------------------
+esp32_camera:
+  name: "Camera"
+  external_clock:
+    pin: GPIO0
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  # Mandatory on this board. Without it the sensor answers on the camera
+  # I2C bus but returns garbage ID registers -> "Setup Failed:
+  # ESP_ERR_NOT_SUPPORTED" at boot.
+  power_down_pin: GPIO32
+  # reset_pin is not routed on AI-Thinker boards - do not set it.
+
+  resolution: 800x600     # SVGA; 1024x768 or 1600x1200 work too but are slower
+  jpeg_quality: 10        # 6 = best ... 63 = worst (the OV2640 encodes in hardware)
+  frame_buffer_count: 2   # double buffering, smoother stream (needs PSRAM)
+  frame_buffer_location: PSRAM
+
+  # Framerate is a power/heat/WiFi tradeoff. 5 fps is plenty for a garden;
+  # idle_framerate keeps a fresh still image in Home Assistant while
+  # nobody is watching the live stream.
+  max_framerate: 5 fps
+  idle_framerate: 0.2 fps
+
+  # Set these according to how the board is finally mounted.
+  vertical_flip: false
+  horizontal_mirror: false
+
+  # Outdoor scenes: auto exposure/gain handle sun and dusk reasonably.
+  # If the sky burns out, lower ae_level (-2..2) or cap agc_gain_ceiling.
+  aec_mode: AUTO
+  agc_mode: AUTO
+  wb_mode: AUTO
+  # ae_level: -1
+  # agc_gain_ceiling: 8X
+
+# MJPEG endpoints for anything that cannot use the native Home Assistant
+# camera entity (Frigate, motionEye, generic MJPEG card, browser).
+#   http://${static_ip}:8080/  -> continuous stream (only ONE client at a time)
+#   http://${static_ip}:8081/  -> single snapshot (multiple clients allowed)
+esp32_camera_web_server:
+  - port: 8080
+    mode: stream
+  - port: 8081
+    mode: snapshot
+
+# ---------------------------------------------------------------------
+# Onboard LEDs
+# ---------------------------------------------------------------------
+# Red LED next to the antenna, active low. Shows WiFi/API problems.
+status_led:
+  pin:
+    number: GPIO33
+    inverted: true
+
+output:
+  # White flash LED. Very bright and it gets hot - do not leave it at
+  # 100% for long. Channel must be set manually because the camera
+  # occupies LEDC timer #1 (try channel 4 if the LED flickers).
+  - platform: ledc
+    pin: GPIO4
+    id: flash_led_output
+    channel: 2
+
+light:
+  - platform: monochromatic
+    output: flash_led_output
+    name: "Flash LED"
+    id: flash_led
+    restore_mode: ALWAYS_OFF
+    default_transition_length: 0s
+
+# ---------------------------------------------------------------------
+# Optional: PIR motion sensor (e.g. AM312/HC-SR501 on 3V3)
+# GPIO13 is a microSD data line and therefore free as long as the card
+# slot stays unused. Do not use GPIO12 (strapping pin, must be low at
+# boot) and never GPIO16 (PSRAM).
+# ---------------------------------------------------------------------
+# binary_sensor:
+#   - platform: gpio
+#     pin:
+#       number: GPIO13
+#       mode:
+#         input: true
+#         pullup: false
+#     name: "Motion"
+#     device_class: motion
+#     filters:
+#       - delayed_off: 30s
+
+# ---------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: diagnostic
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart"
+    entity_category: config

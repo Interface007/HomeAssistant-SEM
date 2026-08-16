@@ -6,6 +6,13 @@ Sometimes the selection of components for ESP32 devices can be difficult, becaus
   - diymore ESP32-CAM: <https://www.amazon.de/dp/B08X3GRK22>
   - firmware project: <https://github.com/jomjol/AI-on-the-edge-device>
   - the casing is simply a cardboard tube and some gaffer tape
+- Garden surveillance camera
+  - diymore ESP32-CAM: <https://www.amazon.de/dp/B08X3GRK22> - the same board as the water meter camera, an AI-Thinker clone with an OV2640 sensor and a micro-USB programmer shield
+  - config: [config/esphome/camera-garden-01.yaml](config/esphome/camera-garden-01.yaml) (plain ESPHome, no AI-on-the-edge here)
+  - power supply is the thing that breaks first: 5 V with at least 1 A on the 5V pin (not 3V3) and a short cable, otherwise the board browns out as soon as the stream starts
+  - `power_down_pin: GPIO32` is mandatory in the ESPHome config - without it the camera fails at boot with `ESP_ERR_NOT_SUPPORTED`, even though the wiring is fine
+  - the PCB antenna is weak for outdoor use; the board has a u.FL connector that can be enabled by moving the 0 ohm resistor next to it
+  - ESPHome cannot do motion detection on this chip - either add a PIR sensor on GPIO13 or let Home Assistant / Frigate work on the MJPEG stream
 - OpenEPaperLink "Spaghetti AP" Access Point:
   - ESP32 S3-Module HMI 8M PSRAM 16M: <https://de.aliexpress.com/item/1005005755597419.html>
   - ESP32 C6-Module: <https://www.amazon.de/dp/B0DYD147MG>

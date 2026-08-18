@@ -101,7 +101,29 @@ display:
     i2c_id: multiplex0channel1
     id: oled_display_1
     lambda: |-
-      it.print(10, 20, id(font12), "HELLO");
+      // WAN downstream bar: 15 px wide, full height (64 px) = 110 Mbit/s
+      // WAN capacity. Bottom part (filled): traffic routed through the
+      // UCG Max. Stacked on top (outline only): FritzBox total minus
+      // UCG = guest network share. Values are 1-min means, see
+      // config/templates/network.yaml.
+      const float capacity_mbit = 110.0f;
+      float ucg = id(wan_ucg_mbit).has_state() ? id(wan_ucg_mbit).state : 0.0f;
+      float guest = id(wan_guest_mbit).has_state() ? id(wan_guest_mbit).state : 0.0f;
+      if (ucg < 0.0f) ucg = 0.0f;
+      if (guest < 0.0f) guest = 0.0f;
+      int ucg_px = (int) roundf(ucg / capacity_mbit * 64.0f);
+      if (ucg_px > 64) ucg_px = 64;
+      int guest_px = (int) roundf(guest / capacity_mbit * 64.0f);
+      if (guest_px > 64 - ucg_px) guest_px = 64 - ucg_px;
+      if (ucg_px > 0)
+        it.filled_rectangle(0, 64 - ucg_px, 15, ucg_px);
+      if (guest_px > 0)
+        it.rectangle(0, 64 - ucg_px - guest_px, 15, guest_px);
+      // Numeric readout next to the bar (Mbit/s)
+      it.printf(22, 0, id(font12), "WAN %.0f%%", (ucg + guest) / capacity_mbit * 100.0f);
+      it.printf(22, 19, id(font12), "UCG  %5.1f", ucg);
+      it.printf(22, 32, id(font12), "Gast %5.1f", guest);
+      it.print(22, 45, id(font12), "Mbit/s");
 
 # --- Binary sensors ----------------------------------------------------------
 binary_sensor:
@@ -182,3 +204,22 @@ binary_sensor:
     on_state:
       then:
         - lambda: 'id(oled_display_0).update();'
+
+# --- Sensors -----------------------------------------------------------------
+# WAN downstream (Mbit/s, 1-min means) computed in HA, see
+# config/templates/network.yaml.
+sensor:
+  - platform: homeassistant
+    id: wan_ucg_mbit
+    entity_id: sensor.wan_downstream_ucg
+    internal: true
+    on_value:
+      then:
+        - lambda: 'id(oled_display_1).update();'
+  - platform: homeassistant
+    id: wan_guest_mbit
+    entity_id: sensor.wan_downstream_guest
+    internal: true
+    on_value:
+      then:
+        - lambda: 'id(oled_display_1).update();'

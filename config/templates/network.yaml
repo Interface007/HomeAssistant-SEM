@@ -1,0 +1,46 @@
+# =====================================================================
+# WAN downstream sensors (Mbit/s) for the network bar on screen-01.
+# Measurement chain: see sensors.yaml (SNMP counter -> derivative for
+# the UCG, statistics mean for the FritzBox). The FritzBox guest
+# network bypasses the UCG Max, therefore guest = total - UCG.
+# =====================================================================
+- sensor:
+    - name: "WAN Downstream UCG"
+      unique_id: wan_downstream_ucg
+      default_entity_id: sensor.wan_downstream_ucg
+      unit_of_measurement: "Mbit/s"
+      device_class: data_rate
+      state_class: measurement
+      icon: mdi:download-network
+      availability: "{{ has_value('sensor.ucg_wan_rx_rate_raw') }}"
+      state: >
+        {# B/s -> Mbit/s; clamp negative spikes from SNMP counter resets #}
+        {{ max(0, states('sensor.ucg_wan_rx_rate_raw') | float(0) * 8 / 1000000) | round(1) }}
+
+    - name: "WAN Downstream Total"
+      unique_id: wan_downstream_total
+      default_entity_id: sensor.wan_downstream_total
+      unit_of_measurement: "Mbit/s"
+      device_class: data_rate
+      state_class: measurement
+      icon: mdi:download-network-outline
+      availability: "{{ has_value('sensor.fritzbox_wan_download_1min') }}"
+      state: >
+        {# kB/s -> Mbit/s #}
+        {{ (states('sensor.fritzbox_wan_download_1min') | float(0) * 8 / 1000) | round(1) }}
+
+    - name: "WAN Downstream Guest"
+      unique_id: wan_downstream_guest
+      default_entity_id: sensor.wan_downstream_guest
+      unit_of_measurement: "Mbit/s"
+      device_class: data_rate
+      state_class: measurement
+      icon: mdi:account-network
+      availability: >
+        {{ has_value('sensor.wan_downstream_total')
+           and has_value('sensor.wan_downstream_ucg') }}
+      state: >
+        {# Clamp: the two sources are sampled independently, so small
+           timing offsets can make the difference slightly negative. #}
+        {{ max(0, states('sensor.wan_downstream_total') | float(0)
+                - states('sensor.wan_downstream_ucg') | float(0)) | round(1) }}

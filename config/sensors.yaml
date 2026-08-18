@@ -86,3 +86,49 @@
   max_age:
     hours: 24
   sampling_size: 1500
+
+# =====================================================================
+# WAN downstream measurement chain (guest network share on screen-01).
+# The FritzBox guest network bypasses the UCG Max, so:
+#   guest = FritzBox WAN total - UCG WAN downstream.
+# UCG side: SNMP v2c counter (enable in UniFi Network: Settings ->
+# System -> SNMP; put the community string into secrets.yaml as
+# "snmp_community"). The SNMP ifIndex equals the kernel interface
+# index; verify it after firmware changes with
+#   ssh root@192.168.2.1 "ip route show default && ip -o link show"
+# (WAN = eth4 on the UCG Max) and adjust the baseoid suffix
+# (IF-MIB::ifHCInOctets.<ifIndex>).
+# =====================================================================
+- platform: snmp
+  name: "ucg_wan_rx_octets"
+  unique_id: ucg_wan_rx_octets
+  host: 192.168.2.1
+  # Version 2c is required: ifHCInOctets is a Counter64, which does not
+  # exist in SNMPv1 (the platform default) and yields "noSuchName" there.
+  version: "2c"
+  community: !secret snmp_community
+  # ifIndex 9 = eth4 (WAN) - verified via "ip -o link show" on the UCG;
+  # virtual interfaces (dummy, vti, ifb, ...) shift the numbering, so the
+  # index is NOT simply lo=1, eth0=2, ...
+  baseoid: 1.3.6.1.2.1.31.1.1.1.6.9  # IF-MIB::ifHCInOctets.9
+  scan_interval: 60
+
+# Mean downstream over the 60 s poll interval: counter delta / time.
+- platform: derivative
+  name: "ucg_wan_rx_rate_raw"
+  unique_id: ucg_wan_rx_rate_raw
+  source: sensor.ucg_wan_rx_octets
+  unit_time: s
+  unit: "B/s"
+  time_window: "00:01:00"
+
+# 1-min mean of the FritzBox WAN downstream (polled every 30 s by the
+# AVM integration, so this averages ~2 samples per interval).
+- platform: statistics
+  name: "fritzbox_wan_download_1min"
+  unique_id: fritzbox_wan_download_1min
+  entity_id: sensor.fritz_box_7690_download_durchsatz
+  state_characteristic: mean
+  max_age:
+    minutes: 1
+  sampling_size: 10

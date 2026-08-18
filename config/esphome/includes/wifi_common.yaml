@@ -1,5 +1,11 @@
 ssid: !secret wifi_ssid
 password: !secret wifi_password
+
+# Fixed devices with a single strong AP: connect straight to the known
+# BSSID/channel instead of scanning and reassociating. Avoids the
+# sporadic "WPA Authentication Failure" reconnect churn seen in the
+# UniFi log (strong signal, single AP, PMF disabled -> stale PMK cache).
+fast_connect: true
 manual_ip:
   static_ip: ${static_ip}
   gateway: 192.168.2.1

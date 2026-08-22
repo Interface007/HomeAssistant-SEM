@@ -1,0 +1,84 @@
+version: 5
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://core-mosquitto:1883
+  user: addons
+  # Quotes are required: without them YAML parses !secret.yaml as a tag.
+  password: '!secret.yaml password'
+serial:
+  port: >-
+    /dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20231008081310-if00
+  adapter: ember
+  baudrate: 115200
+  rtscts: false
+advanced:
+  log_level: info
+  channel: 25
+  network_key: '!secret.yaml network_key'
+  pan_id: 30318
+  ext_pan_id:
+    - 39
+    - 54
+    - 105
+    - 226
+    - 118
+    - 93
+    - 56
+    - 130
+  enable_external_js: false
+frontend:
+  enabled: true
+  port: 8099
+homeassistant:
+  enabled: true
+devices:
+  '0xa4c138083ba3ffff':
+    friendly_name: sonoff_plug_01
+  '0xa4c13808abf4ffff':
+    friendly_name: sonoff_plug_02
+  '0xa4c1386c82c38f90':
+    friendly_name: nous_plug_01
+  '0x0cae5ffffe873783':
+    friendly_name: tuya_repeater_01
+  '0x0ceff6fffe3b2dbd':
+    friendly_name: sonoff_th_01
+  '0x9035eafffe0d88a2':
+    friendly_name: sonoff_th_02
+  '0x881a14fffeec47e2':
+    friendly_name: sonoff_th_04
+  '0x9035eafffe0974ad':
+    friendly_name: sonoff_th_03
+  '0xecf64cfffef26a00':
+    friendly_name: ikea_plug_01
+  '0x282c02bfffeaf3d6':
+    friendly_name: thirdreality_waterleak_01
+  '0x282c02bfffeb8edb':
+    friendly_name: thirdreality_waterleak_02
+  '0x282c02bfffee645a':
+    friendly_name: thirdreality_waterleak_03
+  '0x282c02bfffeae2e4':
+    friendly_name: thirdreality_waterleak_04
+  '0x282c02bfffeb9455':
+    friendly_name: thirdreality_waterleak_05
+  '0xb48931fffe3d5ea7':
+    friendly_name: sonoff_th_05
+  '0xa4c138083dafffff':
+    friendly_name: sonoff_plug_03
+  '0x881a14fffeec48d1':
+    friendly_name: sonoff_th_06
+  '0x0ceff6fffe15b8bc':
+    friendly_name: sonoff_th_07
+  '0xf044d3fffe0804ac':
+    friendly_name: sonoff_th_08
+  '0xa4c138087363ffff':
+    friendly_name: sonoff_plug_04
+  '0xb48931fffe3d62df':
+    friendly_name: sonoff_th_09
+  '0x348d13fffe2aeb82':
+    friendly_name: ikea_light_02
+  '0x348d13fffe2ac87b':
+    friendly_name: ikea_light_01
+  '0x287681fffed8dce5':
+    friendly_name: ikea_light_03
+  '0x04cf8cdf3c7c6a63':
+    friendly_name: aqaraopple_switch_01

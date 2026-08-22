@@ -1,0 +1,176 @@
+###########################################################
+#  presence-livingroom-01 — mmWave presence sensor (living room)
+#
+#  Hardware:
+#    LOLIN / WEMOS S2 Mini v1.0.0  (ESP32-S2, native USB, 4 MB Flash)
+#    HLK-LD2410C  24 GHz mmWave radar (with onboard light sensor)
+#
+#  Wiring (LD2410C module pin -> S2 Mini):
+#    TX  -> GPIO33   (module transmits -> ESP receives  = uart rx_pin)
+#    RX  -> GPIO18   (module receives  <- ESP transmits  = uart tx_pin)
+#    OUT -> GPIO16   (hardware presence level, high = target present)
+#    GND -> GND
+#    VCC -> VBUS     (5 V from USB; the LD2410C needs 5 V, not 3V3)
+#
+#  Notes:
+#    - The LD2410 UART runs at 256000 baud and must own its UART bus;
+#      the logger uses the native USB-CDC of the S2, so no conflict.
+#    - Two presence paths are exposed: the parsed UART state (rich data,
+#      configurable) and the raw OUT pin (GPIO16, fastest, UART-independent).
+###########################################################
+
+substitutions:
+  name: "presence-livingroom-01"
+  friendly_name: "Präsenz Wohnzimmer 01"
+  static_ip: 192.168.2.42
+
+  pin_uart_tx: GPIO18   # -> LD2410C RX
+  pin_uart_rx: GPIO33   # <- LD2410C TX
+  pin_out: GPIO16       # <- LD2410C OUT (hardware presence)
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: lolin_s2_mini
+  variant: esp32s2
+  flash_size: 4MB
+  framework:
+    type: arduino
+
+logger: !include ./includes/logger.yaml
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+web_server: !include ./includes/web.yaml
+
+###########################################################
+#  Dedicated UART for the LD2410C (256000 baud, 8N1)
+###########################################################
+uart:
+  id: uart_ld2410
+  tx_pin: ${pin_uart_tx}
+  rx_pin: ${pin_uart_rx}
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+ld2410:
+  id: ld2410_radar
+  uart_id: uart_ld2410
+
+###########################################################
+#  Presence
+###########################################################
+binary_sensor:
+  - platform: ld2410
+    ld2410_id: ld2410_radar
+    has_target:
+      name: "Präsenz"
+      device_class: occupancy
+    has_moving_target:
+      name: "Bewegung"
+      device_class: motion
+    has_still_target:
+      name: "Ruhende Präsenz"
+      device_class: occupancy
+    out_pin_presence_status:
+      name: "OUT-Pin Präsenz (UART)"
+      device_class: occupancy
+
+  # Raw hardware OUT pin — independent of the UART parser and the fastest
+  # presence edge. High = target present (default out_pin_level).
+  - platform: gpio
+    name: "OUT-Pin Präsenz (GPIO)"
+    device_class: occupancy
+    pin:
+      number: ${pin_out}
+      mode:
+        input: true
+        pullup: false
+
+  - platform: status
+    name: "Status"
+
+###########################################################
+#  Radar measurements
+###########################################################
+sensor:
+  - platform: ld2410
+    ld2410_id: ld2410_radar
+    moving_distance:
+      name: "Entfernung Bewegung"
+    still_distance:
+      name: "Entfernung ruhend"
+    moving_energy:
+      name: "Bewegungsenergie"
+    still_energy:
+      name: "Ruheenergie"
+    detection_distance:
+      name: "Erkennungsentfernung"
+    light:
+      name: "Umgebungslicht"     # LD2410C only: onboard light sensor (0..255)
+
+  - platform: wifi_signal
+    name: "WiFi"
+    entity_category: diagnostic
+    update_interval: 60s
+
+  - platform: uptime
+    name: "Uptime"
+    entity_category: diagnostic
+
+###########################################################
+#  Tuning (editable in HA, stored on the module)
+###########################################################
+number:
+  - platform: ld2410
+    ld2410_id: ld2410_radar
+    timeout:
+      name: "Haltezeit"                 # seconds presence stays after last detection
+    max_move_distance_gate:
+      name: "Max. Gate Bewegung"        # 0..8, each gate ≈ 0.75 m
+    max_still_distance_gate:
+      name: "Max. Gate Ruhe"
+    light_threshold:
+      name: "Lichtschwelle"
+
+select:
+  - platform: ld2410
+    ld2410_id: ld2410_radar
+    distance_resolution:
+      name: "Auflösung"                 # 0.75 m or 0.2 m per gate
+    baud_rate:
+      name: "Baudrate"                  # leave at 256000 unless reflashing
+    light_function:
+      name: "Lichtfunktion"
+    out_pin_level:
+      name: "OUT-Pin Pegel"
+
+###########################################################
+#  Diagnostics
+###########################################################
+button:
+  - platform: ld2410
+    ld2410_id: ld2410_radar
+    factory_reset:
+      name: "LD2410 Werksreset"
+    restart:
+      name: "LD2410 Neustart"
+    query_params:
+      name: "LD2410 Parameter abfragen"
+
+  - platform: restart
+    name: "ESP Neustart"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: ld2410
+    ld2410_id: ld2410_radar
+    version:
+      name: "LD2410 Firmware"
+    mac_address:
+      name: "LD2410 MAC"

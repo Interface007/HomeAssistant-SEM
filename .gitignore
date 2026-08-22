@@ -11,6 +11,14 @@ config/home-assistant.log*
 # ESPHome local secrets
 config/esphome/secrets.yaml
 
+# Zigbee2MQTT local secrets and runtime artifacts
+# coordinator_backup.json also contains the network key.
+config/zigbee2mqtt/secret.yaml
+config/zigbee2mqtt/coordinator_backup.json
+config/zigbee2mqtt/database.db*
+config/zigbee2mqtt/state.json
+config/zigbee2mqtt/log/
+
 # Generated status exports (can contain device/person metadata)
 status/entities.csv
 

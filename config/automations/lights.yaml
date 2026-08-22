@@ -52,35 +52,47 @@
 
 - id: enforce_ikea_lights_power_on_behavior_on
   alias: "Enforce IKEA lights power-on behavior ON"
-  description: "Ensures IKEA lights turn on immediately when mains power returns."
+  description: >
+    Sets startUpOnOff to "on" so the panels come back on after a mains
+    outage.
+
+    Deliberately no longer triggers on the select entities themselves.
+    That was a feedback loop: the action changes exactly the states that
+    form the trigger, so every write kicked off the next one. And since
+    the selects sit at "unknown" and never reach the target value, the
+    natural stopping point was missing too.
   mode: single
+  max_exceeded: silent
   triggers:
     - trigger: homeassistant
       event: start
+    # After a Zigbee2MQTT crash the bridge comes back up without HA
+    # restarting - re-apply in that case as well.
     - trigger: state
-      entity_id:
-        - select.ikea_light_01_power_on_behavior
-        - select.ikea_light_02_power_on_behavior
-        - select.ikea_light_03_power_on_behavior
+      entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+      to: "on"
   actions:
-    - action: select.select_option
-      continue_on_error: true
-      target:
-        entity_id: select.ikea_light_01_power_on_behavior
-      data:
-        option: "on"
-    - action: select.select_option
-      continue_on_error: true
-      target:
-        entity_id: select.ikea_light_02_power_on_behavior
-      data:
-        option: "on"
-    - action: select.select_option
-      continue_on_error: true
-      target:
-        entity_id: select.ikea_light_03_power_on_behavior
-      data:
-        option: "on"
+    # Without the wait the writes run into "Delivery failed": at startup
+    # the routes to the ceiling panels are not established yet.
+    - delay: "00:01:00"
+    - repeat:
+        for_each:
+          - select.ikea_light_01_power_on_behavior
+          - select.ikea_light_02_power_on_behavior
+          - select.ikea_light_03_power_on_behavior
+        sequence:
+          # if/then rather than condition: a bare condition would abort
+          # the whole repeat loop, not just this one iteration.
+          - if:
+              - condition: template
+                value_template: "{{ states(repeat.item) != 'on' }}"
+            then:
+              - action: select.select_option
+                continue_on_error: true
+                target:
+                  entity_id: "{{ repeat.item }}"
+                data:
+                  option: "on"
 
 - id: enforce_shelly_minig3_on_after_power_restore
   alias: "Enforce Shelly Mini G3 ON after power restore"

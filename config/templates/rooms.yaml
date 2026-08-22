@@ -201,10 +201,10 @@
         {{ d > 0.3 if is_state(this.entity_id, 'on') else d > 0.7 }}
 
 # ------------------------- STORAGE ROOM (Basement) --------------------
-# Wandtemperatur wird seit 2026-08-06 real gemessen (DS18B20 am ESPHome-
-# Geraet cellar-fan-01), nicht mehr ueber f_Rsi geschaetzt. Das war hier
-# ohnehin nur eine Naeherung, weil Kellerwaende ans Erdreich grenzen und
-# nicht an die Aussenluft.
+# Since 2026-08-06 the wall temperature is measured for real (DS18B20 on
+# the ESPHome device cellar-fan-01) instead of estimated via f_Rsi. The
+# estimate was only ever an approximation here, because basement walls
+# border soil rather than outside air.
 - sensor:
     - name: "Storage Room Absolute Humidity"
       unique_id: storage_room_absolute_humidity
@@ -232,8 +232,8 @@
         {{ dew_point(states('sensor.storage_room_temperature') | float,
                      states('sensor.storage_room_humidity') | float) | float | round(1) }}
 
-    # Gemessene Wandtemperatur -> einheitlicher Name nach Konvention.
-    # Quelle: DS18B20 an cellar-fan-01, in die Wand eingeklebt.
+    # Measured wall temperature -> uniform name per convention.
+    # Source: DS18B20 on cellar-fan-01, glued into the wall.
     - name: "Storage Room Wall Temperature"
       unique_id: storage_room_wall_temperature
       default_entity_id: sensor.storage_room_wall_temperature

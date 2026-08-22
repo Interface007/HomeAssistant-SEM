@@ -1,22 +1,22 @@
 # =====================================================================
 # Automations: cellar ventilation (ESPHome cellar-fan-01)
 #
-# Nachtabsenkung der Luefterdrehzahl. Die Regelung selbst laeuft komplett
-# auf dem ESP; hier wird nur die Obergrenze gesetzt, die der Regler auf
-# das Ergebnis seiner Taupunkt-Rampe anwendet.
+# Night-time reduction of the fan speed. The controller itself runs
+# entirely on the ESP; all that happens here is setting the upper limit
+# that the controller applies to the result of its dew-point ramp.
 #
-# 0 % haelt den Luefter waehrend des Fensters komplett an.
-# 100 % ist die Freigabe - der Regler entscheidet dann allein.
+# 0 % stops the fan completely for the duration of the window.
+# 100 % releases it - the controller then decides on its own.
 #
-# Der Wert ueberlebt einen Reboot des ESP. Faellt HA aus, bleibt also die
-# zuletzt gesetzte Grenze stehen, statt sich still aufzuheben.
+# The value survives a reboot of the ESP. So if HA goes down the last
+# limit stays in place instead of silently lifting itself.
 # =====================================================================
 
 - id: cellar_fan_night_limit_on
   alias: "Cellar fan: night speed limit on"
   description: >
-    Drosselt den Kellerluefter nachts auf 40 %. Der Arctic P12 ist bei
-    dieser Drehzahl praktisch unhoerbar, entfeuchtet aber weiter.
+    Throttles the cellar fan to 40 % at night. At that speed the Arctic
+    P12 is practically inaudible but keeps dehumidifying.
   triggers:
     - trigger: time
       at: "22:00:00"
@@ -29,7 +29,7 @@
 
 - id: cellar_fan_night_limit_off
   alias: "Cellar fan: night speed limit off"
-  description: Gibt die volle Drehzahl morgens wieder frei.
+  description: Releases full speed again in the morning.
   triggers:
     - trigger: time
       at: "10:00:00"
@@ -40,9 +40,9 @@
       data:
         value: 100
 
-# Nach einem Neustart von HA die Grenze passend zur Uhrzeit nachziehen -
-# sonst bliebe sie bis zum naechsten Zeitpunkt auf dem alten Wert stehen,
-# wenn HA genau ueber einen der beiden Zeitpunkte hinweg neu startet.
+# After an HA restart, re-apply the limit that matches the time of day.
+# Without this it would sit at the old value until the next scheduled
+# point, whenever HA restarts across one of the two trigger times.
 - id: cellar_fan_night_limit_sync
   alias: "Cellar fan: sync night speed limit after restart"
   triggers:

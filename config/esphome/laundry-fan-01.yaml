@@ -1,0 +1,40 @@
+###########################################################
+#  Laundry room (laundry_room) - dew-point-driven ventilation.
+#
+#  Same controller as cellar-fan-01, see includes/dewpoint_fan.yaml.
+#  Only the values that set this device apart are listed here.
+#
+#  Difference to the storage room: two fans in the window, mounted back
+#  to back (one blows in, one blows out). They sit on J4 and J5 and are
+#  already wired in parallel on the carrier board - same PWM, same 12 V.
+#  Because both spin at the same rate neither over- nor under-pressure
+#  builds up: no suction on the soil, no cellar air pushed into the
+#  stairwell. Only J4 carries the tach, so only fan 1 is measured.
+#
+#  One fan alone is not enough here: with a single opening in the window
+#  and a sealed door the P12 works against a closed room and moves
+#  almost no air.
+###########################################################
+
+substitutions:
+  name: "laundry-fan-01"
+  friendly_name: "Waschkellerlüftung 01"
+  static_ip: 192.168.2.46
+
+  # Goes into the entity names - do not change once the device has been
+  # adopted in HA.
+  room_label: "Waschkeller"
+
+  # --- Source entities from Home Assistant ---
+  src_outdoor_temp: sensor.outdoor_temperature
+  src_outdoor_hum: sensor.outdoor_humidity
+  src_indoor_temp: sensor.laundry_room_temperature
+  src_indoor_hum: sensor.laundry_room_humidity
+
+  # --- ESP32-S3-Zero pins, identical to the carrier board ---
+  pin_fan_pwm: GPIO2
+  pin_fan_tacho: GPIO4
+  pin_onewire: GPIO6
+
+packages:
+  controller: !include ./includes/dewpoint_fan.yaml

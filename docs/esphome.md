@@ -25,7 +25,8 @@ All use static IPs.
 
 | File | Contents |
 | --- | --- |
-| `api.yaml`, `ota.yaml`, `logger.yaml`, `web.yaml` | one-liners, pulled with `!include` |
+| `api.yaml`, `ota.yaml`, `logger.yaml` | one-liners, pulled with `!include` |
+| `web.yaml` | web server port and Basic Auth |
 | `wifi_common.yaml` | SSID, static IP via `${static_ip}`, AP fallback |
 | `wifi_common_display.yaml` | variant for the ePaper device |
 | `climate.h` | C++ mirror of `climate.jinja` for on-device calculations |
@@ -57,6 +58,51 @@ file's** directory. Inside `includes/dewpoint_fan.yaml` that means
 **`room_label` ends up in entity names** and therefore in Home Assistant
 entity IDs. Changing it after adoption breaks the dashboard and the
 templates. It is fixed at `Keller` and `Waschkeller`.
+
+## Web server authentication
+
+`includes/web.yaml` adds HTTP Basic Auth with one credential pair shared by
+all devices, from `web_user` and `web_pw` in `secrets.yaml`. Six of the ten
+devices include it; `agent-panel-01`, `ble-proxy-upstairs-01` and
+`camera-garden-01` run no web server at all.
+
+**What this does and does not protect.** The UI is plain HTTP, so Basic
+Auth transmits the credentials base64-encoded — readable to anyone on the
+network path. It keeps casual access out. Transport security comes from the
+encrypted API on port 6053 and the OTA password, both already in place.
+
+### Per-device passwords
+
+Possible, but not by deriving a filename or a secret name from `${name}`.
+Both `!include` and `!secret` are YAML loader tags, resolved **before**
+ESPHome processes substitutions:
+
+```yaml
+auth: !include ./web_auth_${name}.yaml
+#  -> Error reading file includes/web_auth_${name}.yaml: No such file
+password: !secret ${pw_key}
+#  -> Secret '${pw_key}' not defined
+```
+
+What does work is `!include` with `vars:`, passing the secret **value**
+rather than its name:
+
+```yaml
+# in the device file
+web_server: !include
+  file: ./includes/web.yaml
+  vars:
+    web_pw: !secret web_pw_cellar_fan_01
+```
+
+```yaml
+# in the included file
+password: ${web_pw}
+```
+
+The secret stays a secret: `esphome config` shows the reference, not the
+value. The cost is three lines in every device file, since the secret name
+has to be written out by hand.
 
 ## Flashing
 

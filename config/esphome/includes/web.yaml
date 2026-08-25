@@ -1,1 +1,18 @@
+# Shared web_server configuration.
+#
+# Basic auth with one shared credential pair for all devices. Requires
+# web_user and web_pw in secrets.yaml - without them no device compiles.
+#
+# Scope of this protection: the web UI is plain HTTP, so Basic Auth sends
+# the credentials base64-encoded, effectively in the clear on the LAN. It
+# keeps casual access out, it is not transport security. The real
+# protections are the encrypted API on port 6053 and the OTA password.
+#
+# Per-device passwords are possible but need three lines in every device
+# file, because neither an !include path nor a !secret name can be built
+# from ${name} - both tags are resolved by the YAML loader before ESPHome
+# processes substitutions. See docs/esphome.md.
 port: 80
+auth:
+  username: !secret web_user
+  password: !secret web_pw

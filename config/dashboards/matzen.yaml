@@ -441,3 +441,24 @@ views:
           - type: tile
             entity: sensor.living_room_esp32_display_01_wifi_signal_sensor
             name: ePaper WLAN
+
+  # ---------------------------------------------------------------- Haus
+  # 3D-Modell des Hauses aus dem Repo `home` (modell/haus.yaml -> haus.glb).
+  # Die Karte bettet den Viewer als iframe ein und reicht ihm die Messwerte
+  # der Geraete hinein - der Viewer selbst kennt keine Zugangsdaten.
+  # Dateien liegen unter www/haus/ und werden von dort aus aktualisiert:
+  #   python werkzeuge/ha_export.py --ziel <dieses config-Verzeichnis>
+  # Die Karte braucht einmalig eine Ressource:
+  #   Einstellungen -> Dashboards -> ... -> Ressourcen -> Hinzufuegen
+  #   /local/haus/haus-modell-card.js   als JavaScript-Modul
+  # Panel statt sections: eine sections-View steckt Karten in Spalten fester
+  # Breite, das Modell bekaeme davon nur einen Bruchteil. panel zieht genau
+  # eine Karte ueber die volle Breite.
+  - type: panel
+    title: Haus
+    path: haus
+    icon: mdi:cube-scan
+    cards:
+      - type: custom:haus-modell-card
+        url: /local/haus/viewer.html
+        hoehe: calc(100vh - 96px)

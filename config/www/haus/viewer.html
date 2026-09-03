@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hausmodell — Bestandsaufnahme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --linen:#e4e7e2; --linen-deep:#d6dad4; --ink:#22282a; --ink-soft:#5d6866;
+    --hairline:#a9b2ab; --stamp:#0d5c63; --stamp-soft:#0d5c6318;
+    --ui:"Archivo","Segoe UI",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--linen); color:var(--ink); font-family:var(--ui);
+    display:grid; grid-template-columns:280px 1fr;
+  }
+  /* ---- Seitenleiste: liest sich wie ein Planstempel ---- */
+  aside{
+    border-right:1px solid var(--hairline); padding:20px 18px;
+    display:flex; flex-direction:column; gap:22px; overflow-y:auto;
+    background:linear-gradient(var(--linen),var(--linen-deep));
+  }
+  h1{font-size:15px;font-weight:600;letter-spacing:.02em;margin:0 0 2px}
+  .sub{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:0}
+  section h2{
+    font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-soft);
+    margin:0 0 8px; padding-bottom:5px; border-bottom:1px solid var(--hairline);
+  }
+  label.row{
+    display:flex; align-items:center; gap:8px; font-size:13px;
+    padding:3px 0; cursor:pointer;
+  }
+  label.row input{accent-color:var(--stamp);margin:0}
+  .swatch{width:11px;height:11px;border:1px solid var(--ink);flex:none}
+  .count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .feld{
+    display:flex; align-items:center; gap:8px; font-size:13px; margin-top:8px;
+  }
+  .feld input[type=number]{width:70px;font-family:var(--mono);font-size:12px;
+    padding:3px 5px;border:1px solid var(--hairline);background:none;color:var(--ink)}
+  .feld input[type=range]{flex:1}
+  .feld span{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .warn{
+    font-family:var(--mono); font-size:11px; line-height:1.45; margin:8px 0 0;
+    padding:7px 9px; border:1px solid #9a5b2a; color:#7a4620; background:#9a5b2a14;
+  }
+  input[type=range]{width:100%;accent-color:var(--stamp)}
+  #crosshair{position:absolute;left:50%;top:50%;width:14px;height:14px;
+    margin:-7px 0 0 -7px;pointer-events:none;opacity:.75}
+  #crosshair::before,#crosshair::after{content:"";position:absolute;
+    background:#111;box-shadow:0 0 0 1px rgba(255,255,255,.7)}
+  #crosshair::before{left:6px;top:0;width:2px;height:14px}
+  #crosshair::after{left:0;top:6px;width:14px;height:2px}
+  /* ---- Signatur: Schnitthoehe als Bemassungslinie ---- */
+  .dim{
+    display:flex; align-items:center; gap:6px; font-family:var(--mono);
+    font-size:12px; margin-top:6px;
+  }
+  .dim::before,.dim::after{content:"";height:1px;background:var(--ink);flex:1}
+  button{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    background:none; border:1px solid var(--hairline); color:var(--ink);
+    padding:6px 10px; cursor:pointer; border-radius:0;
+  }
+  button:hover{border-color:var(--stamp);color:var(--stamp)}
+  :focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+  /* ---- Buehne ---- */
+  /* Eingeklappt: die Leiste verschwindet ganz aus dem Raster, damit das
+     Modell die volle Breite bekommt - eingebettet in ein Dashboard ist das
+     der Normalfall. */
+  /* Nicht display:none - dann faellt die Leiste aus dem Raster und `main`
+     rutscht in die 0-Pixel-Spalte. Sie bleibt stehen und schrumpft. */
+  body.leiste-zu{grid-template-columns:0 1fr}
+  body.leiste-zu aside{
+    width:0; padding:0; border-right:0; overflow:hidden; visibility:hidden;
+  }
+  main{position:relative}
+  #leiste{
+    position:absolute; top:14px; left:14px; z-index:5;
+    font-family:var(--ui); font-size:13px; font-weight:500;
+    display:flex; align-items:center; gap:8px;
+    padding:7px 12px; border:1px solid var(--hairline); border-radius:2px;
+    background:rgba(228,231,226,.94); color:var(--ink); cursor:pointer;
+  }
+  #leiste:hover{border-color:var(--stamp); color:var(--stamp)}
+  #leiste:focus-visible{outline:2px solid var(--stamp); outline-offset:2px}
+  #leiste .zeichen{font-family:var(--mono); font-size:14px; line-height:1}
+  .zustand{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}
+  .zustand i{width:12px;height:12px;border:1px solid var(--ink);display:block}
+  canvas{display:block}
+  #drop{
+    position:absolute; inset:0; display:grid; place-content:center; gap:10px;
+    text-align:center; font-family:var(--mono); font-size:13px; color:var(--ink-soft);
+    background:var(--linen); pointer-events:none;
+  }
+  #drop.hide{display:none}
+  #drop.armed{background:var(--stamp-soft);color:var(--stamp)}
+  #info{
+    position:absolute; right:16px; top:16px; width:230px;
+    background:var(--linen); border:1px solid var(--ink); padding:12px 14px;
+    font-size:13px; display:none;
+  }
+  #info.on{display:block}
+  #info dt{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-soft);margin-top:8px}
+  #info dd{margin:1px 0 0;font-family:var(--mono);font-size:12px;word-break:break-word}
+  #info dl{margin:0}
+  #info .title{font-weight:600;font-size:14px;border-bottom:1px solid var(--hairline);padding-bottom:6px}
+  @media (max-width:760px){body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+    aside{border-right:0;border-bottom:1px solid var(--hairline)}
+    body.leiste-zu{grid-template-rows:0 1fr}
+    body.leiste-zu aside{height:0;border-bottom:0}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<aside id="leisteInhalt">
+  <div>
+    <h1>Hausmodell</h1>
+    <p class="sub" id="source">keine Datei geladen</p>
+    <p class="warn" id="metaWarn" hidden>haus.meta.json fehlt — ohne sie keine
+      Geschosse, keine Bauteilnamen, kein Begehen. Datei zusätzlich hierher
+      ziehen.</p>
+  </div>
+
+  <section>
+    <h2>Schnitthöhe</h2>
+    <input type="range" id="clip" min="0" max="1" step="0.001" value="1"
+           aria-label="Horizontale Schnittebene">
+    <div class="dim"><span id="clipLabel">—</span></div>
+  </section>
+
+  <section>
+    <h2>Geschosse</h2>
+    <div id="storeys"></div>
+  </section>
+
+  <section>
+    <h2>Bauteile</h2>
+    <div id="types"></div>
+  </section>
+
+  <section>
+    <h2>Ansicht</h2>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button id="fit">Einpassen</button>
+      <button id="top">Draufsicht</button>
+      <button id="reload">Neu laden</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Begehen</h2>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <select id="walkStorey" aria-label="Geschoss zum Betreten"></select>
+      <button id="walk">Betreten</button>
+    </div>
+    <div class="dim">WASD laufen &middot; Maus schauen &middot; Umschalt schneller
+      &middot; Esc zurück</div>
+    <label class="feld">Körpergröße
+      <input type="number" id="groesse" min="1.20" max="2.20" step="0.01"
+             value="1.87"> m</label>
+    <label class="feld">Blickwinkel
+      <input type="range" id="fov" min="40" max="90" step="1" value="60">
+      <span id="fovWert">60°</span></label>
+    <label class="row"><input type="checkbox" id="labels" checked>
+      <span>Wände beschriften</span></label>
+    <label class="row"><input type="checkbox" id="messwerte" checked>
+      <span>Messwerte anzeigen</span></label>
+  </section>
+
+  <section id="fensterLegende" hidden>
+    <h2>Fensterzustand</h2>
+    <div class="zustand"><i style="background:#3f7d9c"></i>geschlossen</div>
+    <div class="zustand"><i style="background:#e0a615"></i>offen</div>
+    <div class="zustand"><i style="background:#c0392b"></i>gekippt</div>
+  </section>
+</aside>
+
+<main>
+  <button id="leiste" type="button" aria-expanded="false" aria-controls="leisteInhalt">
+    <span class="zeichen" aria-hidden="true">&#9776;</span><span id="leisteText">Bauteile</span>
+  </button>
+  <div id="drop">
+    <div><strong>haus.glb</strong> und <strong>haus.meta.json</strong>
+      zusammen hierher ziehen</div>
+    <div>ohne die Metadaten fehlen Geschosse, Bauteilnamen und das Begehen</div>
+  </div>
+  <div id="info" role="status" aria-live="polite"></div>
+  <div id="crosshair" hidden></div>
+</main>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.170.0/build/three.module.js",
+  "three/addons/":"https://unpkg.com/three@0.170.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+// Farbcode analog zu CAD-Layern, nicht nach Geschmack
+const PALETTE = {
+  IfcWall:   0xb9b0a4, IfcSlab:  0x9aa3a6, IfcRoof:  0x6f7a80,
+  IfcWindow: 0x3f7d9c, IfcDoor:  0xa8763b, IfcSpace: 0x0d5c63,
+  _default:  0xa5aca6,
+};
+
+const main = document.querySelector("main");
+const dropEl = document.getElementById("drop");
+const infoEl = document.getElementById("info");
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.localClippingEnabled = true;
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+main.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe4e7e2);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 2000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.495;   // nicht unter das Gelaende schauen
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8d9a90, 2.2));
+const sun = new THREE.DirectionalLight(0xfff4e6, 1.4);
+sun.position.set(-30, 45, 20);
+scene.add(sun);
+
+const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+let model = null, meta = {}, bbox = null;
+const byType = new Map();     // Bauteilgruppe -> Mesh[]
+const groupColor = new Map(); // Bauteilgruppe -> Farbe (fuer die Legende)
+const byStorey = new Map();   // Geschoss -> Mesh[]
+const nachGid = new Map();    // GlobalId -> Mesh[] (fuer die Zustandsfarbe)
+const collidables = [];       // Meshes, gegen die beim Begehen geprueft wird
+const labels = new THREE.Group();   // Wandbeschriftungen
+const geraeteschilder = new THREE.Group();  // Messwerte an Geraeten
+const messwerte = new Map();       // entity_id -> {wert, einheit, stand}
+const hiddenTypes = new Set();
+const hiddenStoreys = new Set();
+
+// ---------------------------------------------------------------- Laden
+const loader = new GLTFLoader();
+
+async function loadURL(url, label) {
+  const gltf = await loader.loadAsync(url);
+  install(gltf.scene, label);
+}
+
+// Ein Fragezeichen-Anhaengsel an der Seiten-URL wird an die Nachbardateien
+// weitergereicht. So laesst sich der ganze Satz auf einen Schlag frisch
+// holen: laedt die einbettende Seite viewer.html?v=123, gilt das auch fuer
+// haus.glb und haus.meta.json. Ohne das kann der Browser einen alten Viewer
+// mit neuen Metadaten mischen - dann stimmen Bauteile und Code nicht mehr
+// zusammen, und Fehler sehen aus wie Zauberei.
+const SEITEN_VERSION = location.search.replace(/^\?/, "");
+
+function mitVersion(datei, extra = "") {
+  const teile = [SEITEN_VERSION, extra].filter(Boolean).join("&");
+  return teile ? `${datei}?${teile}` : datei;
+}
+
+async function loadDefaultFiles({ bustCache = false } = {}) {
+  const extra = bustCache ? `t=${Date.now()}` : "";
+  let mitMeta = false;
+  let stand = "";
+  try {
+    const r = await fetch(mitVersion("haus.meta.json", extra),
+                          { cache: "no-store" });
+    if (r.ok) {
+      meta = await r.json();
+      mitMeta = true;
+      // Zeitstempel der Datei mit anzeigen: damit ist auf einen Blick zu
+      // sehen, ob der Browser wirklich den neuen Stand hat.
+      const lm = r.headers.get("last-modified");
+      if (lm) {
+        const d = new Date(lm);
+        if (!Number.isNaN(d.valueOf())) {
+          stand = ` · Stand ${d.toLocaleString("de-DE",
+            { dateStyle: "short", timeStyle: "short" })}`;
+        }
+      }
+    } else meta = {};
+  } catch { meta = {}; }
+  // Etikett soll benennen, was wirklich geladen wurde - sonst behauptet es
+  // Metadaten, die gar nicht da sind.
+  await loadURL(mitVersion("haus.glb", extra),
+    (mitMeta ? "haus.glb + haus.meta.json" : "haus.glb (ohne Metadaten)")
+    + stand);
+}
+
+// Fuer die Einzeldatei-Fassung: das Modell steckt als Base64 im Dokument.
+// loader.parse arbeitet direkt auf dem Puffer, ganz ohne fetch - das ist der
+// einzige Weg, der auch bei file:// funktioniert.
+async function loadBase64(b64, label) {
+  const roh = atob(b64);
+  const puffer = new Uint8Array(roh.length);
+  for (let i = 0; i < roh.length; i++) puffer[i] = roh.charCodeAt(i);
+  const gltf = await new Promise((ok, fehler) =>
+    loader.parse(puffer.buffer, "", ok, fehler));
+  install(gltf.scene, label);
+}
+
+async function loadEmbedded() {
+  const eMeta = document.getElementById("eingebettetMeta");
+  const eGlb = document.getElementById("eingebettetGlb");
+  if (!eMeta || !eGlb) throw new Error("keine eingebetteten Daten");
+  meta = JSON.parse(eMeta.textContent);
+  await loadBase64(eGlb.textContent.trim(), "eingebettet");
+}
+
+async function reloadDefaultFiles() {
+  const button = document.getElementById("reload");
+  button.disabled = true;
+  button.textContent = "lade...";
+  try {
+    await loadDefaultFiles({ bustCache: true });
+  } catch (err) {
+    try {
+      await loadEmbedded();
+    } catch {
+      dropEl.classList.remove("hide");
+      document.querySelector("#drop div").innerHTML =
+        "<strong>haus.glb</strong> und <strong>haus.meta.json</strong> "
+        + "zusammen hierher ziehen";
+      throw err;
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = "Neu laden";
+  }
+}
+
+function snapshotViewState() {
+  const state = {
+    hiddenTypes: new Set(hiddenTypes),
+    hiddenStoreys: new Set(hiddenStoreys),
+    walkStorey: walkStoreySel.value,
+  };
+  if (bbox) {
+    const min = parseFloat(clipInput.min), max = parseFloat(clipInput.max);
+    state.clip = (parseFloat(clipInput.value) - min) / Math.max(max - min, 1e-9);
+    state.camera = camera.position.clone();
+    state.target = controls.target.clone();
+  }
+  return state;
+}
+
+function install(root, label, state = snapshotViewState()) {
+  if (begehen) verlassen();
+  if (model) scene.remove(model);
+  model = root;
+  byType.clear(); byStorey.clear(); groupColor.clear(); nachGid.clear();
+  collidables.length = 0;
+  hiddenTypes.clear();
+  hiddenStoreys.clear();
+  state.hiddenTypes?.forEach((k) => hiddenTypes.add(k));
+  state.hiddenStoreys?.forEach((k) => hiddenStoreys.add(k));
+
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    // Node-Name = IFC-GlobalId (Serializer-Option use-element-guids)
+    let node = o, gid = null;
+    while (node && !gid) { if (meta[node.name]) gid = node.name; node = node.parent; }
+    const m = gid ? meta[gid] : null;
+    const type = m?.typ ?? "_default";
+    // Verglaste Bauteile durchsichtig zeichnen - Fenster ohnehin, Tueren nur
+    // wenn ihr Material Glas ist (die Terrassentuer etwa).
+    const verglast = type === "IfcWindow" || /glas/i.test(m?.material ?? "");
+    // Gruppe = Schaltgruppe in der Bauteilliste. Standard ist die IFC-Klasse,
+    // Decken werden vom Konverter einzeln benannt (Bodenplatte, Decke ueber ...).
+    const gruppe = m?.gruppe ?? type;
+    const storey = m?.geschoss ?? "ohne Zuordnung";
+    const typfarbe = PALETTE[type] ?? PALETTE._default;
+    const color = verglast ? PALETTE.IfcWindow : typfarbe;
+    o.userData.gid = gid;
+    o.userData.gruppe = gruppe;
+    o.userData.geschoss = storey;
+    o.material = new THREE.MeshLambertMaterial({
+      color,
+      clippingPlanes: [clipPlane],
+      transparent: verglast,
+      opacity: verglast ? 0.45 : 1,
+      side: THREE.DoubleSide,
+    });
+    // Legende immer in der Typfarbe, sonst faerbt eine Glastuer die
+    // ganze Gruppe "Door" blau ein.
+    if (!groupColor.has(gruppe)) groupColor.set(gruppe, typfarbe);
+    push(byType, gruppe, o);
+    if (gid) push(nachGid, gid, o);
+    // Tueren sind im Modell geschlossene Fuellungen. Beim Begehen muss man
+    // hindurchkommen, also zaehlen sie nicht als Hindernis.
+    if (type !== "IfcDoor") collidables.push(o);
+    push(byStorey, storey, o);
+  });
+
+  scene.add(model);
+  beschriften();
+  messwerteSchilder();
+  fensterFaerben();
+  entitaetenAnsagen();
+  bbox = new THREE.Box3().setFromObject(model);
+  fit();
+  if (state.camera && state.target) {
+    camera.position.copy(state.camera);
+    controls.target.copy(state.target);
+    controls.update();
+  }
+  setupClip(state.clip);
+  renderLists(state.walkStorey);
+  applyVisibility();
+  dropEl.classList.add("hide");
+  document.getElementById("source").textContent = label;
+  // Ohne Metadaten faellt jedes Bauteil in "ohne Zuordnung" - das ist der
+  // haeufigste Stolperstein und darf nicht stillschweigend passieren.
+  document.getElementById("metaWarn").hidden = Object.keys(meta).length > 0;
+}
+
+const push = (map, key, val) => {
+  if (!map.has(key)) map.set(key, []);
+  map.get(key).push(val);
+};
+
+// ---------------------------------------------------------------- Kamera
+function fit() {
+  if (!bbox) return;
+  const size = bbox.getSize(new THREE.Vector3());
+  const center = bbox.getCenter(new THREE.Vector3());
+  const dist = Math.max(size.x, size.y, size.z) * 1.9;
+  camera.position.set(center.x + dist * 0.7, center.y + dist * 0.5, center.z + dist * 0.7);
+  controls.target.copy(center);
+  camera.near = dist / 500; camera.far = dist * 12;
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+document.getElementById("fit").onclick = fit;
+document.getElementById("top").onclick = () => {
+  if (!bbox) return;
+  const c = bbox.getCenter(new THREE.Vector3());
+  const s = bbox.getSize(new THREE.Vector3());
+  camera.position.set(c.x, c.y + Math.max(s.x, s.z) * 1.6, c.z + 0.001);
+  controls.target.copy(c); controls.update();
+};
+document.getElementById("reload").onclick = () => reloadDefaultFiles()
+  .catch((err) => console.warn("Reload fehlgeschlagen", err));
+
+// ---------------------------------------------------------------- Schnitt
+const clipInput = document.getElementById("clip");
+const clipLabel = document.getElementById("clipLabel");
+
+function setupClip(fraction = 1) {
+  clipInput.min = bbox.min.y.toFixed(3);
+  clipInput.max = bbox.max.y.toFixed(3);
+  const f = Number.isFinite(fraction) ? THREE.MathUtils.clamp(fraction, 0, 1) : 1;
+  clipInput.value = bbox.min.y + (bbox.max.y - bbox.min.y) * f;
+  applyClip();
+}
+function applyClip() {
+  const y = parseFloat(clipInput.value);
+  // Normale (0,-1,0): sichtbar bleibt der Bereich mit p.y <= constant
+  clipPlane.constant = y;
+  // glTF ist Y-up, das Gebaeude-Nullniveau liegt bei bbox-Fussboden
+  clipLabel.textContent = `OK ${(y - bbox.min.y).toFixed(2)} m`;
+}
+clipInput.addEventListener("input", applyClip);
+
+// ---------------------------------------------------------------- Filter
+function renderLists(selectedStorey = "") {
+  buildList("storeys", byStorey, hiddenStoreys, (k) => k);
+  buildList("types", byType, hiddenTypes, (k) => k.replace(/^Ifc/, ""));
+  walkStoreySel.innerHTML = "";
+  [...byStorey.keys()].sort().forEach((k) => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = k;
+    if (k === selectedStorey || (!selectedStorey && /Erdgeschoss/i.test(k))) o.selected = true;
+    walkStoreySel.append(o);
+  });
+}
+function buildList(id, map, hidden, labelFn) {
+  const host = document.getElementById(id);
+  host.innerHTML = "";
+  [...map.keys()].sort().forEach((key) => {
+    const meshes = map.get(key);
+    const row = document.createElement("label");
+    row.className = "row";
+    const cb = Object.assign(document.createElement("input"),
+      { type: "checkbox", checked: !hidden.has(key) });
+    cb.onchange = () => {
+      if (cb.checked) hidden.delete(key);
+      else hidden.add(key);
+      applyVisibility();
+    };
+    row.append(cb);
+    if (id === "types") {
+      const sw = document.createElement("span");
+      sw.className = "swatch";
+      sw.style.background = "#" + (groupColor.get(key) ?? PALETTE._default)
+        .toString(16).padStart(6, "0");
+      row.append(sw);
+    }
+    const txt = document.createElement("span");
+    txt.textContent = labelFn(key);
+    const cnt = document.createElement("span");
+    cnt.className = "count"; cnt.textContent = meshes.length;
+    row.append(txt, cnt);
+    host.append(row);
+  });
+}
+
+function applyVisibility() {
+  if (!model) return;
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.visible = !hiddenTypes.has(o.userData.gruppe)
+      && !hiddenStoreys.has(o.userData.geschoss);
+  });
+}
+
+// ---------------------------------------------------------------- Beschriftung
+// Als Sprite mit Groessenabnahme: aus der Naehe lesbar, aus der Ferne klein,
+// ohne dass man an Schriftgroessen drehen muss. Je Wand zwei Schilder, eins
+// auf jeder Seite - sonst steckt die Beschriftung in der Wand.
+const SCHILDHOEHE = 0.14;     // m in Weltkoordinaten
+
+function schild(text, blass = false) {
+  const zeilen = Array.isArray(text) ? text : [text];
+  const fs = 44, pad = 10, zh = fs + 6;
+  const mess = document.createElement("canvas").getContext("2d");
+  mess.font = `600 ${fs}px "IBM Plex Mono", ui-monospace, monospace`;
+  const c = document.createElement("canvas");
+  c.width = Math.ceil(Math.max(...zeilen.map((z) => mess.measureText(z).width)))
+            + pad * 2;
+  c.height = zh * zeilen.length + pad * 2 - 6;
+  const g = c.getContext("2d");
+  g.font = `600 ${fs}px "IBM Plex Mono", ui-monospace, monospace`;
+  g.fillStyle = "rgba(228,231,226,0.92)";
+  g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = "#22282a";
+  g.lineWidth = 3;
+  g.strokeRect(1.5, 1.5, c.width - 3, c.height - 3);
+  // Veraltete Werte blass: ein alter Messwert, der wie ein aktueller
+  // aussieht, ist schlimmer als gar keiner.
+  g.fillStyle = blass ? "#7d8a8c" : "#0d5c63";
+  g.textBaseline = "middle";
+  zeilen.forEach((z, i) => g.fillText(z, pad, pad + zh * i + fs / 2 - 3));
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthWrite: false,
+  }));
+  sp.scale.set(SCHILDHOEHE * c.width / c.height, SCHILDHOEHE, 1);
+  return sp;
+}
+
+function beschriften() {
+  labels.clear();
+  const gesehen = new Set();
+  for (const mesh of byType.get("IfcWall") ?? []) {
+    const gid = mesh.userData.gid;
+    const name = meta[gid]?.name;
+    if (!name || gesehen.has(gid)) continue;
+    gesehen.add(gid);
+
+    const kasten = new THREE.Box3().setFromObject(mesh);
+    const mitte = kasten.getCenter(new THREE.Vector3());
+    const groesse = kasten.getSize(new THREE.Vector3());
+    // duennste waagerechte Ausdehnung ist die Wanddicke -> das ist die Normale
+    const duenn = groesse.x < groesse.z;
+    const n = duenn ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+    const abstand = (duenn ? groesse.x : groesse.z) / 2 + 0.04;
+    const y = Math.min(mitte.y, kasten.min.y + 1.55);
+    for (const seite of [1, -1]) {
+      const sp = schild(name);
+      sp.position.copy(mitte).setY(y).addScaledVector(n, seite * abstand);
+      labels.add(sp);
+    }
+  }
+  if (!labels.parent) scene.add(labels);
+  labels.visible = document.getElementById("labels").checked;
+}
+
+// ------------------------------------------------------- Messwerte am Geraet
+// Der Viewer kennt keine Zugangsdaten. Die Werte kommen von der Seite, in die
+// er eingebettet ist (Home-Assistant-Karte), per postMessage herein; welche
+// Entitaeten er dafuer braucht, sagt er beim Laden selbst an.
+const VERALTET_S = 3600;   // ab hier gilt ein Wert als alt
+
+const KURZ = { Temperatur: "", Feuchte: "", Batterie: "Batt " };
+// Zwei Sorten von Rollen: Messwerte kommen als Schild an das Bauteil,
+// Zustaende faerben es ein. Ein Fensterkontakt braucht kein Schild - die
+// Farbe sagt schon alles, und ein Schild an jedem Fenster waere Unruhe.
+const MESSROLLEN = new Set(["Temperatur", "Feuchte", "Batterie"]);
+const FENSTER = { zu: 0x3f7d9c, offen: 0xe0a615, gekippt: 0xc0392b };
+const KIPPSCHWELLE = 5;   // Grad; darunter gilt das Fenster als nicht gekippt
+// Lesereihenfolge, unabhaengig davon wie die Eigenschaften im Pset stehen -
+// die kommen alphabetisch aus der Beidatei und faengen sonst mit Batterie an.
+const REIHENFOLGE = ["Temperatur", "Feuchte", "Batterie"];
+
+function zahlDeutsch(s) {
+  return /^-?\d+([.,]\d+)?$/.test(s) ? s.replace(".", ",") : s;
+}
+
+function entitaetenVon(gid) {
+  const pset = meta[gid]?.psets?.Pset_HomeAssistant;
+  if (!pset) return [];
+  const rang = (k) => {
+    const i = REIHENFOLGE.indexOf(k);
+    return i < 0 ? REIHENFOLGE.length : i;
+  };
+  return Object.entries(pset)
+    .filter(([k]) => k !== "id" && k !== "Geraet")
+    .map(([k, v]) => [k, String(v)])
+    .sort((a, b) => rang(a[0]) - rang(b[0]) || a[0].localeCompare(b[0]));
+}
+
+function alleEntitaeten() {
+  const aus = new Set();
+  for (const gid of Object.keys(meta)) {
+    for (const [, e] of entitaetenVon(gid)) aus.add(e);
+  }
+  return [...aus];
+}
+
+function alterText(sekunden) {
+  if (sekunden == null) return "keine Daten";
+  if (sekunden < 90) return "gerade eben";
+  if (sekunden < 5400) return `vor ${Math.round(sekunden / 60)} min`;
+  if (sekunden < 172800) return `vor ${Math.round(sekunden / 3600)} h`;
+  return `vor ${Math.round(sekunden / 86400)} d`;
+}
+
+function messwerteSchilder() {
+  geraeteschilder.clear();
+  const gesehen = new Set();
+  for (const [gruppe, meshes] of byType) {
+    for (const mesh of meshes) {
+      const gid = mesh.userData.gid;
+      if (!gid || gesehen.has(gid)) continue;
+      const eintraege = entitaetenVon(gid)
+        .filter(([rolle]) => MESSROLLEN.has(rolle));
+      if (!eintraege.length) continue;
+      gesehen.add(gid);
+
+      const teile = [];
+      let juengstes = null;
+      for (const [rolle, entity] of eintraege) {
+        const w = messwerte.get(entity);
+        const kurz = KURZ[rolle] ?? `${rolle} `;
+        teile.push(w ? `${kurz}${zahlDeutsch(w.wert)} ${w.einheit}`.trim()
+                     : `${kurz}—`.trim());
+        if (w?.alter != null) {
+          juengstes = juengstes == null ? w.alter : Math.min(juengstes, w.alter);
+        }
+      }
+      const alt = juengstes == null || juengstes > VERALTET_S;
+      const zeilen = [meta[gid]?.name ?? gruppe,
+                      teile.join("  ·  "),
+                      alterText(juengstes)];
+
+      const kasten = new THREE.Box3().setFromObject(mesh);
+      const mitte = kasten.getCenter(new THREE.Vector3());
+      const groesse = kasten.getSize(new THREE.Vector3());
+      const duenn = groesse.x < groesse.z;
+      const n = duenn ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+      const abstand = (duenn ? groesse.x : groesse.z) / 2 + 0.05;
+      // Zwei Schilder, eins je Seite - das in der Wand verdeckt die Wand
+      // selbst, so muss der Viewer die Montageseite nicht kennen.
+      for (const seite of [1, -1]) {
+        const sp = schild(zeilen, alt);
+        sp.position.copy(mitte).setY(mitte.y + 0.30)
+          .addScaledVector(n, seite * abstand);
+        geraeteschilder.add(sp);
+      }
+    }
+  }
+  if (!geraeteschilder.parent) scene.add(geraeteschilder);
+  geraeteschilder.visible = document.getElementById("messwerte").checked;
+}
+
+function offenLaut(wert) {
+  return /^(on|open|offen|true|geoeffnet)$/i.test(String(wert ?? ""));
+}
+
+function fensterFaerben() {
+  let gefunden = false;
+  for (const [gid, meshes] of nachGid) {
+    const rollen = Object.fromEntries(entitaetenVon(gid));
+    if (!rollen.Kontakt && !rollen.Neigung) continue;
+    gefunden = true;
+
+    const kontakt = messwerte.get(rollen.Kontakt);
+    const neigung = messwerte.get(rollen.Neigung);
+    const winkel = neigung
+      ? parseFloat(String(neigung.wert).replace(",", ".")) : NaN;
+
+    // Gekippt schlaegt offen: ein gekipptes Fenster meldet meist beides,
+    // und der Kippzustand ist die schaerfere Aussage.
+    let farbe = FENSTER.zu;
+    if (Number.isFinite(winkel) && winkel > KIPPSCHWELLE) farbe = FENSTER.gekippt;
+    else if (kontakt && offenLaut(kontakt.wert)) farbe = FENSTER.offen;
+
+    for (const mesh of meshes) mesh.material.color.setHex(farbe);
+  }
+  document.getElementById("fensterLegende").hidden = !gefunden;
+}
+
+// Nur die einbettende Seite darf Werte schicken. Der Inhalt wird
+// ausschliesslich in eine Canvas gezeichnet, nie als HTML eingesetzt.
+addEventListener("message", (e) => {
+  if (window.parent === window || e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || d.typ !== "haus-modell/messwerte" || typeof d.werte !== "object") return;
+  for (const [entity, w] of Object.entries(d.werte)) {
+    if (typeof entity !== "string" || !w) continue;
+    messwerte.set(entity.slice(0, 120), {
+      wert: String(w.wert ?? "—").slice(0, 24),
+      einheit: String(w.einheit ?? "").slice(0, 12),
+      alter: Number.isFinite(w.alter) ? w.alter : null,
+    });
+  }
+  messwerteSchilder();
+  fensterFaerben();
+});
+
+function entitaetenAnsagen() {
+  if (window.parent === window) return;
+  const entitaeten = alleEntitaeten();
+  if (!entitaeten.length) return;
+  // Zielorigin "*": es geht nur eine Liste von Entitaets-ids hinaus, und der
+  // Viewer kennt den Origin der einbettenden Seite nicht.
+  window.parent.postMessage(
+    { typ: "haus-modell/entitaeten", entitaeten }, "*");
+}
+
+document.getElementById("messwerte").onchange = (e) => {
+  geraeteschilder.visible = e.target.checked;
+};
+
+document.getElementById("labels").onchange = (e) => {
+  labels.visible = e.target.checked;
+};
+
+// ---------------------------------------------------------------- Begehen
+// Kein Physikmodell, sondern zwei Strahlen: einer nach unten fuer die
+// Standhoehe, einer in Laufrichtung als Anstosspruefung. Das reicht fuer ein
+// Gebaeude und bleibt nachvollziehbar.
+// Augenhoehe aus der Koerpergroesse: Augen liegen bei rund 93 % der
+// Koerperhoehe. Dazu der Bodenaufbau, denn das Modell kennt nur den Rohboden
+// - man steht in Wirklichkeit 11 cm hoeher als auf der Modellflaeche.
+const AUGENFAKTOR = 0.93;
+const BODENAUFBAU = 0.11;
+let AUGENHOEHE = 1.87 * AUGENFAKTOR + BODENAUFBAU;
+const FOV_ORBIT = 45;
+const RADIUS = 0.30;          // m Abstand, den man zur Wand haelt
+const TEMPO = 3.0;            // m/s
+const STUFE = 0.45;           // m, die pro Bild maximal ueberwunden werden
+
+const walkControls = new PointerLockControls(camera, renderer.domElement);
+const crosshair = document.getElementById("crosshair");
+const walkBtn = document.getElementById("walk");
+const walkStoreySel = document.getElementById("walkStorey");
+const taste = new Set();
+const clock = new THREE.Clock();
+const strahlUnten = new THREE.Raycaster();
+const strahlVorn = new THREE.Raycaster();
+let begehen = false;
+
+const groesseEl = document.getElementById("groesse");
+const fovEl = document.getElementById("fov");
+const fovWertEl = document.getElementById("fovWert");
+
+function augenhoeheSetzen() {
+  const g = parseFloat(groesseEl.value);
+  if (!Number.isFinite(g)) return;
+  AUGENHOEHE = g * AUGENFAKTOR + BODENAUFBAU;
+  if (begehen) aufBoden(true);
+}
+groesseEl.addEventListener("input", augenhoeheSetzen);
+
+function blickwinkelSetzen() {
+  fovWertEl.textContent = `${fovEl.value}°`;
+  if (begehen) {
+    camera.fov = parseFloat(fovEl.value);
+    camera.updateProjectionMatrix();
+  }
+}
+fovEl.addEventListener("input", blickwinkelSetzen);
+
+addEventListener("keydown", (e) => {
+  if (begehen && [" ", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+  if (begehen && e.code === "Escape") { verlassen(); return; }
+  taste.add(e.code);
+});
+addEventListener("keyup", (e) => taste.delete(e.code));
+
+// Nicht jede Umgebung gibt die Pointer-Lock-API frei (eingebettete Ansichten,
+// manche Browserprofile). Dann wird mit gedrueckter Maustaste umgesehen -
+// dieselbe Bewegung, nur ohne gefangenen Zeiger.
+const blick = new THREE.Euler(0, 0, 0, "YXZ");
+let zieht = false;
+renderer.domElement.addEventListener("pointerdown", () => {
+  if (begehen && !walkControls.isLocked) zieht = true;
+});
+addEventListener("pointerup", () => { zieht = false; });
+renderer.domElement.addEventListener("pointermove", (e) => {
+  if (!zieht || !begehen || walkControls.isLocked) return;
+  blick.setFromQuaternion(camera.quaternion);
+  blick.y -= e.movementX * 0.0022;
+  blick.x -= e.movementY * 0.0022;
+  blick.x = Math.max(-Math.PI / 2 + 0.01,
+                     Math.min(Math.PI / 2 - 0.01, blick.x));
+  camera.quaternion.setFromEuler(blick);
+});
+
+function betreten() {
+  if (!model) return;
+  const name = walkStoreySel.value;
+  const meshes = byStorey.get(name) || [];
+  if (!meshes.length) return;
+
+  const kasten = new THREE.Box3();
+  meshes.forEach((m) => kasten.expandByObject(m));
+  const start = freierPunkt(kasten);
+  camera.position.copy(start);
+  aufBoden(true);
+
+  // Eine tiefliegende Schnittebene wuerde das Geschoss unsichtbar machen
+  clipInput.value = clipInput.max;
+  applyClip();
+
+  controls.enabled = false;
+  begehen = true;
+  crosshair.hidden = false;
+  camera.fov = parseFloat(fovEl.value);
+  camera.updateProjectionMatrix();
+  try { walkControls.lock(); } catch { /* Rueckfallebene greift */ }
+  infoEl.innerHTML = `<div class="title">${name}</div>`
+    + `<dl><dt>Begehen</dt><dd>WASD laufen</dd>`
+    + `<dt></dt><dd>Maus schauen</dd>`
+    + `<dt></dt><dd>Umschalt schneller</dd>`
+    + `<dt></dt><dd>Esc zurueck</dd></dl>`;
+  infoEl.classList.add("on");
+}
+
+function verlassen() {
+  if (!begehen) return;
+  begehen = false;
+  camera.fov = FOV_ORBIT;
+  camera.updateProjectionMatrix();
+  infoEl.classList.remove("on");
+  crosshair.hidden = true;
+  controls.enabled = true;
+  controls.target.copy(camera.position).add(
+    camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(4));
+  controls.update();
+}
+walkControls.addEventListener("unlock", verlassen);
+walkBtn.onclick = betreten;
+
+// Die Mitte der Geschoss-Bbox liegt oft mitten in einer Wand. Deshalb ein
+// grobes Raster abtasten, alle Punkte mit genug Abstand zum naechsten Bauteil
+// sammeln und davon den mittigsten nehmen.
+//
+// Nicht der Punkt mit dem *groessten* Abstand: der liegt zuverlaessig in einer
+// Tueroeffnung, weil der Strahl dort ins Freie laeuft und nie etwas trifft.
+function freierPunkt(kasten) {
+  const y = kasten.min.y + AUGENHOEHE;
+  const N = 16;
+  const MINABSTAND = 0.8;
+  const richtungen = [];
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2;
+    richtungen.push(new THREE.Vector3(Math.cos(a), 0, Math.sin(a)));
+  }
+  const probe = new THREE.Raycaster();
+  probe.far = 12;
+  const mitte = kasten.getCenter(new THREE.Vector3()).setY(y);
+
+  let bester = mitte.clone();
+  let besteNote = -Infinity;
+  let ersatz = mitte.clone();
+  let ersatzAbstand = -1;
+
+  for (let i = 1; i < N; i++) {
+    for (let j = 1; j < N; j++) {
+      const q = new THREE.Vector3(
+        THREE.MathUtils.lerp(kasten.min.x, kasten.max.x, i / N), y,
+        THREE.MathUtils.lerp(kasten.min.z, kasten.max.z, j / N));
+      let naechste = Infinity;
+      for (const d of richtungen) {
+        probe.set(q, d);
+        const t = probe.intersectObjects(collidables, false);
+        naechste = Math.min(naechste, t.length ? t[0].distance : probe.far);
+        if (naechste < MINABSTAND) break;
+      }
+      if (naechste > ersatzAbstand) { ersatzAbstand = naechste; ersatz = q; }
+      if (naechste < MINABSTAND) continue;
+      const note = -q.distanceTo(mitte);        // je mittiger, desto besser
+      if (note > besteNote) { besteNote = note; bester = q; }
+    }
+  }
+  return besteNote > -Infinity ? bester : ersatz;
+}
+
+function aufBoden(sofort = false) {
+  strahlUnten.set(camera.position.clone().setY(camera.position.y + 0.2),
+                  new THREE.Vector3(0, -1, 0));
+  strahlUnten.far = AUGENHOEHE + 3;
+  const treffer = strahlUnten.intersectObjects(collidables, false);
+  if (!treffer.length) return;
+  const ziel = treffer[0].point.y + AUGENHOEHE;
+  const d = ziel - camera.position.y;
+  camera.position.y += sofort ? d : Math.max(-STUFE, Math.min(STUFE, d));
+}
+
+// Gibt es unter diesem Punkt ueberhaupt einen Fussboden? Ohne die Pruefung
+// laeuft man durch die Terrassentuer ins Nichts, weil Tueren keine Hindernisse
+// sind und das Gelaende nicht modelliert ist.
+function hatBoden(punkt) {
+  strahlUnten.set(punkt.clone().setY(punkt.y + 0.2), new THREE.Vector3(0, -1, 0));
+  strahlUnten.far = AUGENHOEHE + STUFE + 0.5;
+  return strahlUnten.intersectObjects(collidables, false).length > 0;
+}
+
+function schritt(richtung, weite) {
+  if (weite === 0) return;
+  const v = richtung.clone().multiplyScalar(weite);
+  strahlVorn.set(camera.position, v.clone().normalize());
+  strahlVorn.far = Math.abs(weite) + RADIUS;
+  if (strahlVorn.intersectObjects(collidables, false).length) return;
+  const ziel = camera.position.clone().add(v);
+  if (!hatBoden(ziel)) return;
+  camera.position.copy(ziel);
+}
+
+function laufen(dt) {
+  const schnell = taste.has("ShiftLeft") || taste.has("ShiftRight");
+  const weite = TEMPO * (schnell ? 2.4 : 1) * dt;
+  const vor = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+  const seit = new THREE.Vector3().crossVectors(vor, camera.up).normalize();
+
+  let v = 0, h = 0;
+  if (taste.has("KeyW") || taste.has("ArrowUp")) v += 1;
+  if (taste.has("KeyS") || taste.has("ArrowDown")) v -= 1;
+  if (taste.has("KeyD") || taste.has("ArrowRight")) h += 1;
+  if (taste.has("KeyA") || taste.has("ArrowLeft")) h -= 1;
+
+  // getrennt pruefen, damit man an Waenden entlanggleiten kann
+  schritt(vor, v * weite);
+  schritt(seit, h * weite);
+  aufBoden();
+}
+
+// ---------------------------------------------------------------- Auswahl
+const ray = new THREE.Raycaster();
+ray.params.Line = { threshold: 0.1 };
+let selected = null;
+
+renderer.domElement.addEventListener("pointerdown", (e) => {
+  if (!model) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  // Beim Begehen ist der Mauszeiger gefangen - dann gilt das Fadenkreuz.
+  const pos = begehen
+    ? new THREE.Vector2(0, 0)
+    : new THREE.Vector2(
+        ((e.clientX - r.left) / r.width) * 2 - 1,
+        -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(pos, camera);
+  const hit = ray.intersectObject(model, true).find((h) => h.object.visible);
+  select(hit ? hit.object : null);
+});
+
+function select(obj) {
+  if (selected) selected.material.emissive?.setHex(0x000000);
+  selected = obj;
+  if (!obj) { infoEl.classList.remove("on"); return; }
+  obj.material.emissive = new THREE.Color(0x0d5c63);
+  obj.material.emissiveIntensity = 0.35;
+  const m = meta[obj.userData.gid];
+  const rows = [
+    ["Typ", m?.typ?.replace(/^Ifc/, "") ?? "unbekannt"],
+    ["Geschoss", m?.geschoss ?? "—"],
+  ];
+  if (m?.material) rows.push(["Material", m.material]);
+  rows.push(["GlobalId", obj.userData.gid ?? "—"]);
+  for (const [pset, props] of Object.entries(m?.psets ?? {})) {
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "id") continue;
+      rows.push([`${pset}.${k}`, String(v)]);
+    }
+  }
+  infoEl.innerHTML =
+    `<div class="title">${m?.name || "ohne Namen"}</div><dl>` +
+    rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("") + "</dl>";
+  infoEl.classList.add("on");
+}
+
+// ---------------------------------------------------------------- Dateien
+["dragenter", "dragover"].forEach((t) =>
+  addEventListener(t, (e) => { e.preventDefault(); dropEl.classList.add("armed"); }));
+addEventListener("dragleave", () => dropEl.classList.remove("armed"));
+addEventListener("drop", async (e) => {
+  e.preventDefault();
+  dropEl.classList.remove("armed");
+  const files = [...e.dataTransfer.files];
+  const json = files.find((f) => f.name.endsWith(".json"));
+  if (json) meta = JSON.parse(await json.text());
+  const glb = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
+  if (glb) {
+    const url = URL.createObjectURL(glb);
+    await loadURL(url, glb.name);
+    URL.revokeObjectURL(url);
+  } else if (json && model) {
+    // Metadaten nachgereicht: Zuordnung auf das geladene Modell anwenden
+    install(model, document.getElementById("source").textContent);
+  }
+});
+
+// ---------------------------------------------------------------- Start
+function resize() {
+  const w = main.clientWidth, h = main.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize); resize();
+// Auch auf Layoutwechsel reagieren, nicht nur auf Fenstergroessen: die Leiste
+// klappt auf und zu, und im Dashboard aendert der iframe seine Groesse, ohne
+// dass ein resize-Ereignis am Fenster ankaeme.
+new ResizeObserver(() => resize()).observe(main);
+
+// ------------------------------------------------------- Leiste ein/aus
+// Vorgabe zugeklappt: eingebettet in ein Dashboard zaehlt jede Bildschirm-
+// breite, und die Bauteilliste braucht man nur gelegentlich. Die Wahl wird
+// gemerkt, damit sie beim eigenstaendigen Arbeiten nicht jedes Mal neu
+// getroffen werden muss.
+const SPEICHER_LEISTE = "hausmodell.leiste";
+const leisteKnopf = document.getElementById("leiste");
+const leisteText = document.getElementById("leisteText");
+
+function leisteSetzen(offen) {
+  document.body.classList.toggle("leiste-zu", !offen);
+  leisteKnopf.setAttribute("aria-expanded", String(offen));
+  leisteKnopf.firstElementChild.innerHTML = offen ? "&#10005;" : "&#9776;";
+  leisteText.textContent = "Bauteile";
+  try { localStorage.setItem(SPEICHER_LEISTE, offen ? "auf" : "zu"); } catch {}
+  resize();
+}
+
+let leisteStart = "zu";
+try { leisteStart = localStorage.getItem(SPEICHER_LEISTE) ?? "zu"; } catch {}
+leisteSetzen(leisteStart === "auf");
+leisteKnopf.addEventListener("click", () =>
+  leisteSetzen(document.body.classList.contains("leiste-zu")));
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (begehen) laufen(dt);
+  else controls.update();
+  renderer.render(scene, camera);
+});
+
+// Kleiner Haken zum Nachmessen von aussen (Tests, Fehlersuche).
+window.hausmodell = {
+  kamera: camera,
+  begehen: () => begehen,
+  taste,
+  laufen: (dt) => laufen(dt),
+};
+
+// Beim Oeffnen der Seite Modell und Metadaten selbst holen. Der Default sind
+// haus.glb + haus.meta.json neben dieser HTML-Datei. Die eingebetteten Daten
+// aus bundle.py sind nur der Rueckfall fuer Doppelklick/file://.
+(async () => {
+  try {
+    await loadDefaultFiles();
+  } catch {
+    try {
+      await loadEmbedded();
+    } catch {
+      document.querySelector("#drop div").innerHTML =
+        "<strong>haus.glb</strong> und <strong>haus.meta.json</strong> "
+        + "zusammen hierher ziehen";
+    }
+  }
+})();
+</script>
+</body>
+</html>

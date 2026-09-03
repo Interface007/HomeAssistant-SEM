@@ -26,3 +26,6 @@ status/entities.csv
 tools/pcb/out/
 tools/pcb/__pycache__/
 tools/3dp/out/
+
+config/www/haus/haus.glb
+config/www/haus/haus.meta.json

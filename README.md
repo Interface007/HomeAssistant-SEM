@@ -69,6 +69,7 @@ Projects:
 | Page | Contents |
 | --- | --- |
 | [Cellar ventilation](docs/projects/cellar-ventilation.md) | control logic, hardware, board notes, what to expect |
+| [Raised-bed irrigation](docs/projects/garden-irrigation.md) | design only, not built — pulsed drip irrigation for a strawberry bed |
 
 Shopping list: [components-and-devices.md](components-and-devices.md) — what
 I actually bought, with links. Home automation parts have short lifetimes

@@ -1,0 +1,356 @@
+# =====================================================================
+# irrigation-garden-01 - Raised-bed irrigation, garden.
+#
+# PHASE 1 OF 3: MEASUREMENT ONLY. This build has no pump control. Its
+# job is to produce a week of soil-moisture data so the thresholds in
+# docs/projects/garden-irrigation.md can be replaced by measured ones.
+# Phase 3 moves the control logic into includes/irrigation.yaml as a
+# package; see docs/esphome.md#the-package-pattern.
+#
+# Hardware:
+#   ESP32-S3-Zero, same module as cellar-fan-01 / laundry-fan-01
+#   2 x DFRobot SEN0193 capacitive soil moisture sensor, potted at the
+#     cable entry
+#   Seeed YF-S402 Hall flow sensor, 0.36..6 L/min, G1/4
+#   Reed float switch in the 20 l canister, closed while water is
+#     present, open when the float drops or the cable breaks
+#   Seaflo 12 V diaphragm pump, 4.3 L/min, 2.4 bar
+#   12 V / 5 A PSU on the Solarbank AC-out socket -> MINI560 -> ESP 5 V
+#   IRLZ34N + 1N5822 flyback diode for the pump (fitted, NOT driven yet)
+#
+# Why the S3-Zero and not the ESP32 D1 Mini this file first specified:
+# the carrier board reuses the module footprint that was already built
+# and verified for the ventilation controllers. A footprint derived from
+# a data sheet for a module nobody has measured is exactly the mistake
+# tools/pcb/board.py warns about in its header.
+#
+# Wiring and why these pins - all six signals sit on the module's left
+# pad row except the float switch:
+#   GP1  ADC1_CH0   soil sensor, 10 cm. ADC2 is dead while Wi-Fi is on,
+#                   so both probes must land on ADC1 = GPIO1..GPIO10.
+#   GP2  ADC1_CH1   soil sensor, 20 cm.
+#   GP3             NOT USED. Strapping pin (JTAG source select).
+#   GP4             soil sensor supply, HIGH SIDE. Switching their ground
+#                   instead would move the analog reference and make the
+#                   reading meaningless. Both sensors draw ~10 mA
+#                   together, inside the 40 mA per-pin limit, so no
+#                   transistor is needed.
+#   GP5             pump MOSFET gate. Held low by this firmware and by a
+#                   100 k gate-to-source pulldown. The pulldown is not
+#                   optional: between power-on and the point where
+#                   ESPHome configures the pin, GP5 floats, and a
+#                   floating gate on a logic-level MOSFET can switch the
+#                   pump.
+#   GP6             flow sensor pulse, behind a 10k/20k divider.
+#   GP7             float switch to GND, internal pullup. This is the one
+#                   signal on the module's right pad row, because GP3 is
+#                   unusable and the left row therefore only offers five
+#                   pins. GP7 is the pin furthest from the USB connector,
+#                   so its track leaves past the end of the module
+#                   instead of crossing the other row.
+#
+# Sensor supply voltage: 3V3, NOT 5 V. The SEN0193 is an oscillator plus
+# a rectifier, and its analog output scales with its supply. At 5 V a dry
+# probe pushes about 3 V into the ADC pin, right at the limit. At 3V3 the
+# span is smaller but comfortably inside the input range, and the sensor
+# can be fed straight from a GPIO.
+#
+# Flow sensor divider, not a pull-up: the YF-S402 runs on 5 V and its
+# output is either driven to 5 V or open drain with an on-board pull-up
+# to 5 V, depending on the batch. A divider gives a valid 3.3 V level in
+# both cases. An output with no pull-up at all would show no pulses in
+# week 2 and then needs a pull-up to 5 V ahead of the divider.
+#
+# S3-Zero board traps (see docs/esphome.md):
+#   no USB-serial chip -> logger needs hardware_uart: USB_SERIAL_JTAG
+#   the 5V pin is tied to USB VBUS with no diode -> never feed 5 V from
+#   the MINI560 while a USB cable is plugged in
+# =====================================================================
+substitutions:
+  name: irrigation-garden-01
+  friendly_name: Bewässerung Hochbeet 01
+  # NOTE: verify this address is still free before flashing.
+  # .41-.48, .50 and .51 are taken.
+  static_ip: 192.168.2.52
+
+  pin_soil_shallow: GPIO1
+  pin_soil_deep: GPIO2
+  pin_soil_power: GPIO4
+  pin_pump: GPIO5
+  pin_flow: GPIO6
+  pin_float: GPIO7
+
+  # Frost lockout source in phase 3. Imported already so that a rename of
+  # this entity shows up now and not in the middle of a heatwave.
+  src_outdoor_temp: sensor.garden_north_temperature
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.10.0
+  name_add_mac_suffix: false
+  on_boot:
+    # The pump gate is driven low before anything else runs. Nothing in
+    # this build ever raises it.
+    priority: -100
+    then:
+      - switch.turn_off: pump_gate
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+# No USB-serial chip on the S3-Zero -> logs run via USB-Serial-JTAG.
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+web_server: !include ./includes/web.yaml
+
+###########################################################
+#  Pump gate - held low, not exposed to Home Assistant
+###########################################################
+switch:
+  # Declared so the pin is actively driven instead of floating. internal
+  # keeps it out of Home Assistant: during the measurement phase there
+  # must be no way to start the pump by accident, from a dashboard or
+  # from a mistyped service call.
+  - platform: gpio
+    id: pump_gate
+    pin: ${pin_pump}
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+  # Powers both soil sensors for the duration of a measurement only.
+  # Continuous excitation accelerates the corrosion at the soil/electrode
+  # boundary that eventually kills these probes, and it adds a self-
+  # heating drift that makes the same soil read differently at 07:00 and
+  # at 15:00.
+  - platform: gpio
+    id: soil_power
+    pin: ${pin_soil_power}
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+  - platform: restart
+    name: "Neustart"
+    entity_category: diagnostic
+
+###########################################################
+#  Measurement cycle
+###########################################################
+# 500 ms settling before the first reading: the sensor board contains an
+# RC filter behind its oscillator and needs roughly a quarter of a second
+# to reach a stable output. Three readings 100 ms apart feed the median
+# filter below, which removes the occasional outlier without smearing the
+# response over minutes - during a pulse the reading has to move fast
+# enough to be usable. send_first_at: 3 keeps the filter window aligned
+# with the cycle; with the default of 1 the first publish would be a
+# single reading and every later window would straddle two cycles.
+interval:
+  - interval: 60s
+    then:
+      - switch.turn_on: soil_power
+      - delay: 500ms
+      - repeat:
+          count: 3
+          then:
+            - component.update: soil_shallow_raw
+            - component.update: soil_deep_raw
+            - delay: 100ms
+      - switch.turn_off: soil_power
+
+sensor:
+  # --------------- soil, raw ---------------
+  # The raw voltages are the calibration record. They stay visible in
+  # Home Assistant permanently: a drifting probe is only recognisable
+  # against its own dry and wet references, not against a percentage that
+  # was computed with last year's constants.
+  - platform: adc
+    id: soil_shallow_raw
+    pin: ${pin_soil_shallow}
+    name: "Bodenfeuchte Hochbeet 10 cm Rohwert"
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    state_class: measurement
+    entity_category: diagnostic
+    attenuation: 12db
+    update_interval: never
+    filters:
+      - median:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+  - platform: adc
+    id: soil_deep_raw
+    pin: ${pin_soil_deep}
+    name: "Bodenfeuchte Hochbeet 20 cm Rohwert"
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    state_class: measurement
+    entity_category: diagnostic
+    attenuation: 12db
+    update_interval: never
+    filters:
+      - median:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+
+  # --------------- soil, scaled ---------------
+  # PLACEHOLDER CALIBRATION. Both pairs below are guesses for a SEN0193
+  # on 3V3 and produce a number that looks plausible and means nothing.
+  # Replace them in week 1, per sensor, and record the measured values
+  # here:
+  #
+  #   dry  - probe in air, indoors, after 10 minutes      -> 0 %
+  #   wet  - probe in water up to the marked line         -> 100 %
+  #
+  # Note that neither reference is the control target. That is field
+  # capacity - the reading a few hours after a thorough watering, once
+  # drainage has stopped - and it can only be measured in the bed.
+  #
+  #   shallow: dry = ?  V   wet = ?  V   field capacity = ?  %
+  #   deep:    dry = ?  V   wet = ?  V   field capacity = ?  %
+  - platform: copy
+    id: soil_shallow
+    source_id: soil_shallow_raw
+    name: "Bodenfeuchte Hochbeet 10 cm"
+    unit_of_measurement: "%"
+    icon: mdi:water-percent
+    accuracy_decimals: 1
+    state_class: measurement
+    filters:
+      - calibrate_linear:
+          - 2.100 -> 0.0
+          - 1.100 -> 100.0
+      - clamp:
+          min_value: 0.0
+          max_value: 100.0
+
+  - platform: copy
+    id: soil_deep
+    source_id: soil_deep_raw
+    name: "Bodenfeuchte Hochbeet 20 cm"
+    unit_of_measurement: "%"
+    icon: mdi:water-percent
+    accuracy_decimals: 1
+    state_class: measurement
+    filters:
+      - calibrate_linear:
+          - 2.100 -> 0.0
+          - 1.100 -> 100.0
+      - clamp:
+          min_value: 0.0
+          max_value: 100.0
+
+  # --------------- flow ---------------
+  # PLACEHOLDER CONSTANT. The YF-S402 is commonly quoted as
+  # f[Hz] = 73 * Q[L/min], i.e. 4380 pulses per litre -> 1/4380 =
+  # 0.00022831. That figure is not from a data sheet I have seen, and
+  # these sensors are optimistic at the low end of their range anyway.
+  #
+  # Phase 3 doses by volume, so this constant decides how much water the
+  # bed actually gets. Calibrate it in week 2: pump into a measuring jug,
+  # read Impulse Gesamt below, divide. Then correct both multipliers.
+  #
+  # The same factor appears twice on purpose and is not a copy-paste
+  # slip: pulse_meter reports the rate in pulses per MINUTE, so
+  # pulses_per_min / 4380 = L/min, while the total counts raw pulses, so
+  # pulses / 4380 = L. Two different quantities, one constant.
+  #
+  # The total is published unscaled as the raw pulse count and the litre
+  # figure is derived from it by a copy sensor - not the other way round.
+  # A copy sensor only sees the published value of its source, so a total
+  # that was already converted to litres could not be turned back into an
+  # exact pulse count.
+  - platform: pulse_meter
+    id: flow_rate
+    name: "Bewässerung Durchfluss"
+    pin:
+      number: ${pin_flow}
+      mode:
+        input: true
+        pullup: false           # the divider already defines the level
+    unit_of_measurement: "L/min"
+    icon: mdi:water-pump
+    accuracy_decimals: 2
+    state_class: measurement
+    # 200 us rejects everything above 5 kHz; the sensor tops out near
+    # 440 Hz at its rated 6 L/min, so this only removes contact bounce
+    # and noise coupled from the pump cable.
+    internal_filter: 200us
+    timeout: 5s
+    filters:
+      - multiply: 0.00022831
+    # Raw pulse count, unscaled. This is what makes the bucket calibration
+    # possible without reflashing: pump a known volume, read this, divide.
+    total:
+      id: flow_pulses
+      name: "Bewässerung Impulse Gesamt"
+      unit_of_measurement: "Impulse"
+      accuracy_decimals: 0
+      state_class: total_increasing
+      entity_category: diagnostic
+
+  - platform: copy
+    id: flow_total
+    source_id: flow_pulses
+    name: "Bewässerung Wassermenge"
+    unit_of_measurement: "L"
+    icon: mdi:cup-water
+    accuracy_decimals: 2
+    device_class: water
+    state_class: total_increasing
+    filters:
+      - multiply: 0.00022831
+
+  # --------------- imported from Home Assistant ---------------
+  # Not used by this build. Present so that phase 3 does not discover a
+  # renamed entity on its first hot day. Watch it in the web UI after
+  # flashing: if it stays unknown, the entity ID is wrong.
+  - platform: homeassistant
+    id: t_out
+    entity_id: ${src_outdoor_temp}
+    name: "Außentemperatur (Import)"
+    entity_category: diagnostic
+
+  # --------------- diagnostics ---------------
+  - platform: wifi_signal
+    name: "WLAN Signal"
+    update_interval: 120s
+    entity_category: diagnostic
+
+  - platform: uptime
+    name: "Laufzeit"
+    entity_category: diagnostic
+
+binary_sensor:
+  # Reed float switch between GP7 and GND, closed while the float is up.
+  # Water present -> pin low -> OFF. Float down or cable broken -> pull-up
+  # wins -> pin high -> ON = "Kanister leer". No inversion: the pin is
+  # high in exactly the two cases that must stop the pump, so a broken
+  # cable reads the same as an empty canister. The failure that stops
+  # the pump is safe, the failure that lets it run dry is not.
+  #
+  # The delays swallow sloshing while the canister is being refilled and
+  # the wave a running pump makes in a 20 l container.
+  - platform: gpio
+    id: canister_empty
+    name: "Kanister leer"
+    device_class: problem
+    pin:
+      number: ${pin_float}
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on: 10s
+      - delayed_off: 10s

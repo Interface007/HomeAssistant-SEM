@@ -1,6 +1,7 @@
 # ESPHome devices
 
-Ten self-built devices. Each file carries a header comment with hardware,
+Ten self-built devices in service and one in build. Each file carries a
+header comment with hardware,
 wiring and the reasoning behind the pin choices — that is the primary
 source, this page is the index.
 
@@ -16,8 +17,12 @@ source, this page is the index.
 | [`display-livingroom-01`](../config/esphome/display-livingroom-01.yaml) | .48 | ESP32 | 7.5″ ePaper status display |
 | [`ble-proxy-upstairs-01`](../config/esphome/ble-proxy-upstairs-01.yaml) | .50 | ESP32-C6 | Bluetooth proxy for Shelly BLU sensors |
 | [`camera-garden-01`](../config/esphome/camera-garden-01.yaml) | .51 | ESP32-CAM | garden camera |
+| [`irrigation-garden-01`](../config/esphome/irrigation-garden-01.yaml) | .52 | ESP32 D1 Mini | raised-bed irrigation — **not built yet**, sensors only |
 
-All use static IPs.
+All use static IPs. `irrigation-garden-01` is the eleventh entry and is in
+its measurement phase: it has no pump control and its address has not been
+claimed on the network yet. See
+[garden-irrigation.md](projects/garden-irrigation.md).
 
 ## Shared fragments
 

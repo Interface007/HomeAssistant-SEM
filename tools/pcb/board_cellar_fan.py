@@ -15,6 +15,7 @@ MODULE_PIN_PITCH and regenerate.
 
 # ---------------------------------------------------------------- Board
 
+BOARD_NAME = "cellar-fan-01"   # goes into the Gerber and BOM file names
 BOARD_REV = "rev B"
 
 BOARD_W = 60.0

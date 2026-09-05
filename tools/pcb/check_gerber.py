@@ -173,7 +173,7 @@ def svg(layers):
                          f'stroke="{paint}" stroke-width="{it[3] * SCALE:.1f}" '
                          f'stroke-linecap="round" opacity="{op}"/>')
 
-    for d, pts in parse_drill(os.path.join(sys.argv[1], "cellar-fan-01.drl")).items():
+    for d, pts in parse_drill(os.path.join(sys.argv[1], B.BOARD_NAME + ".drl")).items():
         for x, y in pts:
             o.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" '
                      f'r="{d / 2 * SCALE:.1f}" fill="{BG}"/>')
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     for fn in sorted(os.listdir(d)):
         if not fn.endswith(".gbr"):
             continue
-        name = fn.replace("cellar-fan-01-", "").replace(".gbr", "")
+        name = fn.replace(B.BOARD_NAME + "-", "").replace(".gbr", "")
         items, problems = parse(os.path.join(d, fn))
         layers[name] = items
         x0, y0, x1, y1 = bbox(items)
@@ -221,7 +221,7 @@ if __name__ == "__main__":
             ok = False
         print(f"{lay}: {got} pad flashes, expected {expect} -> {mark}")
 
-    holes = parse_drill(os.path.join(d, "cellar-fan-01.drl"))
+    holes = parse_drill(os.path.join(d, B.BOARD_NAME + ".drl"))
     nholes = sum(len(v) for v in holes.values())
     expect_h = npads + len(vias) + len(B.mount_holes())
     print(f"Drills: {nholes}, expected {expect_h} -> "

@@ -31,7 +31,7 @@ SILK_WIDTH = 0.15
 EDGE_WIDTH = 0.10
 POUR_INSET = 0.5
 CORNER_SEGMENTS = 8
-NAME = "cellar-fan-01"
+NAME = B.BOARD_NAME
 
 
 def c(v):

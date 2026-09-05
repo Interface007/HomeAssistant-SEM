@@ -4,7 +4,7 @@ Usage:
     python tools/pcb/export_bom.py [output_csv]
 
 If no output path is given, the script writes to:
-    tools/pcb/out/cellar-fan-01-bom.csv
+    tools/pcb/out/<board name>-bom.csv
 """
 
 from __future__ import annotations
@@ -80,7 +80,7 @@ def export_bom(path: str) -> tuple[int, int]:
 
 
 def main() -> int:
-    default_out = os.path.join(os.path.dirname(__file__), "out", "cellar-fan-01-bom.csv")
+    default_out = os.path.join(os.path.dirname(__file__), "out", B.BOARD_NAME + "-bom.csv")
     out = sys.argv[1] if len(sys.argv) > 1 else default_out
     out = os.path.abspath(out)
 

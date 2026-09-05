@@ -30,12 +30,14 @@ See [conventions.md](conventions.md#entity-naming).
 
 ## PCB design chain
 
-`tools/pcb/` generates the carrier board for the ventilation controllers
-without an EDA tool. Everything derives from one source of truth.
+`tools/pcb/` generates carrier boards without an EDA tool. Everything
+derives from one source of truth per board.
 
 | Script | Role |
 | --- | --- |
-| [`board.py`](../tools/pcb/board.py) | geometry and netlist — the only file to edit |
+| [`board.py`](../tools/pcb/board.py) | selects which board definition `import board` resolves to |
+| [`board_cellar_fan.py`](../tools/pcb/board_cellar_fan.py) | ventilation controller — geometry and netlist |
+| [`board_irrigation.py`](../tools/pcb/board_irrigation.py) | irrigation controller — geometry and netlist |
 | [`router.py`](../tools/pcb/router.py) | grid router, Dijkstra on 0.25 mm, two layers with vias |
 | [`verify.py`](../tools/pcb/verify.py) | electrical check — clearances, continuity, shorts, ground plane |
 | [`preview.py`](../tools/pcb/preview.py) | geometry check and SVG view |
@@ -48,11 +50,32 @@ without an EDA tool. Everything derives from one source of truth.
 cd tools/pcb
 python preview.py out/preview.svg     # placement
 python verify.py                      # electrical check
-python gerber.py out                  # manufacturing data
-python check_gerber.py out out/preview.svg
+python gerber.py out/cellar           # manufacturing data
+python check_gerber.py out/cellar out/preview.svg
+python export_bom.py                  # out/<board name>-bom.csv
 ```
 
 `out/` is gitignored — everything in it is reproducible from the sources.
+
+### Two boards, one chain
+
+The six tools all do `import board as B`. Rather than parameterise every
+one of them, `board.py` picks the definition that import resolves to, from
+`PCB_BOARD`:
+
+```bash
+PCB_BOARD=board_irrigation python verify.py
+PCB_BOARD=board_irrigation python gerber.py out/irrigation
+```
+
+The default is `board_cellar_fan`, deliberately: that board is built and in
+service, and a mistyped variable name must not silently regenerate
+manufacturing data for the wrong project. Output file names come from
+`BOARD_NAME` in the board definition, so the two boards cannot overwrite
+each other's Gerbers even in the same directory.
+
+To dump a netlist, run the board definition itself — `python
+board_irrigation.py` — rather than `board.py`, which is only the selector.
 
 ### Why the checks exist
 

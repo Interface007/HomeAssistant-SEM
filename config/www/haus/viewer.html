@@ -94,7 +94,8 @@
   #leiste .zeichen{font-family:var(--mono); font-size:14px; line-height:1}
   .zustand{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}
   .zustand i{width:12px;height:12px;border:1px solid var(--ink);display:block}
-  canvas{display:block}
+  /* Gesten gehoeren der Kamera, nicht dem Scrollen der Seite. */
+  canvas{display:block;touch-action:none}
   #drop{
     position:absolute; inset:0; display:grid; place-content:center; gap:10px;
     text-align:center; font-family:var(--mono); font-size:13px; color:var(--ink-soft);
@@ -113,10 +114,26 @@
   #info dd{margin:1px 0 0;font-family:var(--mono);font-size:12px;word-break:break-word}
   #info dl{margin:0}
   #info .title{font-weight:600;font-size:14px;border-bottom:1px solid var(--hairline);padding-bottom:6px}
-  @media (max-width:760px){body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-    aside{border-right:0;border-bottom:1px solid var(--hairline)}
-    body.leiste-zu{grid-template-rows:0 1fr}
-    body.leiste-zu aside{height:0;border-bottom:0}}
+  /* Schmale Schirme: die Leiste legt sich UEBER das Modell, statt ihm eine
+     Rasterspur wegzunehmen. Zwei Gruende. Erstens ist sie auf einem Handy so
+     lang, dass sie das Modell sonst plattdrueckt. Zweitens - und das war ein
+     echter Fehler - erbt `body.leiste-zu` seine Spaltenangabe aus der
+     Grundregel (hoehere Spezifitaet als das schlichte `body` hier). Zugeklappt
+     entstand daraus ein Raster aus zwei Spalten UND zwei Zeilen, `main` fiel
+     in die 0 Pixel hohe erste Zeile, und das Modell war unsichtbar. Ausserhalb
+     des Rasters kann das nicht mehr passieren. */
+  @media (max-width:760px){
+    body{position:relative; grid-template-columns:1fr; grid-template-rows:1fr}
+    body.leiste-zu{grid-template-columns:1fr; grid-template-rows:1fr}
+    aside{
+      position:absolute; inset:0; z-index:10; width:auto; padding:20px 18px;
+      border-right:0; border-bottom:0;
+    }
+    body.leiste-zu aside{visibility:hidden; padding:0}
+    /* Die Schaltflaeche muss ueber der Leiste bleiben, sonst laesst sie sich
+       nicht wieder schliessen. */
+    #leiste{z-index:11}
+  }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -172,6 +189,8 @@
       <span id="fovWert">60°</span></label>
     <label class="row"><input type="checkbox" id="labels" checked>
       <span>Wände beschriften</span></label>
+    <label class="row"><input type="checkbox" id="raumnamen" checked>
+      <span>Raumnamen anzeigen</span></label>
     <label class="row"><input type="checkbox" id="messwerte" checked>
       <span>Messwerte anzeigen</span></label>
   </section>
@@ -245,6 +264,7 @@ const byStorey = new Map();   // Geschoss -> Mesh[]
 const nachGid = new Map();    // GlobalId -> Mesh[] (fuer die Zustandsfarbe)
 const collidables = [];       // Meshes, gegen die beim Begehen geprueft wird
 const labels = new THREE.Group();   // Wandbeschriftungen
+const raumschilder = new THREE.Group();     // Raumnamen
 const geraeteschilder = new THREE.Group();  // Messwerte an Geraeten
 const messwerte = new Map();       // entity_id -> {wert, einheit, stand}
 const hiddenTypes = new Set();
@@ -407,6 +427,7 @@ function install(root, label, state = snapshotViewState()) {
 
   scene.add(model);
   beschriften();
+  raeumeBeschriften();
   messwerteSchilder();
   fensterFaerben();
   entitaetenAnsagen();
@@ -437,7 +458,14 @@ function fit() {
   if (!bbox) return;
   const size = bbox.getSize(new THREE.Vector3());
   const center = bbox.getCenter(new THREE.Vector3());
-  const dist = Math.max(size.x, size.y, size.z) * 1.9;
+  // Abstand aus der Umkugel und dem ENGEREN der beiden Blickwinkel. Ein
+  // fester Faktor reicht nicht: im Hochformat ist der waagerechte Winkel
+  // deutlich kleiner als der senkrechte, und das Haus lief seitlich aus dem
+  // Bild - auf dem Telefon war nur eine Hausecke zu sehen.
+  const radius = size.length() / 2;
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+  const dist = radius / Math.sin(Math.min(vFov, hFov) / 2) * 1.08;
   camera.position.set(center.x + dist * 0.7, center.y + dist * 0.5, center.z + dist * 0.7);
   controls.target.copy(center);
   camera.near = dist / 500; camera.far = dist * 12;
@@ -525,6 +553,14 @@ function applyVisibility() {
     o.visible = !hiddenTypes.has(o.userData.gruppe)
       && !hiddenStoreys.has(o.userData.geschoss);
   });
+  // Schilder haengen an keinem Mesh und muessen den Geschossfilter deshalb
+  // selbst befolgen - sonst schweben die Namen eines ausgeblendeten
+  // Geschosses frei in der Luft ueber dem, was stehengeblieben ist.
+  for (const gruppe of [labels, raumschilder]) {
+    for (const sp of gruppe.children) {
+      sp.visible = !hiddenStoreys.has(sp.userData.geschoss);
+    }
+  }
 }
 
 // ---------------------------------------------------------------- Beschriftung
@@ -584,11 +620,39 @@ function beschriften() {
     for (const seite of [1, -1]) {
       const sp = schild(name);
       sp.position.copy(mitte).setY(y).addScaledVector(n, seite * abstand);
+      sp.userData.geschoss = mesh.userData.geschoss;
       labels.add(sp);
     }
   }
   if (!labels.parent) scene.add(labels);
   labels.visible = document.getElementById("labels").checked;
+}
+
+// Raumnamen. Anders als die Waende haengen sie an keinem Mesh: IfcSpace wird
+// gar nicht erst nach glTF exportiert (DEFAULT_EXCLUDE in ifc_to_glb.py), sonst
+// staeken 14 undurchsichtige Kloetze im Modell. Die Schilder kommen deshalb
+// allein aus den Metadaten - `Pset_Schild` traegt einen Punkt, der garantiert
+// im Raumpolygon liegt, auf Augenhoehe ueber dem Fertigfussboden.
+function raeumeBeschriften() {
+  raumschilder.clear();
+  for (const [gid, m] of Object.entries(meta)) {
+    if (m.typ !== "IfcSpace") continue;
+    const s = m.psets?.Pset_Schild;
+    if (!s) continue;
+    const kurz = s.Kurz ? String(s.Kurz) : "";
+    const sp = schild(kurz ? [m.name || gid, kurz] : [m.name || gid]);
+    // glTF steht auf Y-up (y-up in ifc_to_glb.py): Modell-Z wird zu Y,
+    // Modell-Y zu -Z. Dieselbe Drehung wie beim Rest der Szene.
+    sp.position.set(Number(s.X), Number(s.Z), -Number(s.Y));
+    // Deutlich groesser als die Wandschilder: ein Raumname soll aus der
+    // Draufsicht auf das ganze Geschoss lesbar sein, nicht erst, wenn man
+    // davorsteht. 0.14 * 3.2 = rund 45 cm Schildhoehe.
+    sp.scale.multiplyScalar(3.2);
+    sp.userData.geschoss = m.geschoss;
+    raumschilder.add(sp);
+  }
+  if (!raumschilder.parent) scene.add(raumschilder);
+  raumschilder.visible = document.getElementById("raumnamen").checked;
 }
 
 // ------------------------------------------------------- Messwerte am Geraet
@@ -620,7 +684,11 @@ function entitaetenVon(gid) {
     return i < 0 ? REIHENFOLGE.length : i;
   };
   return Object.entries(pset)
-    .filter(([k]) => k !== "id" && k !== "Geraet")
+    // `Geraet` ist der stabile Name, `Area` der Raumbezug, `id` die
+    // IFC-Instanznummer - keins davon ist eine Entitaet, die man abonnieren
+    // koennte. Ohne diesen Filter bestellte der Viewer `bedroom` als
+    // Messwert und bekaeme nie eine Antwort.
+    .filter(([k]) => k !== "id" && k !== "Geraet" && k !== "Area")
     .map(([k, v]) => [k, String(v)])
     .sort((a, b) => rang(a[0]) - rang(b[0]) || a[0].localeCompare(b[0]));
 }
@@ -750,6 +818,10 @@ document.getElementById("messwerte").onchange = (e) => {
 
 document.getElementById("labels").onchange = (e) => {
   labels.visible = e.target.checked;
+};
+
+document.getElementById("raumnamen").onchange = (e) => {
+  raumschilder.visible = e.target.checked;
 };
 
 // ---------------------------------------------------------------- Begehen

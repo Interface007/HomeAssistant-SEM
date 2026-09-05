@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="800" viewBox="0 0 1240 800" font-family="DejaVu Sans Mono, Consolas, monospace">
+  <style>
+    .w  { stroke:#24292f; stroke-width:1.7; fill:none; stroke-linecap:square; }
+    .s  { stroke:#24292f; stroke-width:1.5; fill:none; }
+    .bx { stroke:#24292f; stroke-width:1.5; fill:#f2f1ec; }
+    .dash { stroke:#24292f; stroke-width:1.4; fill:none; stroke-dasharray:6 4; }
+    .dot{ fill:#24292f; }
+    text { fill:#24292f; font-size:12px; }
+    .ttl { font-size:15px; letter-spacing:1px; }
+    .sm  { font-size:10.5px; }
+    .net { font-size:11.5px; letter-spacing:0.5px; }
+    .note{ font-size:11px; }
+  </style>
+  <rect width="1240" height="800" fill="#ffffff"/>
+
+  <text class="ttl" x="60" y="34">IRRIGATION-GARDEN-01  REV A</text>
+  <text class="sm"  x="60" y="50">Raised-bed irrigation controller — schematic. Board: tools/pcb/board_irrigation.py</text>
+
+  <!-- ================= POWER STRIP (top) ================= -->
+
+  <!-- J1 12 V in -->
+  <rect class="bx" x="60" y="75" width="80" height="80"/>
+  <text class="sm" x="100" y="102" text-anchor="middle">J1</text>
+  <text class="sm" x="100" y="118" text-anchor="middle">12V IN</text>
+  <text class="sm" x="134" y="104" text-anchor="end">+</text>
+  <text class="sm" x="134" y="134" text-anchor="end">−</text>
+  <path class="w" d="M140 100 H300"/>
+  <path class="w" d="M140 130 H170"/>
+  <text class="net" x="250" y="92" text-anchor="middle">+12V</text>
+
+  <!-- GND at J1 -->
+  <path class="w" d="M170 130 V140"/>
+  <path class="s" d="M161 140 H179 M165.5 144 H174.5 M167.5 148 H172.5"/>
+
+  <!-- C1 -->
+  <circle class="dot" cx="200" cy="100" r="3.4"/>
+  <path class="w" d="M200 100 V118"/>
+  <path class="s" d="M189 118 H211 M189 125 H211"/>
+  <path class="w" d="M200 125 V150"/>
+  <path class="s" d="M191 150 H209 M195.5 154 H204.5 M197.5 158 H202.5"/>
+  <text class="sm" x="216" y="118">C1 1000u/25V</text>
+
+  <!-- J2 12 V out to the step-down -->
+  <circle class="dot" cx="300" cy="100" r="3.4"/>
+  <rect class="bx" x="300" y="75" width="80" height="80"/>
+  <text class="sm" x="340" y="102" text-anchor="middle">J2</text>
+  <text class="sm" x="340" y="118" text-anchor="middle">12V OUT</text>
+  <path class="w" d="M270 130 H300"/>
+  <path class="w" d="M270 130 V140"/>
+  <path class="s" d="M261 140 H279 M265.5 144 H274.5 M267.5 148 H272.5"/>
+  <path class="w" d="M380 100 H420"/>
+  <path class="w" d="M380 130 H420"/>
+
+  <!-- MINI560, external -->
+  <rect class="dash" x="420" y="72" width="150" height="86"/>
+  <text class="sm" x="495" y="100" text-anchor="middle">MINI560</text>
+  <text class="sm" x="495" y="116" text-anchor="middle">12 V → 5 V</text>
+  <text class="sm" x="495" y="132" text-anchor="middle">(external module)</text>
+  <path class="w" d="M570 100 H610"/>
+  <path class="w" d="M570 130 H610"/>
+
+  <!-- J3 5 V in -->
+  <rect class="bx" x="610" y="75" width="80" height="80"/>
+  <text class="sm" x="650" y="102" text-anchor="middle">J3</text>
+  <text class="sm" x="650" y="118" text-anchor="middle">5V IN</text>
+  <path class="w" d="M690 100 H745"/>
+  <text class="net" x="750" y="104">+5V</text>
+  <path class="w" d="M690 130 H720"/>
+  <path class="w" d="M720 130 V140"/>
+  <path class="s" d="M711 140 H729 M715.5 144 H724.5 M717.5 148 H722.5"/>
+
+  <text class="sm" x="60" y="188">The step-down sits outside the board: J2 hands 12 V to it, J3 takes 5 V back.</text>
+  <text class="sm" x="60" y="203">Same arrangement as the ventilation carrier board — no module footprint on the PCB.</text>
+
+  <!-- ================= U1 ================= -->
+  <rect class="s" x="470" y="250" width="280" height="410" fill="none"/>
+  <text class="ttl" x="610" y="290" text-anchor="middle">U1</text>
+  <text x="610" y="312" text-anchor="middle">ESP32-S3-ZERO</text>
+  <text class="sm" x="610" y="330" text-anchor="middle">Waveshare, 2 x 9 pads</text>
+  <text class="sm" x="610" y="600" text-anchor="middle">GP3 unused —</text>
+  <text class="sm" x="610" y="615" text-anchor="middle">strapping pin</text>
+  <text class="sm" x="610" y="640" text-anchor="middle">GP7 is on the module's east row</text>
+
+  <!-- U1 left pins -->
+  <text class="sm" x="478" y="274">5V</text>
+  <text class="sm" x="478" y="314">3V3</text>
+  <text class="sm" x="478" y="354">GND</text>
+  <text class="sm" x="478" y="394">GP1</text>
+  <text class="sm" x="478" y="444">GP4</text>
+  <text class="sm" x="478" y="514">GP2</text>
+  <text class="sm" x="478" y="619">GP6</text>
+  <path class="w" d="M430 270 H470"/>
+  <path class="w" d="M430 310 H470"/>
+  <path class="w" d="M430 350 H470"/>
+  <path class="w" d="M430 390 H470"/>
+  <path class="w" d="M430 440 H470"/>
+  <path class="w" d="M430 510 H470"/>
+  <path class="w" d="M430 615 H470"/>
+
+  <!-- U1 right pins -->
+  <text class="sm" x="742" y="344" text-anchor="end">GP5</text>
+  <text class="sm" x="742" y="564" text-anchor="end">GP7</text>
+  <path class="w" d="M750 340 H790"/>
+  <path class="w" d="M750 560 H790"/>
+
+  <!-- +5V to U1 -->
+  <path class="w" d="M395 270 H430"/>
+  <text class="net" x="390" y="274" text-anchor="end">+5V</text>
+
+  <!-- C3 on 3V3 -->
+  <path class="w" d="M390 310 H430"/>
+  <path class="w" d="M390 310 V326"/>
+  <path class="s" d="M379 326 H401 M379 333 H401"/>
+  <path class="w" d="M390 333 V352"/>
+  <path class="s" d="M381 352 H399 M385.5 356 H394.5 M387.5 360 H392.5"/>
+  <text class="sm" x="404" y="330">C3 100n</text>
+
+  <!-- U1 GND -->
+  <path class="w" d="M350 350 H430"/>
+  <path class="w" d="M350 350 V360"/>
+  <path class="s" d="M341 360 H359 M345.5 364 H354.5 M347.5 368 H352.5"/>
+
+  <!-- ================= SOIL PROBES ================= -->
+  <rect class="bx" x="60" y="315" width="120" height="90"/>
+  <text class="sm" x="120" y="340" text-anchor="middle">J5</text>
+  <text class="sm" x="120" y="356" text-anchor="middle">ERDE 10CM</text>
+  <text class="sm" x="120" y="372" text-anchor="middle">SEN0193</text>
+  <text class="sm" x="174" y="334" text-anchor="end">V</text>
+  <text class="sm" x="174" y="364" text-anchor="end">−</text>
+  <text class="sm" x="174" y="394" text-anchor="end">A</text>
+
+  <rect class="bx" x="60" y="435" width="120" height="90"/>
+  <text class="sm" x="120" y="460" text-anchor="middle">J6</text>
+  <text class="sm" x="120" y="476" text-anchor="middle">ERDE 20CM</text>
+  <text class="sm" x="120" y="492" text-anchor="middle">SEN0193</text>
+  <text class="sm" x="174" y="454" text-anchor="end">V</text>
+  <text class="sm" x="174" y="484" text-anchor="end">−</text>
+  <text class="sm" x="174" y="514" text-anchor="end">A</text>
+
+  <!-- SOIL_PWR bus: GP4 feeds both probes -->
+  <path class="w" d="M180 330 H250"/>
+  <path class="w" d="M180 450 H250"/>
+  <path class="w" d="M250 330 V385"/>
+  <path class="s" d="M250 385 A 6 6 0 0 1 250 395"/>
+  <path class="w" d="M250 395 V450"/>
+  <path class="w" d="M250 440 H430"/>
+  <circle class="dot" cx="250" cy="440" r="3.4"/>
+  <text class="net" x="262" y="426">SOIL_PWR</text>
+
+  <!-- probe grounds -->
+  <path class="w" d="M180 360 H205"/>
+  <path class="w" d="M205 360 V370"/>
+  <path class="s" d="M196 370 H214 M200.5 374 H209.5 M202.5 378 H207.5"/>
+  <path class="w" d="M180 480 H205"/>
+  <path class="w" d="M205 480 V490"/>
+  <path class="s" d="M196 490 H214 M200.5 494 H209.5 M202.5 498 H207.5"/>
+
+  <!-- probe analog outputs -->
+  <path class="w" d="M180 390 H430"/>
+  <text class="net" x="300" y="384">SOIL_A</text>
+  <path class="w" d="M180 510 H430"/>
+  <text class="net" x="300" y="504">SOIL_B</text>
+
+  <!-- ================= FLOW SENSOR ================= -->
+  <rect class="bx" x="60" y="540" width="120" height="90"/>
+  <text class="sm" x="120" y="565" text-anchor="middle">J7</text>
+  <text class="sm" x="120" y="581" text-anchor="middle">DURCHFLUSS</text>
+  <text class="sm" x="120" y="597" text-anchor="middle">YF-S402</text>
+  <text class="sm" x="174" y="559" text-anchor="end">5</text>
+  <text class="sm" x="174" y="589" text-anchor="end">−</text>
+  <text class="sm" x="174" y="619" text-anchor="end">S</text>
+
+  <path class="w" d="M180 555 H215"/>
+  <text class="net" x="220" y="559">+5V</text>
+  <path class="w" d="M180 585 H205"/>
+  <path class="w" d="M205 585 V595"/>
+  <path class="s" d="M196 595 H214 M200.5 599 H209.5 M202.5 603 H207.5"/>
+
+  <!-- divider R3 / R4 -->
+  <path class="w" d="M180 615 H260"/>
+  <rect class="s" x="260" y="604" width="65" height="22" fill="#fff"/>
+  <text class="sm" x="292" y="619" text-anchor="middle">R3 10k</text>
+  <path class="w" d="M325 615 H430"/>
+  <circle class="dot" cx="380" cy="615" r="3.4"/>
+  <path class="w" d="M380 615 V660"/>
+  <rect class="s" x="369" y="660" width="22" height="65" fill="#fff"/>
+  <text class="sm" x="398" y="690">R4 20k</text>
+  <path class="w" d="M380 725 V750"/>
+  <path class="s" d="M371 750 H389 M375.5 754 H384.5 M377.5 758 H382.5"/>
+  <text class="net" x="398" y="610">FLOW_SIG</text>
+
+  <!-- ================= PUMP ================= -->
+  <!-- +12V rail (right) -->
+  <path class="w" d="M1020 95 H1180"/>
+  <text class="net" x="1022" y="86">+12V</text>
+
+  <!-- R1 gate series -->
+  <path class="w" d="M790 340 H800"/>
+  <rect class="s" x="800" y="329" width="65" height="22" fill="#fff"/>
+  <text class="sm" x="832" y="344" text-anchor="middle">R1 100R</text>
+  <path class="w" d="M865 340 H975"/>
+  <circle class="dot" cx="905" cy="340" r="3.4"/>
+
+  <!-- R2 gate pulldown -->
+  <path class="w" d="M905 340 V430"/>
+  <rect class="s" x="894" y="430" width="22" height="65" fill="#fff"/>
+  <text class="sm" x="923" y="460">R2 100k</text>
+  <path class="w" d="M905 495 V530"/>
+  <path class="s" d="M896 530 H914 M900.5 534 H909.5 M902.5 538 H907.5"/>
+
+  <!-- Q1 IRLZ34N -->
+  <path class="s" d="M978 312 V368"/>
+  <path class="s" d="M992 312 V328 M992 332 V348 M992 352 V368"/>
+  <path class="w" d="M992 320 H1035"/>
+  <path class="w" d="M992 360 H1010"/>
+  <path class="w" d="M1010 360 V415"/>
+  <path class="s" d="M1001 415 H1019 M1005.5 419 H1014.5 M1007.5 423 H1012.5"/>
+  <text class="sm" x="1028" y="404">Q1 IRLZ34N</text>
+  <text class="sm" x="1000" y="308" text-anchor="middle">D</text>
+  <text class="sm" x="1000" y="382" text-anchor="middle">S</text>
+  <text class="sm" x="962" y="332" text-anchor="end">G</text>
+
+  <!-- drain to pump / D1 -->
+  <path class="w" d="M1035 320 V235"/>
+  <path class="w" d="M1035 235 H1135"/>
+  <circle class="dot" cx="1080" cy="235" r="3.4"/>
+  <text class="net" x="1040" y="228">PUMP_DRAIN</text>
+
+  <!-- D1 flyback -->
+  <path class="w" d="M1080 235 V172"/>
+  <path class="s" d="M1069 172 L1091 172 L1080 148 Z" fill="#fff"/>
+  <path class="s" d="M1067 148 H1093"/>
+  <path class="w" d="M1080 148 V95"/>
+  <circle class="dot" cx="1080" cy="95" r="3.4"/>
+  <text class="sm" x="1098" y="166">D1 1N5822</text>
+
+  <!-- J4 pump -->
+  <rect class="bx" x="1135" y="175" width="80" height="80"/>
+  <text class="sm" x="1175" y="202" text-anchor="middle">J4</text>
+  <text class="sm" x="1175" y="218" text-anchor="middle">PUMPE</text>
+  <text class="sm" x="1141" y="199">+</text>
+  <text class="sm" x="1141" y="239">−</text>
+  <path class="w" d="M1135 195 H1110"/>
+  <path class="w" d="M1110 195 V95"/>
+  <circle class="dot" cx="1110" cy="95" r="3.4"/>
+
+  <!-- ================= FLOAT ================= -->
+  <path class="w" d="M790 560 H1135"/>
+  <text class="net" x="820" y="554">FLOAT</text>
+  <rect class="bx" x="1135" y="540" width="80" height="75"/>
+  <text class="sm" x="1175" y="566" text-anchor="middle">J8</text>
+  <text class="sm" x="1175" y="582" text-anchor="middle">SCHWIMMER</text>
+  <text class="sm" x="1141" y="564">S</text>
+  <text class="sm" x="1141" y="599">−</text>
+  <path class="w" d="M1135 595 H1085"/>
+  <path class="w" d="M1085 595 V635"/>
+  <path class="s" d="M1076 635 H1094 M1080.5 639 H1089.5 M1082.5 643 H1087.5"/>
+
+  <!-- C2 debounce -->
+  <circle class="dot" cx="1005" cy="560" r="3.4"/>
+  <path class="w" d="M1005 560 V600"/>
+  <path class="s" d="M994 600 H1016 M994 607 H1016"/>
+  <path class="w" d="M1005 607 V635"/>
+  <path class="s" d="M996 635 H1014 M1000.5 639 H1009.5 M1002.5 643 H1007.5"/>
+  <text class="sm" x="1020" y="604">C2 100n</text>
+
+  <!-- ================= NOTES ================= -->
+  <rect class="s" x="60" y="655" width="290" height="120" fill="#fbfaf7"/>
+  <text class="note" x="70" y="675">Crossing wires are NOT connected — only a</text>
+  <text class="note" x="70" y="690">junction dot is a connection. The one hop is</text>
+  <text class="note" x="70" y="705">drawn where SOIL_PWR crosses SOIL_A.</text>
+  <text class="note" x="70" y="726">J5/J6 pin order V/−/A follows the SEN0193 cable.</text>
+  <text class="note" x="70" y="741">V is the switched GP4 rail, not permanent 3V3.</text>
+  <text class="note" x="70" y="762">Q1 pinout G-D-S seen from the printed face.</text>
+</svg>

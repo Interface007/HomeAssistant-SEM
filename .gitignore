@@ -21,6 +21,7 @@ config/zigbee2mqtt/log/
 
 # Generated status exports (can contain device/person metadata)
 status/entities.csv
+tools/renames.csv
 
 # Generierte Fertigungsdaten (aus tools/pcb/ reproduzierbar)
 tools/pcb/out/

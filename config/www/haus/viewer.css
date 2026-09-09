@@ -1,0 +1,134 @@
+:root{
+  --linen:#e4e7e2; --linen-deep:#d6dad4; --ink:#22282a; --ink-soft:#5d6866;
+  --hairline:#a9b2ab; --stamp:#0d5c63; --stamp-soft:#0d5c6318;
+  --ui:"Archivo","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--linen); color:var(--ink); font-family:var(--ui);
+  display:grid; grid-template-columns:280px 1fr;
+}
+/* ---- Sidebar: reads like a drawing stamp ---- */
+aside{
+  border-right:1px solid var(--hairline); padding:20px 18px;
+  display:flex; flex-direction:column; gap:22px; overflow-y:auto;
+  background:linear-gradient(var(--linen),var(--linen-deep));
+}
+h1{font-size:15px;font-weight:600;letter-spacing:.02em;margin:0 0 2px}
+.sub{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:0}
+section h2{
+  font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-soft);
+  margin:0 0 8px; padding-bottom:5px; border-bottom:1px solid var(--hairline);
+}
+label.row{
+  display:flex; align-items:center; gap:8px; font-size:13px;
+  padding:3px 0; cursor:pointer;
+}
+label.row input{accent-color:var(--stamp);margin:0}
+.swatch{width:11px;height:11px;border:1px solid var(--ink);flex:none}
+.count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.feld{
+  display:flex; align-items:center; gap:8px; font-size:13px; margin-top:8px;
+}
+.feld input[type=number]{width:70px;font-family:var(--mono);font-size:12px;
+  padding:3px 5px;border:1px solid var(--hairline);background:none;color:var(--ink)}
+.feld input[type=range]{flex:1}
+.feld span{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.warn{
+  font-family:var(--mono); font-size:11px; line-height:1.45; margin:8px 0 0;
+  padding:7px 9px; border:1px solid #9a5b2a; color:#7a4620; background:#9a5b2a14;
+}
+input[type=range]{width:100%;accent-color:var(--stamp)}
+#crosshair{position:absolute;left:50%;top:50%;width:14px;height:14px;
+  margin:-7px 0 0 -7px;pointer-events:none;opacity:.75}
+#crosshair::before,#crosshair::after{content:"";position:absolute;
+  background:#111;box-shadow:0 0 0 1px rgba(255,255,255,.7)}
+#crosshair::before{left:6px;top:0;width:2px;height:14px}
+#crosshair::after{left:0;top:6px;width:14px;height:2px}
+/* ---- Signature: section height drawn as a dimension line ---- */
+.dim{
+  display:flex; align-items:center; gap:6px; font-family:var(--mono);
+  font-size:12px; margin-top:6px;
+}
+.dim::before,.dim::after{content:"";height:1px;background:var(--ink);flex:1}
+button{
+  font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  background:none; border:1px solid var(--hairline); color:var(--ink);
+  padding:6px 10px; cursor:pointer; border-radius:0;
+}
+button:hover{border-color:var(--stamp);color:var(--stamp)}
+:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+/* ---- Stage ---- */
+/* Collapsed: the sidebar disappears from the grid entirely so the model gets
+   the full width - embedded in a dashboard that is the normal case. */
+/* Not display:none - that drops the sidebar out of the grid and `main` slides
+   into the 0 pixel column. It stays in place and shrinks instead. */
+body.leiste-zu{grid-template-columns:0 1fr}
+body.leiste-zu aside{
+  width:0; padding:0; border-right:0; overflow:hidden; visibility:hidden;
+}
+/* The stage is a grid item, and it has to be allowed to shrink. `1fr` alone is
+   not enough: the automatic minimum of a grid track is the min-content size of
+   its contents - and that is the canvas, whose size the renderer sets itself.
+   Without min-width/min-height:0 the two feed each other: a canvas that once
+   came out too wide keeps the track too wide, resize() measures the track, and
+   so the canvas stays too wide. The renderer then draws into a picture wider
+   than the visible area, and the model - centred in the canvas - slides out to
+   the right. On a phone that pushed half the house off the screen.
+   overflow:hidden keeps a stray oversize from becoming a scrollable page. */
+main{position:relative; min-width:0; min-height:0; overflow:hidden}
+#leiste{
+  position:absolute; top:14px; left:14px; z-index:5;
+  font-family:var(--ui); font-size:13px; font-weight:500;
+  display:flex; align-items:center; gap:8px;
+  padding:7px 12px; border:1px solid var(--hairline); border-radius:2px;
+  background:rgba(228,231,226,.94); color:var(--ink); cursor:pointer;
+}
+#leiste:hover{border-color:var(--stamp); color:var(--stamp)}
+#leiste:focus-visible{outline:2px solid var(--stamp); outline-offset:2px}
+#leiste .zeichen{font-family:var(--mono); font-size:14px; line-height:1}
+.zustand{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}
+.zustand i{width:12px;height:12px;border:1px solid var(--ink);display:block}
+/* Gestures belong to the camera, not to page scrolling. */
+canvas{display:block;touch-action:none}
+#drop{
+  position:absolute; inset:0; display:grid; place-content:center; gap:10px;
+  text-align:center; font-family:var(--mono); font-size:13px; color:var(--ink-soft);
+  background:var(--linen); pointer-events:none;
+}
+#drop.hide{display:none}
+#drop.armed{background:var(--stamp-soft);color:var(--stamp)}
+#info{
+  position:absolute; right:16px; top:16px; width:230px;
+  background:var(--linen); border:1px solid var(--ink); padding:12px 14px;
+  font-size:13px; display:none;
+}
+#info.on{display:block}
+#info dt{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft);margin-top:8px}
+#info dd{margin:1px 0 0;font-family:var(--mono);font-size:12px;word-break:break-word}
+#info dl{margin:0}
+#info .title{font-weight:600;font-size:14px;border-bottom:1px solid var(--hairline);padding-bottom:6px}
+/* Narrow screens: the sidebar lies OVER the model instead of taking a grid
+   track away from it. Two reasons. First, on a phone it is so long that it
+   would otherwise squash the model flat. Second - and this was a real bug -
+   `body.leiste-zu` inherits its column declaration from the base rule (higher
+   specificity than the plain `body` here). Collapsed, that produced a grid of
+   two columns AND two rows, `main` fell into the 0 pixel high first row, and
+   the model was invisible. Outside the grid that can no longer happen. */
+@media (max-width:760px){
+  body{position:relative; grid-template-columns:1fr; grid-template-rows:1fr}
+  body.leiste-zu{grid-template-columns:1fr; grid-template-rows:1fr}
+  aside{
+    position:absolute; inset:0; z-index:10; width:auto; padding:20px 18px;
+    border-right:0; border-bottom:0;
+  }
+  body.leiste-zu aside{visibility:hidden; padding:0}
+  /* The button has to stay above the sidebar, otherwise it cannot be closed
+     again. */
+  #leiste{z-index:11}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}

@@ -128,3 +128,9 @@ utility_meter:
   power_main_daily:
     source: sensor.power_main_energy
     cycle: daily
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1

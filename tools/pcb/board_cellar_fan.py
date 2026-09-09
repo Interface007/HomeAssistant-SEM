@@ -15,7 +15,14 @@ MODULE_PIN_PITCH and regenerate.
 
 # ---------------------------------------------------------------- Board
 
+import pinout as P
+
 BOARD_NAME = "cellar-fan-01"   # goes into the Gerber and BOM file names
+# Two silkscreen label pairs overlap on this revision - verify.py
+# reports them as warnings. They are NOT fixed here on purpose: both
+# boards are built and in service, and changing the silk would make
+# these files disagree with the hardware over a legibility defect
+# that costs nothing now. Fix them in a rev C if it is ever reordered.
 BOARD_REV = "rev B"
 
 BOARD_W = 60.0
@@ -83,7 +90,12 @@ _u1_x_unused = _u1_x_signal + MODULE_ROW_PITCH
 _u1_y_top = 44.0
 
 COMPONENTS["U1"] = {
-    "desc": "ESP32-S3-Zero on 2x9 female headers, USB facing up",
+    "desc": "ESP32-S3-Zero on two 1x9 female header strips, USB facing up",
+    # Two SINGLE-row strips, not a 2x9 dual-row part: the rows are
+    # MODULE_ROW_PITCH = 15.24 mm apart, while a dual-row header holds
+    # its rows 2.54 mm apart in one body and cannot be split to span
+    # that. "2x9" in a parts list buys the wrong thing.
+    "fit": (0.64, None),
     "pads": (
         [pad(_u1_x_signal, _u1_y_top - i * MODULE_PIN_PITCH, D_HEADER,
              MODULE_LEFT_ROW[i]) for i in range(MODULE_PINS_PER_ROW)]
@@ -110,6 +122,7 @@ _y_gp6 = _u1_y_top - 8 * MODULE_PIN_PITCH
 # --- J1: 12 V input, 2-pin screw terminal 5.08 -------------------------
 COMPONENTS["J1"] = {
     "desc": "2-pin screw terminal 5.08 - 12 V input from PSU",
+    "fit": (0.9, None),
     "pads": inline(12.0, 6.0, 2, 5.08, D_SCREW_5MM),
     "nets": {0: "+12V", 1: "GND"},
     "silk": [(12.0, 10.2, "+", 1.1, "middle"),
@@ -121,6 +134,7 @@ COMPONENTS["J1"] = {
 # --- J2: 5 V input from external MINI560 ------------------------------
 COMPONENTS["J2"] = {
     "desc": "2-pin screw terminal 5.08 - 5 V input from MINI560 (external)",
+    "fit": (0.9, None),
     "pads": inline(26.0, 48.0, 2, 5.08, D_SCREW_5MM),
     "nets": {0: "+5V", 1: "GND"},
     "silk": [(26.0, 52.3, "+", 1.1, "middle"),
@@ -136,6 +150,7 @@ COMPONENTS["J3"] = {
     # the middle of the board with J6/C1 to the west and J4/R1/R2 to the
     # east - no direction for the sensor cable to leave without crossing
     # another part. Connectors belong on an edge.
+    "fit": (0.9, None),
     "pads": inline(11.0, 50.0, 3, 3.5, D_SCREW_35MM),
     "nets": {0: "+3V3", 1: "GND", 2: "GPIO6"},
     "silk": [(11.0, 45.4, "+", 1.0, "middle"),
@@ -149,6 +164,7 @@ COMPONENTS["J3"] = {
 # Pin order as on motherboard: 1 GND, 2 +12V, 3 tach, 4 PWM
 COMPONENTS["J4"] = {
     "desc": "4-pin header 2.54 - fan 1 (with tach)",
+    "fit": (0.64, None),
     "pads": inline(24.0, 18.0, 4, 2.54, D_HEADER),
     "nets": {0: "GND", 1: "+12V", 2: "GPIO4", 3: "PWM_OUT"},
     "silk": [(22.5, 22.7, "J4 FAN1", 1.0, "start"),
@@ -158,6 +174,7 @@ COMPONENTS["J4"] = {
 
 COMPONENTS["J5"] = {
     "desc": "4-pin header 2.54 - fan 2, tach NOT connected",
+    "fit": (0.64, None),
     "pads": inline(24.0, 8.0, 4, 2.54, D_HEADER),
     "nets": {0: "GND", 1: "+12V", 3: "PWM_OUT"},
     "silk": [(22.5, 12.7, "J5 FAN2 OHNE TACHO", 0.9, "start"),
@@ -170,6 +187,7 @@ COMPONENTS["J5"] = {
 # parallel with J1 - saves doubling up two wires in one screw terminal.
 COMPONENTS["J6"] = {
     "desc": "2-pin screw terminal 5.08 - 12 V pass-through to step-down",
+    "fit": (0.9, None),
     "pads": inline(4.5, 29.08, 2, 5.08, D_SCREW_5MM, dx=0.0, dy=-1.0),
     "nets": {0: "+12V", 1: "GND"},
     "silk": [(9.2, 28.7, "+", 1.1, "start"),
@@ -190,6 +208,7 @@ COMPONENTS["J6"] = {
 # Pitch 5.08 - parts with 2.54 just get their legs spread.
 COMPONENTS["C2"] = {
     "desc": "100nF ceramic - low-pass on the tach line against PWM crosstalk",
+    "fit": (0.6, None),
     "pads": inline(14.0, 15.5, 2, 5.08, D_RESISTOR),
     "nets": {0: "GPIO4", 1: "GND"},
     "silk": [(12.5, 17.7, "C2 100N", 0.9, "start")],
@@ -200,6 +219,7 @@ COMPONENTS["C2"] = {
 #     Pitch 10.16 (axial resistor 1/4 W horizontal).
 COMPONENTS["R1"] = {
     "desc": "4k7 Pull-up 1-Wire: GPIO6 -> 3V3",
+    "fit": (0.6, 6.8),
     "pads": inline(24.0, _y_gp6, 2, 10.16, D_RESISTOR),
     "nets": {0: "+3V3", 1: "GPIO6"},
     "silk": [(24.0, _y_gp6 + 1.7, "R1 4k7", 1.0, "start")],
@@ -208,6 +228,7 @@ COMPONENTS["R1"] = {
 
 COMPONENTS["R2"] = {
     "desc": "10k Pull-up Tacho: GPIO4 -> 3V3",
+    "fit": (0.6, 6.8),
     "pads": inline(24.0, _y_gp4, 2, 10.16, D_RESISTOR),
     "nets": {0: "+3V3", 1: "GPIO4"},
     "silk": [(24.0, _y_gp4 + 1.7, "R2 10k", 1.0, "start")],
@@ -216,6 +237,7 @@ COMPONENTS["R2"] = {
 
 COMPONENTS["R4"] = {
     "desc": "10k gate pull-up: keeps Q1 conducting until ESP takes control",
+    "fit": (0.6, 6.8),
     "pads": inline(24.0, _y_gp2, 2, 10.16, D_RESISTOR),
     "nets": {0: "+3V3", 1: "GPIO2"},
     "silk": [(24.0, _y_gp2 + 1.7, "R4 10k", 1.0, "start")],
@@ -230,16 +252,22 @@ COMPONENTS["R4"] = {
 # check the datasheet before substituting a different part.
 _Q1_X = (6.0, 8.54, 11.08)
 
+# Both the pad-to-net mapping and the three pin letters come out of the
+# single declaration in pinout.PACKAGES - see the header there for why.
+# What is written by hand below is the schematic statement "the gate goes
+# to GPIO2", which cannot be transposed the way a pad index can.
+_q1_pads = inline(_Q1_X[0], 39.0, 3, 2.54, D_TO92)
+_q1_nets, _q1_silk = P.wire("2N7000/TO-92", _q1_pads,
+                            {"S": "GND", "G": "GPIO2", "D": "Q1_DRAIN"},
+                            label_y=36.6)
+
 COMPONENTS["Q1"] = {
     "desc": "2N7000 open-drain driver for PWM (TO-92, S-G-D)",
-    "pads": inline(_Q1_X[0], 39.0, 3, 2.54, D_TO92),
-    "nets": {0: "GND", 1: "GPIO2", 2: "Q1_DRAIN"},
-    # One label per pad, centred underneath it. A single "S G D" string
-    # cannot be aligned to the 2.54 mm pad pitch.
-    "silk": [(4.5, 43.1, "Q1 2N7000", 1.0, "start"),
-             (_Q1_X[0], 36.6, "S", 0.9, "middle"),
-             (_Q1_X[1], 36.6, "G", 0.9, "middle"),
-             (_Q1_X[2], 36.6, "D", 0.9, "middle")],
+    "package": "2N7000/TO-92",
+    "fit": (0.45, None),
+    "pads": _q1_pads,
+    "nets": _q1_nets,
+    "silk": [(4.5, 43.1, "Q1 2N7000", 1.0, "start")] + _q1_silk,
     "keepout": (4.5, 35.5, 8.0, 7.0),
 }
 
@@ -251,6 +279,7 @@ COMPONENTS["JP1"] = {
     # therefore surrounded by foreign copper on both sides. At 2.54 there is
     # no corridor left to route PWM_OUT. Bridge with a
     # Solder bridge or wire link - not a jumper-cap pitch.
+    "fit": (0.64, None),
     "pads": inline(16.0, 39.0, 3, 3.81, D_HEADER),
     "nets": {0: "GPIO2", 1: "PWM_OUT", 2: "Q1_DRAIN"},
     "silk": [(15.0, 36.2, "JP1", 1.0, "start"),
@@ -261,6 +290,8 @@ COMPONENTS["JP1"] = {
 # --- C1: electrolytic capacitor 100 uF / 25 V -------------------------
 COMPONENTS["C1"] = {
     "desc": "100uF/25V radial, pitch 2.5, buffer for 12 V rail",
+    "fit": (0.5, None),
+    "polarity": (1, "+"),
     "pads": inline(5.0, 14.0, 2, 2.5, D_ELKO, dx=0.0, dy=1.0),
     "nets": {0: "GND", 1: "+12V"},
     "silk": [(9.4, 16.1, "+", 1.2, "start"),

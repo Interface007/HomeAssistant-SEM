@@ -142,6 +142,16 @@ def svg():
                      f'stroke-width="0.8" stroke-dasharray="3 2" '
                      f'opacity="0.75"/>')
             continue
+        if shape and shape[0] == "lines":
+            # Body outline drawn as polylines - lets a footprint show which
+            # way a part faces (TO-220 tab, diode cathode band) instead of
+            # only which pad is which net.
+            for pts in shape[1]:
+                path = " ".join(f"{_x(px):.1f},{_y(py):.1f}" for px, py in pts)
+                o.append(f'<polyline points="{path}" fill="none" '
+                         f'stroke="#e8e4d8" stroke-width="0.8" '
+                         f'stroke-dasharray="3 2" opacity="0.75"/>')
+            continue
         ko = comp.get("keepout")
         if ko:
             o.append(f'<rect x="{_x(ko[0]):.1f}" y="{_y(ko[1] + ko[3]):.1f}" '

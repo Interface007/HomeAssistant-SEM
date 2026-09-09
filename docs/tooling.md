@@ -38,6 +38,7 @@ derives from one source of truth per board.
 | [`board.py`](../tools/pcb/board.py) | selects which board definition `import board` resolves to |
 | [`board_cellar_fan.py`](../tools/pcb/board_cellar_fan.py) | ventilation controller — geometry and netlist |
 | [`board_irrigation.py`](../tools/pcb/board_irrigation.py) | irrigation controller — geometry and netlist |
+| [`pinout.py`](../tools/pcb/pinout.py) | package pin order as data, plus the checks that compare a board against it |
 | [`router.py`](../tools/pcb/router.py) | grid router, Dijkstra on 0.25 mm, two layers with vias |
 | [`verify.py`](../tools/pcb/verify.py) | electrical check — clearances, continuity, shorts, ground plane |
 | [`preview.py`](../tools/pcb/preview.py) | geometry check and SVG view |
@@ -77,6 +78,36 @@ each other's Gerbers even in the same directory.
 To dump a netlist, run the board definition itself — `python
 board_irrigation.py` — rather than `board.py`, which is only the selector.
 
+### Pin order as data
+
+Revision A of the ventilation board went to the fab with Q1's gate and
+drain swapped. The data sheet was not wrong; the same fact had been
+written out by hand twice — once as a pad-index-to-net mapping, once as
+three silkscreen letters — and nothing compared the two with each other
+or with the part.
+
+[`pinout.py`](../tools/pcb/pinout.py) holds each package's pin order once,
+with its source and the date it was checked. A board file then states the
+*schematic* fact and never a pad index:
+
+```python
+_q1_nets, _q1_silk = P.wire("IRLZ34N/TO-220AB", _q1_pads,
+                            {"G": "Q1_GATE", "D": "PUMP_DRAIN", "S": "GND"},
+                            label_y=13.0)
+```
+
+Both the netlist and the pin letters come out of that one call, so they
+cannot disagree. Transposing two entries now means writing "the gate goes
+to the pump", which does not survive reading the line back.
+
+`verify.py` additionally checks what the derivation cannot: that every
+part naming a transistor package declared one, that polarity markers sit
+next to the right pad and outside the body, that drills fit their leads,
+and that axial pitches leave room to bend them. Silkscreen labels that
+overlap are reported as **warnings** — they make a board awkward to
+populate rather than wrong, and the ventilation board carries two that
+are not worth invalidating built hardware over.
+
 ### Why the checks exist
 
 There is no DRC engine here, so each check earns its place by having caught
@@ -90,6 +121,14 @@ a real defect:
   than either endpoint
 - **a connector with no cable route to any board edge** — J3 sat enclosed
   by neighbours
+- **a 1.2 mm hole for a 1.3 mm lead** — the D1 footprint on the irrigation
+  board, found before it was ordered
+- **a 10.16 mm lead spacing for a 9.5 mm body** — same diode: 0.33 mm per
+  side to bend a lead into the hole, i.e. the part does not go in
+- **a keepout narrower than the part it reserves room for** — Q1's TO-220
+  is 10 mm wide, the keepout was 8.5
+- **a polarity marker printed underneath the capacitor it describes** —
+  visible on the bare board, gone as soon as it is populated
 
 `verify.py` works geometrically rather than by rasterising, so there are no
 rounding artefacts. `check_gerber.py` parses the generated files instead of

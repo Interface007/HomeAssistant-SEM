@@ -19,6 +19,7 @@ so a flood-fill on a 0.1 mm grid is used.
 import math
 
 import board as B
+import pinout as P
 import router as R
 
 POUR_GRID = 0.1
@@ -274,6 +275,21 @@ if __name__ == "__main__":
             print(f"  {nets}")
     else:
         print("  Short:       none")
+
+    silk_warnings = P.check_silk(B.COMPONENTS)
+    if silk_warnings:
+        print(f"\nSILKSCREEN ({len(silk_warnings)} warning(s), not a failure):")
+        for w in silk_warnings:
+            print("  -", w)
+
+    package_problems = P.check(B.COMPONENTS)
+    if package_problems:
+        ok = False
+        print("\nPACKAGE / FIT:")
+        for p in package_problems:
+            print("  -", p)
+    else:
+        print("  Packages:    pin order, polarity and lead fit as declared")
 
     problems, area = check_pour(routed, vias)
     if problems:

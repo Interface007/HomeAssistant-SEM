@@ -179,6 +179,11 @@ def silkscreen():
                     cy + r * math.sin(2 * math.pi * i / 24))
                    for i in range(25)]
             g.draw(pts, SILK_WIDTH)
+        elif shape and shape[0] == "lines":
+            # Explicit body outline: carries the orientation marks (TO-220
+            # tab edge, diode cathode band) that letters alone cannot.
+            for pts in shape[1]:
+                g.draw(pts, SILK_WIDTH)
         else:
             ko = comp.get("keepout")
             if ko:

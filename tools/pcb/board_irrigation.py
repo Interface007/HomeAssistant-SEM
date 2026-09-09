@@ -35,6 +35,8 @@ the way it does:
 
 # ---------------------------------------------------------------- Board
 
+import pinout as P
+
 BOARD_NAME = "irrigation-garden-01"   # goes into the Gerber and BOM file names
 BOARD_REV = "rev A"
 
@@ -70,7 +72,9 @@ D_SCREW_5MM = 1.3           # Screw terminal 5.08 mm pitch
 D_SCREW_35MM = 1.1          # Screw terminal 3.50 mm pitch
 D_RESISTOR = 0.8            # Axial resistor 1/4 W, ceramic capacitor
 D_TO220 = 1.1               # IRLZ34N leads, 0.9 x 0.5 mm
-D_AXIAL_PWR = 1.2           # 1N5822 in DO-201AD, 1.0 mm leads
+D_AXIAL_PWR = 1.5           # 1N5822 in DO-201AD: lead is 1.20..1.30 mm,
+                            # so 1.2 was narrower than the part. See the
+                            # fit check in pinout.py.
 D_ELKO = 0.9
 
 
@@ -105,7 +109,12 @@ _u1_x_unused = _u1_x_signal + MODULE_ROW_PITCH
 _u1_y_top = 60.0
 
 COMPONENTS["U1"] = {
-    "desc": "ESP32-S3-Zero on 2x9 female headers, USB facing up",
+    "desc": "ESP32-S3-Zero on two 1x9 female header strips, USB facing up",
+    # Two SINGLE-row strips, not a 2x9 dual-row part: the rows are
+    # MODULE_ROW_PITCH = 15.24 mm apart, while a dual-row header holds
+    # its rows 2.54 mm apart in one body and cannot be split to span
+    # that. "2x9" in a parts list buys the wrong thing.
+    "fit": (0.64, None),
     "pads": (
         [pad(_u1_x_signal, _u1_y_top - i * MODULE_PIN_PITCH, D_HEADER,
              MODULE_LEFT_ROW[i]) for i in range(MODULE_PINS_PER_ROW)]
@@ -132,12 +141,13 @@ _y_gp5 = _u1_y_top - 7 * MODULE_PIN_PITCH      # pump gate, 42.22
 # --- J1: 12 V input, bottom edge ---------------------------------------
 COMPONENTS["J1"] = {
     "desc": "2-pin screw terminal 5.08 - 12 V input from the PSU",
+    "fit": (0.9, None),
     "pads": inline(12.0, 6.0, 2, 5.08, D_SCREW_5MM),
     "nets": {0: "+12V", 1: "GND"},
     "silk": [(12.0, 10.2, "+", 1.1, "middle"),
              (17.08, 10.2, "-", 1.1, "middle"),
-             (9.0, 12.1, "J1 12V IN", 1.0, "start")],
-    "keepout": (8.5, 2.5, 12.5, 7.0),
+             (1.5, 12.6, "J1 12V IN", 1.0, "start")],
+    "keepout": (8.5, 1.7, 12.5, 8.6),
 }
 
 # --- J2: 12 V pass-through to the external MINI560 ---------------------
@@ -145,23 +155,25 @@ COMPONENTS["J1"] = {
 # in one clamp, same decision as on the ventilation board.
 COMPONENTS["J2"] = {
     "desc": "2-pin screw terminal 5.08 - 12 V out to the step-down module",
+    "fit": (0.9, None),
     "pads": inline(5.0, 43.0, 2, 5.08, D_SCREW_5MM, dx=0.0, dy=-1.0),
     "nets": {0: "+12V", 1: "GND"},
     "silk": [(9.7, 42.6, "+", 1.1, "start"),
              (9.7, 37.5, "-", 1.1, "start"),
              (9.7, 47.3, "J2 12V OUT", 0.9, "start")],
-    "keepout": (1.5, 34.5, 7.0, 12.5),
+    "keepout": (0.7, 34.5, 8.6, 12.5),
 }
 
 # --- J3: 5 V input from the external MINI560 ---------------------------
 COMPONENTS["J3"] = {
     "desc": "2-pin screw terminal 5.08 - 5 V in from the step-down module",
+    "fit": (0.9, None),
     "pads": inline(5.0, 57.0, 2, 5.08, D_SCREW_5MM, dx=0.0, dy=-1.0),
     "nets": {0: "+5V", 1: "GND"},
     "silk": [(9.7, 56.6, "+", 1.1, "start"),
              (9.7, 51.5, "-", 1.1, "start"),
              (9.7, 61.3, "J3 5V IN", 0.9, "start")],
-    "keepout": (1.5, 48.5, 7.0, 12.5),
+    "keepout": (0.7, 48.5, 8.6, 12.5),
 }
 
 # --- J4: pump, bottom edge --------------------------------------------
@@ -171,12 +183,13 @@ COMPONENTS["J3"] = {
 # 12 V to turn on.
 COMPONENTS["J4"] = {
     "desc": "2-pin screw terminal 5.08 - pump, low-side switched",
+    "fit": (0.9, None),
     "pads": inline(36.0, 6.0, 2, 5.08, D_SCREW_5MM),
     "nets": {0: "+12V", 1: "PUMP_DRAIN"},
     "silk": [(36.0, 10.2, "+", 1.1, "middle"),
              (41.08, 10.2, "-", 1.1, "middle"),
-             (33.0, 12.1, "J4 PUMPE", 1.0, "start")],
-    "keepout": (32.5, 2.5, 12.5, 7.0),
+             (33.0, 11.5, "J4 PUMPE", 1.0, "start")],
+    "keepout": (32.5, 1.7, 12.5, 8.6),
 }
 
 # --- J5 / J6: soil moisture probes, top edge --------------------------
@@ -185,17 +198,19 @@ COMPONENTS["J4"] = {
 # defeats the duty cycling that keeps it alive for more than one season.
 COMPONENTS["J5"] = {
     "desc": "3-pin screw terminal 3.50 - soil probe 10 cm (VCC/GND/AOUT)",
-    "pads": inline(11.0, 63.0, 3, 3.5, D_SCREW_35MM),
+    "fit": (0.9, None),
+    "pads": inline(12.0, 63.0, 3, 3.5, D_SCREW_35MM),
     "nets": {0: "SOIL_PWR", 1: "GND", 2: "SOIL_A"},
-    "silk": [(11.0, 58.4, "V", 1.0, "middle"),
-             (14.5, 58.4, "-", 1.0, "middle"),
-             (18.0, 58.4, "A", 1.0, "middle"),
-             (9.0, 56.2, "J5 ERDE 10CM", 0.9, "start")],
-    "keepout": (9.0, 59.5, 11.0, 7.0),
+    "silk": [(12.0, 58.4, "V", 1.0, "middle"),
+             (15.5, 58.4, "-", 1.0, "middle"),
+             (19.0, 58.4, "A", 1.0, "middle"),
+             (10.0, 54.6, "J5 ERDE 10CM", 0.9, "start")],
+    "keepout": (10.0, 59.5, 11.0, 7.0),
 }
 
 COMPONENTS["J6"] = {
     "desc": "3-pin screw terminal 3.50 - soil probe 20 cm (VCC/GND/AOUT)",
+    "fit": (0.9, None),
     "pads": inline(24.0, 63.0, 3, 3.5, D_SCREW_35MM),
     "nets": {0: "SOIL_PWR", 1: "GND", 2: "SOIL_B"},
     "silk": [(24.0, 58.4, "V", 1.0, "middle"),
@@ -211,6 +226,7 @@ COMPONENTS["J6"] = {
 # correct for both, a pull-up would only be correct for one.
 COMPONENTS["J7"] = {
     "desc": "3-pin screw terminal 3.50 - YF-S402 flow sensor (5V/GND/OUT)",
+    "fit": (0.9, None),
     "pads": inline(38.0, 63.0, 3, 3.5, D_SCREW_35MM),
     "nets": {0: "+5V", 1: "GND", 2: "FLOW_RAW"},
     "silk": [(38.0, 58.4, "5", 1.0, "middle"),
@@ -225,6 +241,7 @@ COMPONENTS["J7"] = {
 # wired normally closed, so a cut cable reads as "canister empty".
 COMPONENTS["J8"] = {
     "desc": "2-pin screw terminal 3.50 - float switch, normally closed",
+    "fit": (0.9, None),
     "pads": inline(75.0, 34.0, 2, 3.5, D_SCREW_35MM, dx=0.0, dy=-1.0),
     "nets": {0: "FLOAT", 1: "GND"},
     "silk": [(71.0, 37.0, "J8 SCHWIMMER", 0.9, "start"),
@@ -245,15 +262,31 @@ COMPONENTS["J8"] = {
 # earlier board shipped a revision with them swapped.
 _Q1_X = (36.0, 38.54, 41.08)
 
+_q1_pads = inline(_Q1_X[0], 17.0, 3, 2.54, D_TO220)
+_q1_nets, _q1_silk = P.wire("IRLZ34N/TO-220AB", _q1_pads,
+                            {"G": "Q1_GATE", "D": "PUMP_DRAIN", "S": "GND"},
+                            label_y=13.4)
+
 COMPONENTS["Q1"] = {
     "desc": "IRLZ34N logic-level MOSFET, low-side pump switch (TO-220, G-D-S)",
-    "pads": inline(_Q1_X[0], 16.0, 3, 2.54, D_TO220),
-    "nets": {0: "Q1_GATE", 1: "PUMP_DRAIN", 2: "GND"},
-    "silk": [(33.5, 20.1, "Q1 IRLZ34N", 1.0, "start"),
-             (_Q1_X[0], 13.0, "G", 0.9, "middle"),
-             (_Q1_X[1], 13.0, "D", 0.9, "middle"),
-             (_Q1_X[2], 13.0, "S", 0.9, "middle")],
-    "keepout": (34.5, 13.5, 8.5, 5.5),
+    "package": "IRLZ34N/TO-220AB",
+    "fit": (0.9, None),
+    "pads": _q1_pads,
+    "nets": _q1_nets,
+    # Body outline instead of the generic keepout rectangle, with a second
+    # line along the tab edge. The three letters say which pad is which
+    # net; only this says which way to turn the part, and reading the
+    # letters still needs the viewing convention from pinout.PACKAGES.
+    "outline": ("lines", [
+        [(33.44, 14.7), (43.64, 14.7), (43.64, 19.4), (33.44, 19.4),
+         (33.44, 14.7)],
+        [(33.44, 18.9), (43.64, 18.9)],          # tab side, faces north
+    ]),
+    "silk": [(33.5, 21.1, "Q1 IRLZ34N", 1.0, "start")] + _q1_silk,
+    # 10.7 x 5.2, not 8.5 x 5.5: a TO-220 body is 10 mm wide and the old
+    # keepout was narrower than the part it was supposed to reserve room
+    # for.
+    "keepout": (33.2, 14.4, 10.7, 5.2),
 }
 
 # --- R1: gate series resistor -----------------------------------------
@@ -263,6 +296,7 @@ COMPONENTS["Q1"] = {
 # most sensitive signals on this board and they share its ground.
 COMPONENTS["R1"] = {
     "desc": "100R gate series resistor: GP5 -> Q1 gate",
+    "fit": (0.6, 6.8),
     "pads": inline(38.0, _y_gp5, 2, 10.16, D_RESISTOR),
     "nets": {0: "Q1_GATE", 1: "PUMP_GATE"},
     "silk": [(38.0, _y_gp5 + 1.7, "R1 100R", 1.0, "start")],
@@ -276,6 +310,7 @@ COMPONENTS["R1"] = {
 # enough to turn the MOSFET partly on. This resistor is not a detail.
 COMPONENTS["R2"] = {
     "desc": "100k gate pulldown: holds Q1 off while GP5 floats at boot",
+    "fit": (0.6, 6.8),
     "pads": inline(30.0, 40.0, 2, 10.16, D_RESISTOR, dx=0.0, dy=-1.0),
     "nets": {0: "Q1_GATE", 1: "GND"},
     "silk": [(31.7, 35.5, "R2 100K", 0.9, "start")],
@@ -288,6 +323,7 @@ COMPONENTS["R2"] = {
 # still a clean high.
 COMPONENTS["R3"] = {
     "desc": "10k divider upper leg: flow sensor output -> GP6",
+    "fit": (0.6, 6.8),
     "pads": inline(41.0, 58.0, 2, 10.16, D_RESISTOR, dx=0.0, dy=-1.0),
     "nets": {0: "FLOW_RAW", 1: "FLOW_SIG"},
     "silk": [(42.7, 53.5, "R3 10K", 0.9, "start")],
@@ -296,6 +332,7 @@ COMPONENTS["R3"] = {
 
 COMPONENTS["R4"] = {
     "desc": "20k divider lower leg: GP6 -> GND",
+    "fit": (0.6, 6.8),
     "pads": inline(28.0, 47.84, 2, 10.16, D_RESISTOR),
     "nets": {0: "GND", 1: "FLOW_SIG"},
     "silk": [(28.0, 49.5, "R4 20K", 0.9, "start")],
@@ -310,10 +347,12 @@ COMPONENTS["R4"] = {
 # and is not one.
 COMPONENTS["C1"] = {
     "desc": "1000uF/25V radial, RM5 - inrush buffer on the 12 V rail",
+    "fit": (0.6, None),
+    "polarity": (1, "+"),
     "pads": inline(13.0, 16.0, 2, 5.0, D_ELKO, dx=0.0, dy=1.0),
     "nets": {0: "GND", 1: "+12V"},
-    "silk": [(17.5, 21.5, "+", 1.2, "start"),
-             (5.5, 11.0, "C1 1000U 25V", 0.85, "start")],
+    "silk": [(19.4, 21.5, "+", 1.2, "start"),
+             (1.5, 11.0, "C1 1000U 25V", 0.85, "start")],
     # Round outline: 12.5 mm can plus air.
     "outline": ("circle", 13.0, 18.5, 6.6),
     "keepout": (6.0, 11.5, 14.0, 14.0),
@@ -326,6 +365,7 @@ COMPONENTS["C1"] = {
 # pump switch-off.
 COMPONENTS["C2"] = {
     "desc": "100nF ceramic - debounce and noise sink on the float input",
+    "fit": (0.6, None),
     "pads": inline(72.0, 24.0, 2, 5.08, D_RESISTOR, dx=0.0, dy=-1.0),
     "nets": {0: "FLOAT", 1: "GND"},
     "silk": [(69.0, 25.6, "C2 100N", 0.85, "start")],
@@ -335,9 +375,10 @@ COMPONENTS["C2"] = {
 # --- C3: 3V3 decoupling ------------------------------------------------
 COMPONENTS["C3"] = {
     "desc": "100nF ceramic - 3V3 decoupling next to the module",
+    "fit": (0.6, None),
     "pads": inline(46.0, 55.0, 2, 5.08, D_RESISTOR, dx=0.0, dy=-1.0),
     "nets": {0: "+3V3", 1: "GND"},
-    "silk": [(43.0, 56.6, "C3 100N", 0.85, "start")],
+    "silk": [(44.0, 56.6, "C3", 0.85, "start")],
     "keepout": (44.5, 48.5, 3.0, 8.0),
 }
 
@@ -345,13 +386,27 @@ COMPONENTS["C3"] = {
 # Cathode to +12V, anode to the drain. Fitted the other way round it is a
 # short across the supply the moment power is applied, and the 5 A PSU
 # will win that argument.
+# Pitch 15.24, not the 10.16 this board was first drawn with. The
+# DO-201AD body is up to 9.50 mm long, which left 0.33 mm per side to bend
+# a 1.3 mm lead into the hole - the part does not go in. 15.24 mm is the
+# next standard axial grid step and leaves 2.87 mm per side.
 COMPONENTS["D1"] = {
     "desc": "1N5822 Schottky flyback across the pump (cathode to +12V)",
-    "pads": inline(34.0, 26.0, 2, 10.16, D_AXIAL_PWR),
+    "fit": (1.3, 9.5),
+    "polarity": (1, "K"),
+    "pads": inline(34.0, 26.0, 2, 15.24, D_AXIAL_PWR),
     "nets": {0: "PUMP_DRAIN", 1: "+12V"},
-    "silk": [(34.0, 27.7, "D1 1N5822", 0.9, "start"),
-             (44.16, 23.4, "K", 1.0, "middle")],
-    "keepout": (33.0, 24.0, 12.2, 4.0),
+    # Body outline with a band at the cathode end, so the orientation is
+    # readable as a shape and not only as the letter K.
+    "outline": ("lines", [
+        [(36.87, 23.35), (46.37, 23.35), (46.37, 28.65), (36.87, 28.65),
+         (36.87, 23.35)],
+        [(45.1, 23.35), (45.1, 28.65)],
+        [(45.6, 23.35), (45.6, 28.65)],
+    ]),
+    "silk": [(34.0, 29.6, "D1 1N5822", 0.9, "start"),
+             (49.24, 22.2, "K", 1.0, "middle")],
+    "keepout": (33.0, 23.0, 17.3, 6.0),
 }
 
 # ---------------------------------------------------------------- Nets

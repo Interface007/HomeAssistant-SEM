@@ -329,9 +329,25 @@ only one of them is the usual way it fails anyway:
 
 Procedure, identical for both probes:
 
-1. Desolder the JST connector and solder a **round-jacketed** 3-core cable
-   straight to the pads. A seal can grip a round jacket; it cannot grip
-   three loose wires.
+1. **Leave the JST connector on the board and pot it with the head.** It is
+   surface-mounted, and an SMD connector usually has two soldered anchor
+   tabs besides the three signal pins. With an iron, all of them have to
+   let go together, and heating the tabs long enough risks lifting the
+   small signal pads — a lifted AOUT pad ends the probe. The connector's
+   only problem was being a contact in wet soil, and once sealed inside
+   the potting, it isn't one.
+
+   Plug the supplied cable in fully, until it latches, and cut it 3–4 cm
+   behind the plug. Splice a **round-jacketed** 3-core cable onto the stub:
+   solder each core, give each joint its own small heat-shrink, and stagger
+   the joints so that no two sit side by side. The splice goes into the
+   potting too. A seal can grip a round jacket; it cannot grip three loose
+   wires.
+
+   **Test before potting.** Connect the probe to the board and check the
+   reading in dry air against a glass of water. After potting, a bad joint
+   cannot be repaired. Then clean off the flux with isopropyl alcohol, so
+   the epoxy bonds to the board rather than to flux residue.
 2. Strip the jacket about 10 mm back *inside* what will be potted, so the
    compound seals against the jacket **and** each insulated core. Water
    otherwise creeps along the strands inside the insulation by capillary
@@ -341,19 +357,24 @@ Procedure, identical for both probes:
    faces are already masked, and every extra layer on them adds dielectric
    and costs sensitivity.
 4. Pot the head in a small mould — a piece of tube, a cut glove finger, a
-   3D-printed cup — with slow-cure two-component epoxy, down to the white
-   marker line and no further. Epoxy rather than potting silicone: a
+   3D-printed cup — with slow-cure two-component epoxy, from the white
+   marker line up to past the splice. The plugged-in connector makes the
+   head thicker and the splice makes it longer, so the mould has to take
+   both. Below the white line, pot nothing. Epoxy rather than potting silicone: a
    silicone gel fills but barely adheres to FR4 or to the cable jacket, and
    in soil, with no enclosure around it, that interface is exactly where
    water creeps in. Epoxy bonds, and it doubles as the edge coating in
    step 3.
 
    The compound in the BOM mixes **2:1 by weight**, and a wrong ratio
-   leaves it tacky for good. Two heads need about 10 g, of which the
-   hardener is barely 3 g — below what a kitchen scale weighs reliably.
-   Mix a 30 g batch instead (20 g + 10 g), use the rest on the edges, and
-   leave a blob in the mixing cup as a witness: if that has not gone hard
-   after 12 h, neither have the sensors.
+   leaves it tacky for good. Size the batch by measuring rather than
+   estimating: fill one empty mould with water up to the fill line and
+   weigh the water. Twice that mass in grams, times 1.5, covers both heads,
+   the edge coating, spillage and a denser compound than water. Never mix
+   less than 30 g (20 g + 10 g): below that the hardener is a few grams,
+   and a kitchen scale does not weigh that reliably. Leave a blob in the
+   mixing cup as a witness: if that has not gone hard after 12 h, neither
+   have the sensors.
 5. Optionally, adhesive-lined 3:1 heat-shrink over the transition from
    potting to cable as strain relief. Plain heat-shrink on its own is not a
    seal outdoors.

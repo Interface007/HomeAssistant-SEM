@@ -3,10 +3,10 @@
  * them.
  */
 import {
-  byStorey, byType, groupColor, hiddenStoreys, hiddenTypes, labels, model,
-  PALETTE, raumschilder,
-} from "haus/zustand.js";
-import { walkStoreySel } from "haus/begehen.js";
+  byStorey, byType, groupColor, hiddenStoreys, hiddenTypes, model, PALETTE,
+  roomLabels, wallLabels,
+} from "haus/state.js";
+import { walkStoreySel } from "haus/walk.js";
 
 export function renderLists(selectedStorey = "") {
   buildList("storeys", byStorey, hiddenStoreys, (k) => k);
@@ -61,9 +61,9 @@ export function applyVisibility() {
   // Labels hang off no mesh and therefore have to obey the storey filter
   // themselves - otherwise the names of a hidden storey float freely in the
   // air above whatever is left standing.
-  for (const gruppe of [labels, raumschilder]) {
-    for (const sp of gruppe.children) {
-      sp.visible = !hiddenStoreys.has(sp.userData.geschoss);
+  for (const group of [wallLabels, roomLabels]) {
+    for (const sprite of group.children) {
+      sprite.visible = !hiddenStoreys.has(sprite.userData.geschoss);
     }
   }
 }

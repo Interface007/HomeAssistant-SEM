@@ -2,9 +2,9 @@
  * Picking a component and the info panel that describes it.
  */
 import * as THREE from "three";
-import { meta, model } from "haus/zustand.js";
-import { camera, infoEl, renderer } from "haus/szene.js";
-import { begehen } from "haus/begehen.js";
+import { meta, model } from "haus/state.js";
+import { camera, infoEl, renderer } from "haus/scene.js";
+import { walking } from "haus/walk.js";
 
 const ray = new THREE.Raycaster();
 ray.params.Line = { threshold: 0.1 };
@@ -14,7 +14,7 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   if (!model) return;
   const r = renderer.domElement.getBoundingClientRect();
   // While walking the mouse pointer is captured - then the crosshair applies.
-  const pos = begehen
+  const pos = walking
     ? new THREE.Vector2(0, 0)
     : new THREE.Vector2(
         ((e.clientX - r.left) / r.width) * 2 - 1,

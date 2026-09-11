@@ -3,22 +3,20 @@
  * files, from an embedded copy, or from files dropped onto the page.
  *
  * `install` is the one place that turns a loaded glTF scene into the lookup
- * tables in zustand.js and lets every other aspect rebuild itself.
+ * tables in state.js and lets every other aspect rebuild itself.
  */
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
-  bbox, byStorey, byType, collidables, groupColor, hiddenStoreys, hiddenTypes,
-  meta, model, nachGid, PALETTE, push, setBbox, setMeta, setModel,
-} from "haus/zustand.js";
-import { camera, clipPlane, controls, dropEl, fit, scene } from "haus/szene.js";
-import { clipInput, setupClip } from "haus/schnitt.js";
+  bbox, byGid, byStorey, byType, collidables, groupColor, hiddenStoreys,
+  hiddenTypes, meta, model, PALETTE, push, setBbox, setMeta, setModel,
+} from "haus/state.js";
+import { camera, clipPlane, controls, dropEl, fit, scene } from "haus/scene.js";
+import { clipInput, setupClip } from "haus/section.js";
 import { applyVisibility, renderLists } from "haus/filter.js";
-import { beschriften, raeumeBeschriften } from "haus/schilder.js";
-import {
-  entitaetenAnsagen, fensterFaerben, messwerteSchilder,
-} from "haus/messwerte.js";
-import { verlassen, walkStoreySel } from "haus/begehen.js";
+import { labelRooms, labelWalls } from "haus/labels.js";
+import { announceEntities, colorWindows, labelDevices } from "haus/readings.js";
+import { leave, walkStoreySel } from "haus/walk.js";
 
 const loader = new GLTFLoader();
 
@@ -32,30 +30,30 @@ export async function loadURL(url, label) {
 // loads viewer.html?v=123, the same applies to haus.glb and haus.meta.json.
 // Without it the browser can mix an old viewer with new metadata - then
 // components and code no longer match, and errors look like magic.
-const SEITEN_VERSION = location.search.replace(/^\?/, "");
+const PAGE_VERSION = location.search.replace(/^\?/, "");
 
-function mitVersion(datei, extra = "") {
-  const teile = [SEITEN_VERSION, extra].filter(Boolean).join("&");
-  return teile ? `${datei}?${teile}` : datei;
+function withVersion(file, extra = "") {
+  const parts = [PAGE_VERSION, extra].filter(Boolean).join("&");
+  return parts ? `${file}?${parts}` : file;
 }
 
 export async function loadDefaultFiles({ bustCache = false } = {}) {
   const extra = bustCache ? `t=${Date.now()}` : "";
-  let mitMeta = false;
-  let stand = "";
+  let hasMeta = false;
+  let stamp = "";
   try {
-    const r = await fetch(mitVersion("haus.meta.json", extra),
+    const r = await fetch(withVersion("haus.meta.json", extra),
                           { cache: "no-store" });
     if (r.ok) {
       setMeta(await r.json());
-      mitMeta = true;
+      hasMeta = true;
       // Show the file timestamp as well: that way one can see at a glance
       // whether the browser really has the new state.
       const lm = r.headers.get("last-modified");
       if (lm) {
         const d = new Date(lm);
         if (!Number.isNaN(d.valueOf())) {
-          stand = ` · Stand ${d.toLocaleString("de-DE",
+          stamp = ` · Stand ${d.toLocaleString("de-DE",
             { dateStyle: "short", timeStyle: "short" })}`;
         }
       }
@@ -63,29 +61,29 @@ export async function loadDefaultFiles({ bustCache = false } = {}) {
   } catch { setMeta({}); }
   // The label should name what was really loaded - otherwise it claims
   // metadata that is not there at all.
-  await loadURL(mitVersion("haus.glb", extra),
-    (mitMeta ? "haus.glb + haus.meta.json" : "haus.glb (ohne Metadaten)")
-    + stand);
+  await loadURL(withVersion("haus.glb", extra),
+    (hasMeta ? "haus.glb + haus.meta.json" : "haus.glb (ohne Metadaten)")
+    + stamp);
 }
 
 // For the single-file edition: the model sits in the document as base64.
 // loader.parse works directly on the buffer, entirely without fetch - that is
 // the only way that also works under file://.
 async function loadBase64(b64, label) {
-  const roh = atob(b64);
-  const puffer = new Uint8Array(roh.length);
-  for (let i = 0; i < roh.length; i++) puffer[i] = roh.charCodeAt(i);
-  const gltf = await new Promise((ok, fehler) =>
-    loader.parse(puffer.buffer, "", ok, fehler));
+  const raw = atob(b64);
+  const buffer = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) buffer[i] = raw.charCodeAt(i);
+  const gltf = await new Promise((resolve, reject) =>
+    loader.parse(buffer.buffer, "", resolve, reject));
   install(gltf.scene, label);
 }
 
 export async function loadEmbedded() {
-  const eMeta = document.getElementById("eingebettetMeta");
-  const eGlb = document.getElementById("eingebettetGlb");
-  if (!eMeta || !eGlb) throw new Error("keine eingebetteten Daten");
-  setMeta(JSON.parse(eMeta.textContent));
-  await loadBase64(eGlb.textContent.trim(), "eingebettet");
+  const metaEl = document.getElementById("embeddedMeta");
+  const glbEl = document.getElementById("embeddedGlb");
+  if (!metaEl || !glbEl) throw new Error("no embedded data");
+  setMeta(JSON.parse(metaEl.textContent));
+  await loadBase64(glbEl.textContent.trim(), "eingebettet");
 }
 
 async function reloadDefaultFiles() {
@@ -126,10 +124,10 @@ function snapshotViewState() {
 }
 
 export function install(root, label, state = snapshotViewState()) {
-  verlassen();
+  leave();
   if (model) scene.remove(model);
   setModel(root);
-  byType.clear(); byStorey.clear(); groupColor.clear(); nachGid.clear();
+  byType.clear(); byStorey.clear(); groupColor.clear(); byGid.clear();
   collidables.length = 0;
   hiddenTypes.clear();
   hiddenStoreys.clear();
@@ -145,29 +143,29 @@ export function install(root, label, state = snapshotViewState()) {
     const type = m?.typ ?? "_default";
     // Draw glazed components transparent - windows anyway, doors only if their
     // material is glass (the terrace door for instance).
-    const verglast = type === "IfcWindow" || /glas/i.test(m?.material ?? "");
+    const glazed = type === "IfcWindow" || /glas/i.test(m?.material ?? "");
     // Group = switching group in the component list. The default is the IFC
     // class, ceilings are named individually by the converter (base slab,
     // ceiling above ...).
-    const gruppe = m?.gruppe ?? type;
+    const group = m?.gruppe ?? type;
     const storey = m?.geschoss ?? "ohne Zuordnung";
-    const typfarbe = PALETTE[type] ?? PALETTE._default;
-    const color = verglast ? PALETTE.IfcWindow : typfarbe;
+    const typeColor = PALETTE[type] ?? PALETTE._default;
+    const color = glazed ? PALETTE.IfcWindow : typeColor;
     o.userData.gid = gid;
-    o.userData.gruppe = gruppe;
+    o.userData.gruppe = group;
     o.userData.geschoss = storey;
     o.material = new THREE.MeshLambertMaterial({
       color,
       clippingPlanes: [clipPlane],
-      transparent: verglast,
-      opacity: verglast ? 0.45 : 1,
+      transparent: glazed,
+      opacity: glazed ? 0.45 : 1,
       side: THREE.DoubleSide,
     });
     // Legend always in the type color, otherwise a glass door dyes the whole
     // "Door" group blue.
-    if (!groupColor.has(gruppe)) groupColor.set(gruppe, typfarbe);
-    push(byType, gruppe, o);
-    if (gid) push(nachGid, gid, o);
+    if (!groupColor.has(group)) groupColor.set(group, typeColor);
+    push(byType, group, o);
+    if (gid) push(byGid, gid, o);
     // Doors are closed fillings in the model. When walking one has to get
     // through them, so they do not count as an obstacle.
     if (type !== "IfcDoor") collidables.push(o);
@@ -175,11 +173,11 @@ export function install(root, label, state = snapshotViewState()) {
   });
 
   scene.add(model);
-  beschriften();
-  raeumeBeschriften();
-  messwerteSchilder();
-  fensterFaerben();
-  entitaetenAnsagen();
+  labelWalls();
+  labelRooms();
+  labelDevices();
+  colorWindows();
+  announceEntities();
   setBbox(new THREE.Box3().setFromObject(model));
   fit();
   if (state.camera && state.target) {
@@ -198,4 +196,4 @@ export function install(root, label, state = snapshotViewState()) {
 }
 
 document.getElementById("reload").onclick = () => reloadDefaultFiles()
-  .catch((err) => console.warn("Reload fehlgeschlagen", err));
+  .catch((err) => console.warn("reload failed", err));

@@ -21,6 +21,7 @@ all manufacturers and avoids arc interpretation differences.
 """
 import os
 import sys
+import zipfile
 
 import board as B
 import font
@@ -131,6 +132,11 @@ def bottom_copper(routed, vias):
     g.region(outline(POUR_INSET))
 
     g.polarity(dark=False)
+    # Copper keepouts first: plain openings in the plane, no clearance
+    # ring, because nothing is meant to connect to them.
+    for kx, ky, kw, kh in getattr(B, "COPPER_KEEPOUT", ()):
+        g.region([(kx, ky), (kx + kw, ky), (kx + kw, ky + kh),
+                  (kx, ky + kh), (kx, ky)])
     for ref, idx, p, net in B.all_pads():
         if net == "GND":
             continue
@@ -237,7 +243,7 @@ def excellon(vias, path):
 
 
 if __name__ == "__main__":
-    outdir = sys.argv[1] if len(sys.argv) > 1 else "gerber"
+    outdir = sys.argv[1] if len(sys.argv) > 1 else B.OUT_DIR
     os.makedirs(outdir, exist_ok=True)
 
     routed, vias, failed = R.route()
@@ -264,4 +270,16 @@ if __name__ == "__main__":
     print(f"  {NAME + '.drl':34s} {total} drill holes")
     for d, n in sorted(counts.items()):
         print(f"      {d:.3f} mm  x{n}")
-    print(f"\n{len(files) + 1} files in {outdir}/")
+    # One archive per board, files at the archive root. Fabs detect the
+    # layers from the file names, so two boards in one zip means two
+    # Edge_Cuts and an importer that has to guess. The zip is what gets
+    # uploaded; the loose files stay for check_gerber.py to read back.
+    names = list(files) + [f"{NAME}.drl"]
+    zip_path = os.path.join(outdir, f"{NAME}.zip")
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        for fname in names:
+            z.write(os.path.join(outdir, fname), arcname=fname)
+
+    print(f"\n{len(names)} files in {outdir}/")
+    print(f"  -> {zip_path}  ({os.path.getsize(zip_path) / 1024:.0f} kB, "
+          f"upload this one)")

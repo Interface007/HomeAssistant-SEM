@@ -7,6 +7,7 @@ Checks: components outside board, overlapping component areas,
 pads too close to mounting holes, pad clearance between different nets.
 Then generates a top-view SVG.
 """
+import os
 import sys
 
 import board as B
@@ -211,7 +212,9 @@ def svg():
 
 
 if __name__ == "__main__":
-    out = sys.argv[1] if len(sys.argv) > 1 else "board-preview.svg"
+    out = (sys.argv[1] if len(sys.argv) > 1
+           else os.path.join(B.OUT_DIR, f"{B.BOARD_NAME}-preview.svg"))
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     problems = check()
     if problems:
         print(f"{len(problems)} problem(s):")

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- stil:anfang -->
+<!-- style:start -->
 <script>
 /* Stylesheet with the page's `?v=...`. Home Assistant serves /local/ with a
    long cache lifetime; an old stylesheet next to new markup is just as
@@ -15,16 +15,16 @@
    with a <style> element - the single file has no neighbour to load. */
 (function () {
   var q = location.search.replace(/^\?/, "");
-  var l = document.createElement("link");
-  l.rel = "stylesheet";
-  l.href = "viewer.css" + (q ? "?" + q : "");
-  document.currentScript.after(l);
+  var link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "viewer.css" + (q ? "?" + q : "");
+  document.currentScript.after(link);
 })();
 </script>
-<!-- stil:ende -->
+<!-- style:end -->
 </head>
 <body>
-<aside id="leisteInhalt">
+<aside id="sidebarPanel">
   <div>
     <h1>Hausmodell</h1>
     <p class="sub" id="source">keine Datei geladen</p>
@@ -67,31 +67,31 @@
     </div>
     <div class="dim">WASD laufen &middot; Maus schauen &middot; Umschalt schneller
       &middot; Esc zurück</div>
-    <label class="feld">Körpergröße
-      <input type="number" id="groesse" min="1.20" max="2.20" step="0.01"
+    <label class="field">Körpergröße
+      <input type="number" id="bodyHeight" min="1.20" max="2.20" step="0.01"
              value="1.87"> m</label>
-    <label class="feld">Blickwinkel
+    <label class="field">Blickwinkel
       <input type="range" id="fov" min="40" max="90" step="1" value="60">
-      <span id="fovWert">60°</span></label>
+      <span id="fovValue">60°</span></label>
     <label class="row"><input type="checkbox" id="labels" checked>
       <span>Wände beschriften</span></label>
-    <label class="row"><input type="checkbox" id="raumnamen" checked>
+    <label class="row"><input type="checkbox" id="roomNames" checked>
       <span>Raumnamen anzeigen</span></label>
-    <label class="row"><input type="checkbox" id="messwerte" checked>
+    <label class="row"><input type="checkbox" id="readings" checked>
       <span>Messwerte anzeigen</span></label>
   </section>
 
-  <section id="fensterLegende" hidden>
+  <section id="windowLegend" hidden>
     <h2>Fensterzustand</h2>
-    <div class="zustand"><i style="background:#3f7d9c"></i>geschlossen</div>
-    <div class="zustand"><i style="background:#e0a615"></i>offen</div>
-    <div class="zustand"><i style="background:#c0392b"></i>gekippt</div>
+    <div class="legend"><i style="background:#3f7d9c"></i>geschlossen</div>
+    <div class="legend"><i style="background:#e0a615"></i>offen</div>
+    <div class="legend"><i style="background:#c0392b"></i>gekippt</div>
   </section>
 </aside>
 
 <main>
-  <button id="leiste" type="button" aria-expanded="false" aria-controls="leisteInhalt">
-    <span class="zeichen" aria-hidden="true">&#9776;</span><span id="leisteText">Bauteile</span>
+  <button id="sidebar" type="button" aria-expanded="false" aria-controls="sidebarPanel">
+    <span class="glyph" aria-hidden="true">&#9776;</span><span id="sidebarText">Bauteile</span>
   </button>
   <div id="drop">
     <div><strong>haus.glb</strong> und <strong>haus.meta.json</strong>
@@ -102,7 +102,7 @@
   <div id="crosshair" hidden></div>
 </main>
 
-<!-- module:anfang -->
+<!-- modules:start -->
 <script>
 /* The import map is built here instead of sitting statically in the document -
    for two reasons.
@@ -116,26 +116,26 @@
    Second, the single file: bundle.py places the module sources as JSON before
    this block. The entries then point at data: URLs instead of neighbouring
    files, because under file:// the browser blocks every module import of a
-   file next door. Bare specifiers like "haus/szene.js" still work from inside
+   file next door. Bare specifiers like "haus/scene.js" still work from inside
    a data: module, relative paths do not - which is why the modules import each
    other through the map and never through "./".
 
    The map is inserted before the first module load, as the spec requires. A
-   module missing from MODULE fails loudly: its specifier stays unresolved. */
+   module missing from MODULES fails loudly: its specifier stays unresolved. */
 (function () {
-  var MODULE = ["zustand", "szene", "schnitt", "filter", "schilder",
-                "messwerte", "begehen", "auswahl", "laden", "viewer"];
+  var MODULES = ["state", "scene", "section", "filter", "labels",
+                 "readings", "walk", "selection", "loading", "viewer"];
   var q = location.search.replace(/^\?/, "");
   q = q ? "?" + q : "";
-  var eingebettet = document.getElementById("eingebetteteModule");
-  var quellen = eingebettet ? JSON.parse(eingebettet.textContent) : null;
+  var embedded = document.getElementById("embeddedModules");
+  var sources = embedded ? JSON.parse(embedded.textContent) : null;
   var imports = {
     "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
     "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
   };
-  MODULE.forEach(function (name) {
-    imports["haus/" + name + ".js"] = quellen
-      ? "data:text/javascript;charset=utf-8," + encodeURIComponent(quellen[name])
+  MODULES.forEach(function (name) {
+    imports["haus/" + name + ".js"] = sources
+      ? "data:text/javascript;charset=utf-8," + encodeURIComponent(sources[name])
       : "./viewer/" + name + ".js" + q;
   });
   var el = document.createElement("script");

@@ -18,6 +18,12 @@ MODULE_PIN_PITCH and regenerate.
 import pinout as P
 
 BOARD_NAME = "cellar-fan-01"   # goes into the Gerber and BOM file names
+# The archive sent to the fab in August 2026 was compared against the
+# output of these sources on 2026-09-10: all seven files byte-identical.
+# Everything added since - the board selector, pinout.py, the fit and
+# polarity data, the copper keepout mechanism - has left the boards on
+# the wall untouched, and this file still describes the hardware.
+#
 # Two silkscreen label pairs overlap on this revision - verify.py
 # reports them as warnings. They are NOT fixed here on purpose: both
 # boards are built and in service, and changing the silk would make
@@ -90,11 +96,16 @@ _u1_x_unused = _u1_x_signal + MODULE_ROW_PITCH
 _u1_y_top = 44.0
 
 COMPONENTS["U1"] = {
-    "desc": "ESP32-S3-Zero on two 1x9 female header strips, USB facing up",
-    # Two SINGLE-row strips, not a 2x9 dual-row part: the rows are
-    # MODULE_ROW_PITCH = 15.24 mm apart, while a dual-row header holds
-    # its rows 2.54 mm apart in one body and cannot be split to span
-    # that. "2x9" in a parts list buys the wrong thing.
+    "desc": "ESP32-S3-Zero soldered flat over the pads, USB facing up",
+    # No socket and no header. The module is castellated (half holes) and
+    # gets soldered straight onto these pads, which is how both
+    # ventilation boards were built and what they have survived. A socket
+    # would only buy replaceability, and it would cost a tin-plated
+    # contact pair in a box that crosses its dew point every night.
+    #
+    # The pads stay drilled rather than becoming SMD lands: solder wicking
+    # into the hole anchors the module far better than a surface fillet,
+    # and the 1.6 mm copper ring leaves room for one.
     "fit": (0.64, None),
     "pads": (
         [pad(_u1_x_signal, _u1_y_top - i * MODULE_PIN_PITCH, D_HEADER,
@@ -301,6 +312,15 @@ COMPONENTS["C1"] = {
     "outline": ("circle", 5.0, 15.25, 4.3),
     "keepout": (1.5, 10.5, 7.5, 10.0),
 }
+
+# ---------------------------------------------------------------- Copper keepout
+
+# Empty on purpose. The same module is soldered flat here, so the same
+# antenna sits on the same ground plane - but these two boards are built
+# and working indoors, and cutting the plane would change rev B's
+# manufacturing data over an effect nobody has measured. A rev C should
+# carry the opening that board_irrigation.py defines.
+COPPER_KEEPOUT = []
 
 # ---------------------------------------------------------------- Nets
 

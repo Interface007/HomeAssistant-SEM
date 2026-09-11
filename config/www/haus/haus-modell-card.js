@@ -1,29 +1,33 @@
 /*
- * haus-modell-card.js -- Lovelace-Karte, die das Hausmodell einbettet und
- * ihm Messwerte hineinreicht.
+ * haus-modell-card.js -- Lovelace card that embeds the house model and hands
+ * readings into it.
  *
- * Warum diese Karte statt eines einfachen iframe-Panels: der Viewer soll
- * KEINE Zugangsdaten kennen. Er wird als Einzeldatei weitergegeben
- * (bundle.py), und ein Long-Lived Token darin waere ein Vollzugriff auf diese
- * Home-Assistant-Instanz fuer jeden, der die Datei bekommt. Die Karte laeuft
- * dagegen innerhalb von Home Assistant, hat `hass` ohnehin und schiebt nur
- * die fertigen Werte per postMessage in den iframe.
+ * Why this card instead of a plain iframe panel: the viewer must know NO
+ * credentials. It is passed around as a single file (bundle.py), and a
+ * long-lived token inside it would be full access to this Home Assistant
+ * instance for anyone who gets the file. The card, by contrast, runs inside
+ * Home Assistant, has `hass` anyway, and only pushes the finished values into
+ * the iframe by postMessage.
  *
- * Einbau:
- *   1. Datei nach config/www/haus-modell-card.js kopieren
- *   2. Einstellungen -> Dashboards -> Ressourcen -> hinzufuegen:
- *      /local/haus-modell-card.js  als JavaScript-Modul
- *   3. Karte anlegen:
+ * Installation:
+ *   1. Copy the file to config/www/haus-modell-card.js
+ *   2. Settings -> Dashboards -> Resources -> add:
+ *      /local/haus-modell-card.js  as a JavaScript module
+ *   3. Create the card:
  *        type: custom:haus-modell-card
  *        url: /local/haus_viewer.html
  *        hoehe: 640px
  *
- * Der Viewer sagt nach dem Laden selbst an, welche Entitaeten er braucht -
- * die Karte muss also nicht doppelt konfiguriert werden.
+ * After loading, the viewer announces itself which entities it needs - so the
+ * card does not have to be configured twice.
+ *
+ * The message keys (typ, werte, wert, einheit, alter) are the wire format
+ * shared with the viewer and stay as they are; renaming them would have to
+ * happen on both sides at once.
  */
 
-const TYP_ANSAGE = "haus-modell/entitaeten";
-const TYP_WERTE = "haus-modell/messwerte";
+const TYPE_ANNOUNCE = "haus-modell/entitaeten";
+const TYPE_VALUES = "haus-modell/messwerte";
 
 class HausModellCard extends HTMLElement {
   setConfig(config) {
@@ -31,78 +35,78 @@ class HausModellCard extends HTMLElement {
       throw new Error("url fehlt (Pfad zum Viewer, z. B. /local/haus_viewer.html)");
     }
     this._config = config;
-    this._entitaeten = [];
-    this._letzte = "";
+    this._entities = [];
+    this._last = "";
 
     const card = document.createElement("ha-card");
     if (config.title) card.header = config.title;
     this._frame = document.createElement("iframe");
-    // Home Assistant liefert /local/ mit langer Cache-Dauer aus. Ohne
-    // Anhaengsel laedt der Browser nach einem Export weiter den alten Viewer -
-    // und mischt ihn mit frischen Metadaten, was zu Fehlern fuehrt, die
-    // aussehen wie Zauberei (Beschriftungen aktuell, Farben nicht). Der
-    // Viewer reicht das Anhaengsel an haus.glb und haus.meta.json weiter.
-    const stempel = config.version ?? Date.now();
+    // Home Assistant serves /local/ with a long cache lifetime. Without a
+    // suffix the browser keeps loading the old viewer after an export - and
+    // mixes it with fresh metadata, which produces errors that look like magic
+    // (labels current, colors not). The viewer passes the suffix on to
+    // haus.glb, haus.meta.json, viewer.css and its modules.
+    const stamp = config.version ?? Date.now();
     this._frame.src = config.url
-      + (config.url.includes("?") ? "&" : "?") + "v=" + stempel;
+      + (config.url.includes("?") ? "&" : "?") + "v=" + stamp;
     this._frame.style.cssText =
       `width:100%;height:${config.hoehe || config.height || "640px"};` +
       "border:0;display:block";
-    // Der Viewer braucht nur Skripte und gleiche Herkunft fuer postMessage.
+    // The viewer only needs scripts and same origin for postMessage.
     this._frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
     card.appendChild(this._frame);
     this.replaceChildren(card);
 
-    // Der Viewer meldet nach dem Laden, welche Entitaeten er anzeigen will.
-    this._hoerer = (e) => {
+    // After loading, the viewer reports which entities it wants to show.
+    this._listener = (e) => {
       if (e.source !== this._frame.contentWindow) return;
-      if (!e.data || e.data.typ !== TYP_ANSAGE) return;
-      const liste = e.data.entitaeten;
-      if (!Array.isArray(liste)) return;
-      this._entitaeten = liste.filter((x) => typeof x === "string").slice(0, 200);
-      this._letzte = "";           // erzwingt ein Senden
-      this._senden();
+      if (!e.data || e.data.typ !== TYPE_ANNOUNCE) return;
+      const list = e.data.entitaeten;
+      if (!Array.isArray(list)) return;
+      this._entities = list.filter((x) => typeof x === "string").slice(0, 200);
+      this._last = "";           // forces a send
+      this._send();
     };
-    window.addEventListener("message", this._hoerer);
+    window.addEventListener("message", this._listener);
   }
 
   disconnectedCallback() {
-    if (this._hoerer) window.removeEventListener("message", this._hoerer);
+    if (this._listener) window.removeEventListener("message", this._listener);
   }
 
   set hass(hass) {
     this._hass = hass;
-    this._senden();
+    this._send();
   }
 
-  _senden() {
-    if (!this._hass || !this._frame?.contentWindow || !this._entitaeten.length) return;
+  _send() {
+    if (!this._hass || !this._frame?.contentWindow || !this._entities.length) return;
 
-    const jetzt = Date.now();
+    const now = Date.now();
     const werte = {};
-    for (const eid of this._entitaeten) {
+    for (const eid of this._entities) {
       const s = this._hass.states[eid];
       if (!s) continue;
-      const gemessen = Date.parse(s.last_updated || s.last_changed || "");
+      const measured = Date.parse(s.last_updated || s.last_changed || "");
       werte[eid] = {
         wert: s.state,
         einheit: s.attributes?.unit_of_measurement ?? "",
-        alter: Number.isFinite(gemessen)
-          ? Math.max(0, Math.round((jetzt - gemessen) / 1000)) : null,
+        alter: Number.isFinite(measured)
+          ? Math.max(0, Math.round((now - measured) / 1000)) : null,
       };
     }
 
-    // `hass` aendert sich bei jedem Zustandswechsel im ganzen Haus. Ohne
-    // diesen Vergleich wuerde die Karte den iframe im Sekundentakt fluten,
-    // obwohl sich an diesen Entitaeten nichts geaendert hat.
-    const abdruck = JSON.stringify(
+    // `hass` changes on every state change in the whole house. Without this
+    // comparison the card would flood the iframe every second, even though
+    // nothing changed on these entities.
+    const fingerprint = JSON.stringify(
       Object.fromEntries(Object.entries(werte).map(
         ([k, v]) => [k, [v.wert, v.einheit]])));
-    if (abdruck === this._letzte) return;
-    this._letzte = abdruck;
+    if (fingerprint === this._last) return;
+    this._last = fingerprint;
 
     this._frame.contentWindow.postMessage(
-      { typ: TYP_WERTE, werte }, window.location.origin);
+      { typ: TYPE_VALUES, werte }, window.location.origin);
   }
 
   getCardSize() {

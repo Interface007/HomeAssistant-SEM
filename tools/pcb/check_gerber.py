@@ -138,7 +138,7 @@ def parse_drill(path):
     return holes
 
 
-def svg(layers):
+def svg(layers, gerber_dir):
     w = B.BOARD_W * SCALE + 2 * MARGIN
     h = B.BOARD_H * SCALE + 2 * MARGIN
 
@@ -173,7 +173,7 @@ def svg(layers):
                          f'stroke="{paint}" stroke-width="{it[3] * SCALE:.1f}" '
                          f'stroke-linecap="round" opacity="{op}"/>')
 
-    for d, pts in parse_drill(os.path.join(sys.argv[1], B.BOARD_NAME + ".drl")).items():
+    for d, pts in parse_drill(os.path.join(gerber_dir, B.BOARD_NAME + ".drl")).items():
         for x, y in pts:
             o.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" '
                      f'r="{d / 2 * SCALE:.1f}" fill="{BG}"/>')
@@ -183,7 +183,7 @@ def svg(layers):
 
 
 if __name__ == "__main__":
-    d = sys.argv[1]
+    d = sys.argv[1] if len(sys.argv) > 1 else B.OUT_DIR
     ok = True
     layers = {}
 
@@ -239,10 +239,19 @@ if __name__ == "__main__":
                 print(f"   ! drill {key} is {dia} mm, pad requires "
                       f"{pads_by_pos[key]} mm")
 
-    if len(sys.argv) > 2:
-        with open(sys.argv[2], "w", encoding="utf-8") as f:
-            f.write(svg(layers))
-        print("Preview:", sys.argv[2])
+    # A DIFFERENT file from preview.py's: that one draws the placement
+    # from the board definition, this one draws what the Gerbers actually
+    # contain. Both used to be written to the same path, so the second run
+    # silently replaced the first picture with the other one.
+    out_svg = (sys.argv[2] if len(sys.argv) > 2
+               else os.path.join(B.OUT_DIR, f"{B.BOARD_NAME}-gerber.svg"))
+    # Render first, open second. Opening for writing truncates, so a
+    # failure while rendering used to leave a zero-byte file sitting there
+    # looking like a result.
+    content = svg(layers, d)
+    with open(out_svg, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Read-back view:", out_svg)
 
     print("\n" + ("GERBER PLAUSIBLE" if ok else "GERBER INVALID"))
     raise SystemExit(0 if ok else 1)

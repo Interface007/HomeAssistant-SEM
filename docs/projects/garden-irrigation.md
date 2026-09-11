@@ -201,6 +201,70 @@ device going unavailable; that is the alarm.
 Everything downstream of the PSU is 12 V SELV. No mains enters the wooden
 shed except inside the IP65 enclosure.
 
+### The enclosure
+
+Four things go in the box, and the one rule is that **nothing that
+carries water does**.
+
+| Inside | Why there |
+| --- | --- |
+| Carrier board, on four M3 standoffs | the reason the box exists |
+| Mean Well LPV-60-12 (163 × 43 × 32 mm) | its mains leads are fixed tails and have to be joined to the incoming lead somewhere dry — this is the only dry place |
+| MINI560 step-down | a few centimetres of wire from J2 and to J3; stick it down with foam tape so it cannot wander |
+| Lever terminals for L, N and PE | the mains junction between the incoming lead and the PSU tails |
+
+| Outside, cable through a gland | Gland |
+| --- | --- |
+| mains lead from the Solarbank socket | M16 |
+| pump lead | M16 |
+| two soil probes, flow sensor, float switch | 4 × M12 |
+
+Pump, flow sensor, filter, check valve and hoses all stay **outside**. An
+IP65 box keeps water out and, just as reliably, keeps it in: a weeping
+fitting inside it turns the enclosure into a sealed bathtub around a mains
+supply. The flow sensor sits in the water line; only its cable comes in.
+
+**Fit.** The box is 200 × 150 × 100 mm outside. The PSU lies along one long
+wall and the 80 × 70 mm board beside it — 43 + 70 = 113 mm across the
+150 mm width, which leaves room for the lever terminals and the cable
+runs. Height is not a constraint.
+
+**Mount without breaching the seal.** Every screw through the floor is a
+hole in an IP65 box. Glue the standoffs in with the same epoxy as the soil
+probes, or use the enclosure's internal bosses if it has any.
+
+**Cables enter from below.** Mount the box with the glands on its lower
+face and let each cable hang in a loop below its gland, so that water
+running down a cable drips off the bottom of the loop instead of being led
+to the seal. Mains and pump glands at the PSU end, the four signal glands
+at the board end — that keeps mains and sensor cables apart inside.
+
+**Mains inside the box — three rules.**
+
+- Keep the mains side at the PSU's end and tie the incoming lead down, so
+  that no mains conductor can reach the board even if a terminal lets go.
+  The PSU's own case is the barrier between the two sides.
+- If the PSU has only two input wires (L, N), the green-yellow conductor of
+  the incoming three-core lead still gets its own lever terminal. Never cut
+  it short and leave it loose.
+- Mains outdoors belongs behind an RCD. Check whether the Solarbank's
+  AC-out socket provides residual-current protection; if it does not, a
+  portable RCD in front of the plug.
+
+**Condensation.** The box crosses its dew point every night. A sealed
+enclosure breathes regardless — temperature pumps air in and out through
+the gland seals — and the moisture it draws in condenses on the coldest
+surface inside it. A **pressure-compensation vent** equalises the pressure
+through a membrane that passes air but not liquid water. An M12 vent fits
+the same hole size as the four signal glands; put it in a side wall, not
+in the lid. The first draft of this document listed one, and it fell out
+of the bill of materials when the rest was pinned to articles.
+
+**Antenna.** Point the module's USB-far end — the antenna — away from the
+PSU and away from the Solarbank. A battery that size is a lot of material
+between the antenna and the access point. The ABS wall itself barely
+attenuates 2.4 GHz; it is not the problem.
+
 ### Pin plan
 
 ESP32-S3-Zero. **ADC2 is unusable while Wi-Fi is on** — both soil sensors
@@ -246,10 +310,77 @@ continuously powered probe read differently at 07:00 and at 15:00.
 Switching must be **high side**. Interrupting the sensor's ground moves the
 analog reference and the reading becomes meaningless.
 
-The cable joint is the part that actually fails. Seal the board where the
-cable enters — heat-shrink is not enough outdoors, use epoxy or potting
-compound and leave the sensing area untouched. Buried, unpotted capacitive
-sensors survive about one season.
+### Sealing the soil probes
+
+Both probes end up fully buried, so the whole electronics head needs
+sealing, not only the cable entry. Buried, unsealed capacitive probes
+survive about one season, and the SEN0193 has three weak points — sealing
+only one of them is the usual way it fails anyway:
+
+1. **The electronics head** — timer, regulator and passives, bare at the
+   top of the board.
+2. **The JST connector** — not waterproof, and a mechanical contact in wet
+   soil.
+3. **The cut board edges.** The solder mask covers both faces of the probe
+   but not its milled FR4 edges. Water wicks into the laminate from there
+   and changes the dielectric the measurement depends on. It shows up as
+   slow drift rather than as a failure, which makes it the hardest of the
+   three to notice.
+
+Procedure, identical for both probes:
+
+1. Desolder the JST connector and solder a **round-jacketed** 3-core cable
+   straight to the pads. A seal can grip a round jacket; it cannot grip
+   three loose wires.
+2. Strip the jacket about 10 mm back *inside* what will be potted, so the
+   compound seals against the jacket **and** each insulated core. Water
+   otherwise creeps along the strands inside the insulation by capillary
+   action, straight past a seal that only grips the outside.
+3. Coat the cut edges along the full length of the probe with a thin film
+   of epoxy or acrylic protective lacquer. **Edges only**: the sensing
+   faces are already masked, and every extra layer on them adds dielectric
+   and costs sensitivity.
+4. Pot the head in a small mould — a piece of tube, a cut glove finger, a
+   3D-printed cup — with slow-cure two-component epoxy, down to the white
+   marker line and no further. Epoxy rather than potting silicone: a
+   silicone gel fills but barely adheres to FR4 or to the cable jacket, and
+   in soil, with no enclosure around it, that interface is exactly where
+   water creeps in. Epoxy bonds, and it doubles as the edge coating in
+   step 3.
+
+   The compound in the BOM mixes **2:1 by weight**, and a wrong ratio
+   leaves it tacky for good. Two heads need about 10 g, of which the
+   hardener is barely 3 g — below what a kitchen scale weighs reliably.
+   Mix a 30 g batch instead (20 g + 10 g), use the rest on the edges, and
+   leave a blob in the mixing cup as a witness: if that has not gone hard
+   after 12 h, neither have the sensors.
+5. Optionally, adhesive-lined 3:1 heat-shrink over the transition from
+   potting to cable as strain relief. Plain heat-shrink on its own is not a
+   seal outdoors.
+
+**Never acetic-cure silicone** — ordinary bathroom silicone. It smells of
+vinegar while it cures because it releases acetic acid, and that acid
+attacks copper and solder inside the very seal meant to protect them.
+Neutral-cure (oxime or alkoxy) or proper potting compound only.
+
+### Installing the soil probes
+
+**Horizontal, on edge — not vertical.** A vertical probe averages over its
+roughly 6 cm sensing length, so "at 20 cm" really means somewhere between
+14 and 20 cm. Laid horizontally at the target depth it reads a defined
+layer, which is the whole point of the deep probe as a runoff detector.
+On edge, broad faces vertical, so water does not pool on the upper face.
+
+Dig to depth, push the probe sideways into the undisturbed side wall, then
+backfill and firm gently. Air gaps around a capacitive probe distort the
+reading more than anything else. Keep 2–3 cm of soil between the deep
+probe and the clay pebbles: a probe touching the drainage layer measures
+the pebbles, not the root zone.
+
+**Both probes identically** — same sealing, same orientation, only the
+depth differs. The control logic compares the two readings with each other,
+and two probes that see different volumes of soil make that comparison
+meaningless.
 
 ## Schematic
 
@@ -295,11 +426,12 @@ that all do `import board as B` did not have to change:
 
 ```bash
 cd tools/pcb
-PCB_BOARD=board_irrigation python preview.py out/irrigation-preview.svg
-PCB_BOARD=board_irrigation python verify.py
-PCB_BOARD=board_irrigation python gerber.py out/irrigation
-PCB_BOARD=board_irrigation python check_gerber.py out/irrigation out/irrigation-preview.svg
-PCB_BOARD=board_irrigation python export_bom.py
+export PCB_BOARD=board_irrigation
+python preview.py
+python verify.py
+python gerber.py
+python check_gerber.py
+python export_bom.py
 ```
 
 The default stays the cellar fan: a mistyped variable must not silently
@@ -348,12 +480,19 @@ Two things the review did **not** resolve:
 with 15.24 mm row spacing, taken from the ventilation board. Measure the
 Waveshare module before sending the Gerbers.
 
-**The ceramic antenna wants clearance.** Waveshare's documentation says to
-keep PCB, metal and plastic away from the antenna area. The socket lifts
-the module about 8.5 mm off the copper, which helps, but nothing here has
-been measured. Check the Wi-Fi signal sensor once the board is in its
-IP65 box and before the box goes into the shed — this device sits further
-from the AP than any of the others.
+**The ceramic antenna is now unobstructed on this board, but untested.**
+Waveshare asks for PCB, metal and plastic to be kept clear of the antenna
+area, and the module is soldered flat, so its antenna sits directly on
+this board. `COPPER_KEEPOUT` cuts a 12,8 × 4,6 mm opening in the ground
+plane underneath it — the ground pour drops from 5139 to 5078 mm² and
+stays a single island. The opening lies in the corridor between the two
+pad rows and cost neither a pad nor a track.
+
+That is insurance, not a measurement. Nobody has quantified the loss on
+the ventilation boards, which work indoors near the AP. Check the Wi-Fi
+signal sensor once the board is in its IP65 box and before the box goes
+into the shed — this device sits further from the AP than any of the
+others.
 
 ### What differs from the ventilation board
 
@@ -405,16 +544,13 @@ noted only where it would surprise someone ordering today.
 | `METALL 20,0K` | 20 kΩ — flow divider, lower leg | 1 | 0,07 € | ab Lager |
 | `METALL 100K` | 100 kΩ — gate pulldown | 1 | 0,07 € | ab Lager |
 | `AKL 101-02` | Screw terminal 2-pol, RM 5,08 | 4 | 0,26 € | from 16.10.2026 |
-| `AKL 059-03` | Screw terminal 3-pol, RM 3,5 | 3 | 0,46 € | ab Lager |
-| `AKL 059-02` | Screw terminal 2-pol, RM 3,5 | 1 | 0,31 € | from 07.09.2026 |
-| `BL 1X10G 2,54` | Female header **1×10**, cut to 1×9 | 2 | 0,75 € | ab Lager |
-| `SL 1X50G 2,54` | Male header **1×50**, snap off 2 × 1×9 | 1 | 0,79 € | ab Lager |
+| `AKL 059-03` | Screw terminal 3-pol, RM 3,5 | 4 | 0,46 € | ab Lager |
 | `MW LPV-60-12` | Mean Well 12 V / 5 A, 60 W | 1 | 13,80 € | ab Lager |
 | `DELOCK 60445` | Enclosure IP65, 200 × 150 × 100 mm | 1 | 16,95 € | ab Lager |
 | `DELOCK 60615` | Cable gland **M16** IP68, 4–8 mm, 2 pcs | 1 | 4,80 € | ab Lager |
 | `AGR 1045.12.050` | Cable gland **M12** IP68, **1,0–5,0 mm**, brass | 4 | 1,99 € | ab Lager |
 
-≈ 50 €. Six glands, because six cables leave the box: mains in from the
+≈ 48 €. Six glands, because six cables leave the box: mains in from the
 Solarbank socket (the PSU sits inside the enclosure), pump, two soil
 probes, flow, float.
 
@@ -437,16 +573,25 @@ Still measure the mains and pump leads against the 4–8 mm M16 range before
 drilling the box, and never simply overtighten a gland onto an undersized
 cable — the insert deforms instead of sealing.
 
-**The headers are single row, not a 2×10 part.** The module's two pad rows
-sit 15.24 mm apart (`MODULE_ROW_PITCH`), so the board takes two separate
-1×9 strips. A dual-row 2×10 header carries its rows 2.54 mm apart in one
-moulded body and cannot be split to span 15.24 mm — an earlier draft of
-this list specified one, going by the pin count instead of the form
-factor. Female strips must be cut through a socket body, which costs one
-position, so two 1×10 pieces give the two 1×9 strips exactly. Male strips
-snap between pins without loss, so one 1×50 covers this board and the next
-few. Once `BL 1X20G 2,54` is back (18.09.2026) a single 20-pin strip does
-the same for 0,99 € instead of 1,50 €.
+**One kind of 3,50 terminal, not two.** J8 carries a two-wire dry contact
+but is a 3-pin footprint, with the spare pin tied to GND. That drops the
+`AKL 059-02` from the order — it was the only line item bought for a
+single position — and makes the terminal forgiving: the float works in
+1+2 or in 1+3, and every wrong insertion leaves GP7 pulled up, which
+reads as "canister empty" and blocks the pump.
+
+**No headers at all.** Earlier drafts of this list carried first a 2×10
+dual-row header (wrong form factor — the module's rows are 15.24 mm apart,
+a dual-row part holds its two rows 2.54 mm apart in one body) and then two
+1×9 female strips for a socket. Both are gone: the module is castellated
+and gets soldered flat onto the pads, which is how both ventilation boards
+were built.
+
+A socket would buy replaceability of a 6,90 € module and cost a tin-plated
+contact pair in an enclosure that crosses its dew point every night. The
+one thing it did buy — standoff from the ground plane under the ceramic
+antenna — is better bought with an opening in the plane, which costs
+nothing. See [Carrier board](#carrier-board).
 
 `AKL 073-02` stood here as the in-stock substitute for `AKL 101-02`. It is
 **withdrawn**: it is a rising-cage type for 4 mm², with a deeper body than
@@ -482,8 +627,18 @@ against when it is gone.
 | Seaflo 21-series 12 V diaphragm pump, 4,3 l/min, 2,4 bar | `B06WVTYH2W` | 27,99 € | 12 V, **self-priming**, 3–5 l/min, ≥1 bar. Self-priming is the one that matters: it lets the pump sit dry in the shed instead of in the canister |
 | Horizontal float switch, PP, 5 pcs | `B0DLNDYF8R` | 11,95 € | dry contact, PP body, float reversible so NO/NC is a mounting choice. The contact rating is irrelevant — it switches a 3.3 V GPIO through a 100 nF debounce |
 | 4/6 mm irrigation kit, 15 m tube, T-pieces, end plugs | `B0DSP44FWM` | 10,98 € | 4/6 mm tube, ≥6 outlets, end plugs. Explicitly **no drippers** — this design uses open outlets, see above |
+| SVM-50 electronics potting compound, 300 g | `B07147XKRT` | 19,90 € | **two-component epoxy** with a published mixing ratio (2:1 by weight), pot life (~20 min at 20 °C) and cure time (firm after 12 h, fully cured after 7 days). Not silicone gel, not a one-part "conformal coating" — see [Sealing the soil probes](#sealing-the-soil-probes) |
 
-≈ 51 €. The float switch pack of five is deliberate — one goes in the
+≈ 71 €. The potting compound was first specified as WEICON's
+`Gießharz Plus 90` from Reichelt. It is not sold on Amazon, a separate
+Reichelt order would cost postage again, and SVM-50 is cheaper even
+before that — 19,90 € for 300 g against 32,70 € for 200 g. The one figure
+SVM-50 does not publish is its **service temperature range**. The raised
+bed freezes harder than open ground; at 10–20 cm depth the probes should
+stay well inside what two-component epoxies generally tolerate, but that
+is an inference, not a data sheet — ask the seller if it matters.
+
+The float switch pack of five is deliberate — The float switch pack of five is deliberate — one goes in the
 canister, the rest are the spares for the next two seasons. At 2,39 € per
 switch it also undercuts the single-unit listings, which run 5–6 € each
 (`B092RDHD33`, for example, is the same class of part at 5,45 € for one).
@@ -515,10 +670,15 @@ no single listing was worth citing; budget ~15 € and buy them with the
 pump so the hose diameters match. Add the PCB itself, ~10 € for five
 boards from the usual fab.
 
-**Total ≈ 153 €**, against the 120 € the first draft estimated. The
-difference is the bigger PSU, the enclosure and the glands — the parts
-that make it survive a winter outdoors rather than the parts that make it
-work.
+For the enclosure, see [The enclosure](#the-enclosure): three **lever
+terminals** for the mains junction and four **M3 standoffs** for the
+board. The **M12 pressure-compensation vent** comes from stock — two Delock
+M12 vents are on hand, one goes in the box and the other is the spare.
+
+**Total ≈ 171 €**, against the 120 € the first draft estimated. The
+difference is the bigger PSU, the enclosure, the glands and the potting
+compound — the parts that make it survive a winter outdoors rather than
+the parts that make it work.
 
 ## Failure modes and what catches them
 
@@ -553,6 +713,13 @@ backstop that also covers the failure nobody predicted.
 output. Record both soil readings in Home Assistant through at least one
 manual watering and one dry-down. This is what turns the guessed thresholds
 into real ones.
+
+**Calibrate after sealing, never before — and after full cure, not just
+after it feels hard.** Potting the head leaves the sensing area alone, but
+the edge coating does not, quite, and an epoxy keeps changing its
+dielectric properties until it has fully cured — seven days at 20 °C for
+the compound in the BOM. Seal the probes a week before week 1. Dry and wet
+references taken earlier describe a different sensor.
 
 Calibration per sensor, recorded as a comment in the device file:
 

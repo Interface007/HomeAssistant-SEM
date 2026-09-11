@@ -4,24 +4,26 @@
  * viewer.
  *
  * The aspects themselves live next to this file:
- *   zustand.js    shared state (model, metadata, lookup tables)
- *   szene.js      renderer, camera, orbit control, light, clipping plane
- *   laden.js      loading and installing the model
- *   schnitt.js    horizontal section plane
+ *   state.js      shared state (model, metadata, lookup tables)
+ *   scene.js      renderer, camera, orbit control, light, clipping plane
+ *   loading.js    loading and installing the model
+ *   section.js    horizontal section plane
  *   filter.js     storey and component lists, visibility
- *   schilder.js   wall and room labels
- *   messwerte.js  readings and window states from Home Assistant
- *   begehen.js    walking through a storey
- *   auswahl.js    picking and the info panel
+ *   labels.js     wall and room labels
+ *   readings.js   readings and window states from Home Assistant
+ *   walk.js       walking through a storey
+ *   selection.js  picking and the info panel
  */
 import * as THREE from "three";
-import { model, setMeta } from "haus/zustand.js";
+import { model, setMeta } from "haus/state.js";
 import {
   camera, controls, dropEl, main, renderer, resize, scene,
-} from "haus/szene.js";
-import { install, loadDefaultFiles, loadEmbedded, loadURL } from "haus/laden.js";
-import { begehen, laufen, taste } from "haus/begehen.js";
-import "haus/auswahl.js";
+} from "haus/scene.js";
+import {
+  install, loadDefaultFiles, loadEmbedded, loadURL,
+} from "haus/loading.js";
+import { keys, walk, walking } from "haus/walk.js";
+import "haus/selection.js";
 
 // ---------------------------------------------------------------- Files
 ["dragenter", "dragover"].forEach((t) =>
@@ -55,39 +57,39 @@ new ResizeObserver(() => resize()).observe(main);
 // Collapsed by default: embedded in a dashboard every bit of screen width
 // counts, and the component list is only needed occasionally. The choice is
 // remembered so it does not have to be made again on every standalone visit.
-const SPEICHER_LEISTE = "hausmodell.leiste";
-const leisteKnopf = document.getElementById("leiste");
-const leisteText = document.getElementById("leisteText");
+const SIDEBAR_KEY = "housemodel.sidebar";
+const sidebarBtn = document.getElementById("sidebar");
+const sidebarText = document.getElementById("sidebarText");
 
-function leisteSetzen(offen) {
-  document.body.classList.toggle("leiste-zu", !offen);
-  leisteKnopf.setAttribute("aria-expanded", String(offen));
-  leisteKnopf.firstElementChild.innerHTML = offen ? "&#10005;" : "&#9776;";
-  leisteText.textContent = "Bauteile";
-  try { localStorage.setItem(SPEICHER_LEISTE, offen ? "auf" : "zu"); } catch {}
+function setSidebar(open) {
+  document.body.classList.toggle("sidebar-closed", !open);
+  sidebarBtn.setAttribute("aria-expanded", String(open));
+  sidebarBtn.firstElementChild.innerHTML = open ? "&#10005;" : "&#9776;";
+  sidebarText.textContent = "Bauteile";
+  try { localStorage.setItem(SIDEBAR_KEY, open ? "open" : "closed"); } catch {}
   resize();
 }
 
-let leisteStart = "zu";
-try { leisteStart = localStorage.getItem(SPEICHER_LEISTE) ?? "zu"; } catch {}
-leisteSetzen(leisteStart === "auf");
-leisteKnopf.addEventListener("click", () =>
-  leisteSetzen(document.body.classList.contains("leiste-zu")));
+let stored = "closed";
+try { stored = localStorage.getItem(SIDEBAR_KEY) ?? "closed"; } catch {}
+setSidebar(stored === "open");
+sidebarBtn.addEventListener("click", () =>
+  setSidebar(document.body.classList.contains("sidebar-closed")));
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
-  if (begehen) laufen(dt);
+  if (walking) walk(dt);
   else controls.update();
   renderer.render(scene, camera);
 });
 
 // Small hook for measuring from the outside (tests, fault finding).
-window.hausmodell = {
-  kamera: camera,
-  begehen: () => begehen,
-  taste,
-  laufen: (dt) => laufen(dt),
+window.houseModel = {
+  camera,
+  walking: () => walking,
+  keys,
+  walk: (dt) => walk(dt),
 };
 
 // Fetch model and metadata on opening the page. The default is haus.glb +

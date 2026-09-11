@@ -49,14 +49,92 @@ derives from one source of truth per board.
 
 ```bash
 cd tools/pcb
-python preview.py out/preview.svg     # placement
-python verify.py                      # electrical check
-python gerber.py out/cellar           # manufacturing data
-python check_gerber.py out/cellar out/preview.svg
-python export_bom.py                  # out/<board name>-bom.csv
+python preview.py        # placement view
+python verify.py         # electrical check
+python gerber.py         # manufacturing data + upload zip
+python check_gerber.py   # reads the Gerbers back
+python export_bom.py     # bill of materials
 ```
 
+No arguments needed. Everything a board produces lands in one directory
+named after the board, and every file carries that name as its prefix:
+
+```
+out/irrigation-garden-01/
+    irrigation-garden-01-F_Cu.gbr          fab file
+    irrigation-garden-01-B_Cu.gbr          fab file
+    irrigation-garden-01-F_Mask.gbr        fab file
+    irrigation-garden-01-B_Mask.gbr        fab file
+    irrigation-garden-01-F_Silkscreen.gbr  fab file
+    irrigation-garden-01-Edge_Cuts.gbr     fab file
+    irrigation-garden-01.drl               fab file
+    irrigation-garden-01.zip               the seven fab files - upload this
+    irrigation-garden-01-preview.svg       placement, from the definition
+    irrigation-garden-01-gerber.svg        what the Gerbers contain
+    irrigation-garden-01-bom.csv           bill of materials
+    irrigation-garden-01-route.json        routing cache, see below
+```
+
+The board name is `BOARD_NAME` in the board definition and is also the
+ESPHome device name, so `irrigation-garden-01` is at once the PCB, its
+manufacturing data, its BOM and `config/esphome/irrigation-garden-01.yaml`.
+`board.py` derives the output directory from it once; no tool builds a
+path of its own.
+
+The two SVGs are deliberately separate. `-preview.svg` draws the board
+from its definition — keepouts, outlines, placement. `-gerber.svg` draws
+what the manufacturing files actually contain, parsed back. Earlier both
+were written to the same path and the second run silently replaced the
+first picture with the other one.
+
+The zip holds only the seven fab files, at the archive root. JLCPCB and
+the others accept only zip or rar and identify the layers from the file
+names — so one archive per board, never both in one, or the importer sees
+two `Edge_Cuts` and has to guess.
+
+Order parameters the design assumes: 2 layers, **35 µm (1 oz) copper**.
+The 1.5 mm power traces on the irrigation board were sized for that; a
+thinner copper option makes them undersized for the pump current.
+
 `out/` is gitignored — everything in it is reproducible from the sources.
+
+### Routing cache
+
+The router takes 31 s on the ventilation board and 59 s on the irrigation
+board, and `verify.py`, `gerber.py` and `check_gerber.py` each need its
+result. They used to route afresh every time, so a full chain for both
+boards took over four minutes to recompute the same answer six times.
+
+`route()` now stores its result in `<board>-route.json` and reuses it
+while its inputs are unchanged. Every run says which it did:
+
+```
+  Routing:     cache hit   (04c1337ec689)
+  Routing:     computed, cached as 04c1337ec689
+```
+
+The full chain for both boards takes 1.5 s on a warm cache.
+
+A stale route — Gerbers made from an old wiring — is the risk, and two
+things guard against it:
+
+- The key is built from the routing **inputs**: pad positions, sizes and
+  nets in their order, track widths, clearances, board size, mount holes
+  and keepouts, plus the source of `router.py` itself. It is deliberately
+  not built from the board file's text, so an edited comment costs
+  nothing, while a pad moved by 0.1 mm always re-routes.
+- `verify.py` checks whatever route it gets against the *current* board.
+  A route that no longer meets the pads fails continuity, cached or not.
+
+`PCB_NO_CACHE=1` bypasses the cache entirely, reading and writing. A
+corrupt or truncated cache file is recomputed rather than trusted, and
+the file is replaced atomically so an interrupted run cannot leave half
+of one behind.
+
+Proven before it went in: for both boards, Gerbers from a cold cache and
+from a warm cache are byte-identical to Gerbers made without it; moving a
+pad by 0.1 mm or widening a track changes the key, moving it back restores
+it, and a comment-only edit of the board file leaves it alone.
 
 ### Two boards, one chain
 
@@ -66,14 +144,13 @@ one of them, `board.py` picks the definition that import resolves to, from
 
 ```bash
 PCB_BOARD=board_irrigation python verify.py
-PCB_BOARD=board_irrigation python gerber.py out/irrigation
+PCB_BOARD=board_irrigation python gerber.py
 ```
 
 The default is `board_cellar_fan`, deliberately: that board is built and in
 service, and a mistyped variable name must not silently regenerate
-manufacturing data for the wrong project. Output file names come from
-`BOARD_NAME` in the board definition, so the two boards cannot overwrite
-each other's Gerbers even in the same directory.
+manufacturing data for the wrong project. Output lands in
+`out/<BOARD_NAME>/`, so the two boards cannot overwrite each other.
 
 To dump a netlist, run the board definition itself — `python
 board_irrigation.py` — rather than `board.py`, which is only the selector.
@@ -129,6 +206,15 @@ a real defect:
   is 10 mm wide, the keepout was 8.5
 - **a polarity marker printed underneath the capacitor it describes** —
   visible on the bare board, gone as soon as it is populated
+
+A board may declare `COPPER_KEEPOUT`, a list of rectangles that must stay
+free of copper on both layers — the irrigation board uses one under the
+module's ceramic antenna. `gerber.py` punches them out of the ground
+plane, `check_pour` floods the plane *with* them so it judges the copper
+that is actually made, and `verify.py` fails if a pad, via or track has
+strayed into one. The router is deliberately not taught about them: this
+chain checks the result rather than the intention, so a re-route that
+fills a keepout is caught rather than prevented.
 
 `verify.py` works geometrically rather than by rasterising, so there are no
 rounding artefacts. `check_gerber.py` parses the generated files instead of

@@ -4,8 +4,12 @@
  * Everything several aspects need at once lives here and only here: the loaded
  * model, its metadata and the lookup tables built from them. The three
  * reassignable values are exported as live bindings plus a setter - importing
- * modules keep reading `meta[gid]` as before, and only `laden.js` decides when
- * a new model takes over.
+ * modules keep reading `meta[gid]` as before, and only `loading.js` decides
+ * when a new model takes over.
+ *
+ * The keys inside `meta` (typ, geschoss, gruppe, psets, Pset_HomeAssistant,
+ * ...) stay German on purpose: they are the data format that ifc_to_glb.py
+ * writes, not names this file is free to choose.
  */
 import * as THREE from "three";
 
@@ -20,23 +24,23 @@ export let model = null;
 export let meta = {};
 export let bbox = null;
 
-export function setModel(wert) { model = wert; }
-export function setMeta(wert) { meta = wert; }
-export function setBbox(wert) { bbox = wert; }
+export function setModel(value) { model = value; }
+export function setMeta(value) { meta = value; }
+export function setBbox(value) { bbox = value; }
 
 export const byType = new Map();     // component group -> Mesh[]
 export const groupColor = new Map(); // component group -> color (for the legend)
 export const byStorey = new Map();   // storey -> Mesh[]
-export const nachGid = new Map();    // GlobalId -> Mesh[] (for the state color)
+export const byGid = new Map();      // GlobalId -> Mesh[] (for the state color)
 export const collidables = [];       // meshes checked against while walking
-export const labels = new THREE.Group();           // wall labels
-export const raumschilder = new THREE.Group();     // room names
-export const geraeteschilder = new THREE.Group();  // readings on devices
-export const messwerte = new Map();  // entity_id -> {wert, einheit, alter}
+export const wallLabels = new THREE.Group();    // wall names
+export const roomLabels = new THREE.Group();    // room names
+export const deviceLabels = new THREE.Group();  // readings on devices
+export const readings = new Map();   // entity_id -> {value, unit, age}
 export const hiddenTypes = new Set();
 export const hiddenStoreys = new Set();
 
-export const push = (map, key, val) => {
+export const push = (map, key, value) => {
   if (!map.has(key)) map.set(key, []);
-  map.get(key).push(val);
+  map.get(key).push(value);
 };

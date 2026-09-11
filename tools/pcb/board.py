@@ -28,4 +28,15 @@ import sys
 
 BOARD_MODULE = os.environ.get("PCB_BOARD", "board_cellar_fan")
 
-sys.modules[__name__] = importlib.import_module(BOARD_MODULE)
+_impl = importlib.import_module(BOARD_MODULE)
+
+# Every artefact of a board lives in out/<board name>/ and is called
+# <board name>-something. The board name is also the ESPHome device name,
+# so one string ties the PCB, the manufacturing data, the BOM and the
+# firmware together. Derived here rather than in each board file so that
+# the two cannot drift apart, and injected onto the selected module so
+# the tools reach it as B.OUT_DIR like any other board attribute.
+_impl.OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "out", _impl.BOARD_NAME)
+
+sys.modules[__name__] = _impl

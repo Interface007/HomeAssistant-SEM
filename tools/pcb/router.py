@@ -13,9 +13,12 @@ the router reports it instead of silently faking a route.
 
     python tools/pcb/router.py
 """
+import hashlib
 import heapq
 import itertools
+import json
 import math
+import os
 
 import board as B
 
@@ -202,7 +205,107 @@ def default_order(nets):
     return power + signal
 
 
+# ---------------------------------------------------------------- Cache
+#
+# route() takes about a minute on the irrigation board and verify.py,
+# gerber.py and check_gerber.py each used to call it afresh - three
+# identical minutes per board, because the result is fully determined by
+# its inputs. So the result is stored in out/<board>/<board>-route.json
+# and reused while those inputs are unchanged.
+#
+# A stale route is the danger: Gerbers made from an old wiring that
+# nobody notices. Two things guard against it.
+#
+#   * The key is built from the routing INPUTS - pad positions, sizes and
+#     nets in their order, track widths, clearances, board size, mount
+#     holes, keepouts - plus this file's own source, so any change to the
+#     algorithm or its constants invalidates it too. It is deliberately
+#     NOT built from the board file's text: an edited comment should not
+#     cost a minute, a pad moved by 0.1 mm always must.
+#   * verify.py checks the route it is given against the CURRENT board -
+#     continuity, clearances, keepouts. A route that no longer fits the
+#     pads does not pass, whether it came from the cache or not.
+#
+# If route() ever starts reading another board attribute, add it to
+# _cache_key(). Every run says whether it hit or missed, and
+# PCB_NO_CACHE=1 bypasses the cache entirely, reading and writing.
+
+def _cache_key(max_passes):
+    with open(__file__, "rb") as f:
+        router_src = hashlib.sha256(f.read()).hexdigest()
+    data = {
+        "router": router_src,
+        "max_passes": max_passes,
+        "board": [B.BOARD_W, B.BOARD_H, B.MIN_CLEARANCE, B.MOUNT_HOLE_D,
+                  [list(h) for h in B.mount_holes()]],
+        # all_pads() order, not sorted: net order follows it, and routing
+        # order breaks ties by net order.
+        "pads": [[ref, idx, p["x"], p["y"], p["copper"], p["drill"], net]
+                 for ref, idx, p, net in B.all_pads()],
+        "power": sorted(B.POWER_NETS),
+        "widths": sorted(B.NET_WIDTH.items()),
+        "default_width": B.DEFAULT_NET_WIDTH,
+        # Not read by the router today. In the key anyway, so that the day
+        # it learns about keepouts, moving one cannot hit a stale entry.
+        "keepout": [list(k) for k in getattr(B, "COPPER_KEEPOUT", ())],
+    }
+    blob = json.dumps(data, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _cache_path():
+    return os.path.join(B.OUT_DIR, f"{B.BOARD_NAME}-route.json")
+
+
+def _cache_load(path, key):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if data.get("key") != key:
+        return None
+    # JSON turns tuples into lists. Restore them exactly, so a cached
+    # route is indistinguishable from a computed one to every caller.
+    routed = [(net, [tuple(pt) for pt in path], width, layer)
+              for net, path, width, layer in data["routed"]]
+    vias = [tuple(v) for v in data["vias"]]
+    failed = [tuple(f) for f in data["failed"]]
+    return routed, vias, failed
+
+
+def _cache_store(path, key, result):
+    routed, vias, failed = result
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"key": key, "routed": routed, "vias": vias,
+                   "failed": failed}, f)
+    # Atomic replace: an interrupted run must never leave a half-written
+    # cache that the next run would take for a result.
+    os.replace(tmp, path)
+
+
 def route(max_passes=8, verbose=False):
+    """Route everything, reusing a cached result for identical inputs."""
+    key = _cache_key(max_passes)
+    path = _cache_path()
+    if not os.environ.get("PCB_NO_CACHE"):
+        cached = _cache_load(path, key)
+        if cached is not None:
+            print(f"  Routing:     cache hit   ({key[:12]})")
+            return cached
+
+    result = _route_uncached(max_passes, verbose)
+    if os.environ.get("PCB_NO_CACHE"):
+        print("  Routing:     computed, cache bypassed")
+    else:
+        _cache_store(path, key, result)
+        print(f"  Routing:     computed, cached as {key[:12]}")
+    return result
+
+
+def _route_uncached(max_passes=8, verbose=False):
     """Routes everything; if a net fails, it is routed first in the next pass
     (rip-up-and-retry). Returns the best attempt."""
     nets = B.netlist()

@@ -52,6 +52,36 @@ def _seg_seg_dist(a1, a2, b1, b2):
     )
 
 
+def check_keepouts(routed, vias):
+    """
+    Copper that has strayed into a declared keepout.
+
+    Follows this file's rule of checking the result rather than the
+    intention: the router is not taught about keepouts, so if a later
+    re-route fills one, it shows up here instead of silently shipping.
+    """
+    zones = getattr(B, "COPPER_KEEPOUT", ())
+    if not zones:
+        return []
+
+    def inside(x, y, margin=0.0):
+        return any(kx - margin <= x <= kx + kw + margin
+                   and ky - margin <= y <= ky + kh + margin
+                   for kx, ky, kw, kh in zones)
+
+    problems = []
+    for ref, idx, p, net in B.all_pads():
+        if inside(p["x"], p["y"], p["copper"] / 2):
+            problems.append(f"pad {ref}.{idx} reaches into a copper keepout")
+    for net, vx, vy in vias:
+        if inside(vx, vy, R.VIA_COPPER / 2):
+            problems.append(f"via on {net} reaches into a copper keepout")
+    for net, path, width, layer in routed:
+        if any(inside(x, y, width / 2) for x, y in path):
+            problems.append(f"track on {net} reaches into a copper keepout")
+    return problems
+
+
 def primitives(routed, vias):
     """[(net, kind, geometry, radius, label, layers), ...]"""
     out = []
@@ -183,6 +213,17 @@ def check_pour(routed, vias):
             t = i / n
             clear(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, r)
 
+    # Declared copper keepouts are openings in the plane, so the flood has
+    # to see them too. Without this the check would pass judgement on a
+    # plane that is not the one gerber.py writes.
+    for kx, ky, kw, kh in getattr(B, "COPPER_KEEPOUT", ()):
+        for gy in range(max(0, int(ky / POUR_GRID)),
+                        min(ny, int((ky + kh) / POUR_GRID) + 1)):
+            base = gy * nx
+            for gx in range(max(0, int(kx / POUR_GRID)),
+                            min(nx, int((kx + kw) / POUR_GRID) + 1)):
+                cu[base + gx] = 0
+
     for ref, idx, p, net in B.all_pads():
         if net == "GND":
             continue
@@ -275,6 +316,15 @@ if __name__ == "__main__":
             print(f"  {nets}")
     else:
         print("  Short:       none")
+
+    keepout_problems = check_keepouts(routed, vias)
+    if keepout_problems:
+        ok = False
+        print("\nCOPPER KEEPOUT:")
+        for p in keepout_problems:
+            print("  -", p)
+    elif getattr(B, "COPPER_KEEPOUT", ()):
+        print(f"  Keepouts:    {len(B.COPPER_KEEPOUT)} zone(s) clear of copper")
 
     silk_warnings = P.check_silk(B.COMPONENTS)
     if silk_warnings:

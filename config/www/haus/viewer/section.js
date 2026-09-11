@@ -2,8 +2,8 @@
  * Horizontal section plane: the slider cuts the model open at a chosen height.
  */
 import * as THREE from "three";
-import { bbox } from "haus/zustand.js";
-import { clipPlane } from "haus/szene.js";
+import { bbox } from "haus/state.js";
+import { clipPlane } from "haus/scene.js";
 
 export const clipInput = document.getElementById("clip");
 const clipLabel = document.getElementById("clipLabel");

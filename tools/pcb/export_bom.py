@@ -80,9 +80,10 @@ def export_bom(path: str) -> tuple[int, int]:
 
 
 def main() -> int:
-    default_out = os.path.join(os.path.dirname(__file__), "out", B.BOARD_NAME + "-bom.csv")
+    default_out = os.path.join(B.OUT_DIR, B.BOARD_NAME + "-bom.csv")
     out = sys.argv[1] if len(sys.argv) > 1 else default_out
     out = os.path.abspath(out)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
 
     lines, unique_parts = export_bom(out)
     print(f"Wrote BOM: {out}")

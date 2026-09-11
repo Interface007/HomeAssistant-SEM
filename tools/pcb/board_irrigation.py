@@ -68,6 +68,15 @@ MODULE_RIGHT_ROW = ["TX", "RX", "GP13", "GP12", "GP11", "GP10", "GP9", "GP8", "G
 # ---------------------------------------------------------------- Drill sizes
 
 D_HEADER = 1.0              # Pin/socket header 2.54
+# Terminal pitch follows the CABLE, not the pin count:
+#   5.08 (AKL 101, 2 mm2, 13 A)   -> power. The pump alone draws ~4 A.
+#   3.50 (AKL 059, 1.5 mm2, 6 A)  -> signals, i.e. sensor pigtails of
+#                                    0.25..0.5 mm2.
+# A 2 mm2 cage clamping 0.25 mm2 litz wire is the failure that measures
+# fine on the bench: the screw bottoms out while the strands wander to
+# one side of the oversized cage, and the joint opens after a winter of
+# thermal cycling. That is why J8 is 3.50 although it has two pins like
+# J1..J4 - it carries a sensor cable, not power.
 D_SCREW_5MM = 1.3           # Screw terminal 5.08 mm pitch
 D_SCREW_35MM = 1.1          # Screw terminal 3.50 mm pitch
 D_RESISTOR = 0.8            # Axial resistor 1/4 W, ceramic capacitor
@@ -109,11 +118,16 @@ _u1_x_unused = _u1_x_signal + MODULE_ROW_PITCH
 _u1_y_top = 60.0
 
 COMPONENTS["U1"] = {
-    "desc": "ESP32-S3-Zero on two 1x9 female header strips, USB facing up",
-    # Two SINGLE-row strips, not a 2x9 dual-row part: the rows are
-    # MODULE_ROW_PITCH = 15.24 mm apart, while a dual-row header holds
-    # its rows 2.54 mm apart in one body and cannot be split to span
-    # that. "2x9" in a parts list buys the wrong thing.
+    "desc": "ESP32-S3-Zero soldered flat over the pads, USB facing up",
+    # No socket and no header. The module is castellated (half holes) and
+    # gets soldered straight onto these pads, which is how both
+    # ventilation boards were built and what they have survived. A socket
+    # would only buy replaceability, and it would cost a tin-plated
+    # contact pair in a box that crosses its dew point every night.
+    #
+    # The pads stay drilled rather than becoming SMD lands: solder wicking
+    # into the hole anchors the module far better than a surface fillet,
+    # and the 1.6 mm copper ring leaves room for one.
     "fit": (0.64, None),
     "pads": (
         [pad(_u1_x_signal, _u1_y_top - i * MODULE_PIN_PITCH, D_HEADER,
@@ -239,15 +253,29 @@ COMPONENTS["J7"] = {
 # --- J8: float switch, east edge --------------------------------------
 # Placed here purely because GP7 is on the east pad row. The switch is
 # wired normally closed, so a cut cable reads as "canister empty".
+#
+# 3.50 pitch, not the 5.08 of the other two-pin terminals: see the note
+# at D_SCREW_35MM. The float cable is a thin pigtail, and this is the
+# terminal the dry-run interlock hangs on.
+#
+# THREE pins for a two-wire contact, so this board needs only one kind of
+# 3.50 terminal instead of two. The spare pin is tied to GND rather than
+# left open: an unconnected pad is an isolated island the ground pour has
+# to route around, and as a second ground it makes the terminal forgiving
+# - the float works in 1+2 or in 1+3. A dry contact has no polarity, and
+# every wrong insertion leaves GP7 pulled up, which reads as "canister
+# empty" and blocks the pump. There is no mis-wiring of this connector
+# that ends with the pump running on an empty canister.
 COMPONENTS["J8"] = {
-    "desc": "2-pin screw terminal 3.50 - float switch, normally closed",
+    "desc": "3-pin screw terminal 3.50 - float switch NC, third pin = spare GND",
     "fit": (0.9, None),
-    "pads": inline(75.0, 34.0, 2, 3.5, D_SCREW_35MM, dx=0.0, dy=-1.0),
-    "nets": {0: "FLOAT", 1: "GND"},
-    "silk": [(71.0, 37.0, "J8 SCHWIMMER", 0.9, "start"),
-             (72.5, 33.6, "S", 1.0, "middle"),
-             (72.5, 30.1, "-", 1.0, "middle")],
-    "keepout": (70.5, 28.5, 9.0, 9.0),
+    "pads": inline(75.0, 36.0, 3, 3.5, D_SCREW_35MM, dx=0.0, dy=-1.0),
+    "nets": {0: "FLOAT", 1: "GND", 2: "GND"},
+    "silk": [(70.5, 39.4, "J8 SCHWIMMER", 0.9, "start"),
+             (72.5, 35.6, "S", 1.0, "middle"),
+             (72.5, 32.1, "-", 1.0, "middle"),
+             (72.5, 28.6, "-", 1.0, "middle")],
+    "keepout": (71.5, 27.0, 7.0, 11.0),
 }
 
 # --- Q1: IRLZ34N low-side switch --------------------------------------
@@ -408,6 +436,25 @@ COMPONENTS["D1"] = {
              (49.24, 22.2, "K", 1.0, "middle")],
     "keepout": (33.0, 23.0, 17.3, 6.0),
 }
+
+# ---------------------------------------------------------------- Copper keepout
+
+# Ceramic antenna clearance. The module is soldered flat, so its antenna -
+# at the end away from USB, which points south here - sits directly on
+# this board, and Waveshare asks for PCB, metal and plastic to be kept
+# clear of it. What a carrier board can actually give it is an opening in
+# the ground plane underneath.
+#
+# The rectangle lies in the corridor BETWEEN the two pad rows, so it costs
+# neither a pad nor a track: the area was measured first and the router
+# had put nothing there. verify.py fails if a later re-route does.
+#
+# This is insurance, not a measurement. Nobody has quantified the loss on
+# the ventilation boards, which work indoors near the AP. This device sits
+# further from it than any other and inside a closed plastic box, so the
+# cheap precaution is worth taking - see the Wi-Fi signal check in
+# docs/projects/garden-irrigation.md.
+COPPER_KEEPOUT = [(53.2, 38.0, 12.8, 4.6)]
 
 # ---------------------------------------------------------------- Nets
 

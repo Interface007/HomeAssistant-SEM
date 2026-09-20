@@ -134,7 +134,10 @@ export function colorWindows() {
     if (Number.isFinite(angle) && angle > TILT_THRESHOLD) color = WINDOW.tilted;
     else if (contact && readsOpen(contact.value)) color = WINDOW.open;
 
-    for (const mesh of meshes) mesh.material.color.setHex(color);
+    // Plan material only: in the realistic view a window stays glass.
+    for (const mesh of meshes) {
+      (mesh.userData.planMaterial ?? mesh.material).color.setHex(color);
+    }
   }
   document.getElementById("windowLegend").hidden = !found;
 }

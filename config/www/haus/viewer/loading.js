@@ -17,6 +17,7 @@ import { applyVisibility, renderLists } from "haus/filter.js";
 import { labelRooms, labelWalls } from "haus/labels.js";
 import { announceEntities, colorWindows, labelDevices } from "haus/readings.js";
 import { leave, walkStoreySel } from "haus/walk.js";
+import { prepare } from "haus/appearance.js";
 
 const loader = new GLTFLoader();
 
@@ -172,13 +173,14 @@ export function install(root, label, state = snapshotViewState()) {
     push(byStorey, storey, o);
   });
 
+  setBbox(new THREE.Box3().setFromObject(model));
+  prepare(model, bbox);
   scene.add(model);
   labelWalls();
   labelRooms();
   labelDevices();
   colorWindows();
   announceEntities();
-  setBbox(new THREE.Box3().setFromObject(model));
   fit();
   if (state.camera && state.target) {
     camera.position.copy(state.camera);

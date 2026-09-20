@@ -22,10 +22,14 @@ export const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.495;   // do not look below the terrain
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8d9a90, 2.2));
+// Light of the plan view. The realistic view (appearance.js) brings its own
+// and switches this group off.
+export const planLights = new THREE.Group();
+planLights.add(new THREE.HemisphereLight(0xffffff, 0x8d9a90, 2.2));
 const sun = new THREE.DirectionalLight(0xfff4e6, 1.4);
 sun.position.set(-30, 45, 20);
-scene.add(sun);
+planLights.add(sun);
+scene.add(planLights);
 
 export const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
 

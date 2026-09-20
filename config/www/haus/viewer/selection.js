@@ -24,12 +24,31 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   select(hit ? hit.object : null);
 });
 
+// Both materials of a mesh (plan and realistic, see appearance.js), so the
+// highlight survives entering and leaving the walk. The realistic materials
+// are shared between components of a kind; a picked one gets its own copy
+// first, otherwise every wall would light up with it.
+function ownMaterials(o) {
+  const real = o.userData.realMaterial;
+  if (real && real.userData.own === false) {
+    const copy = real.clone();
+    copy.userData = {};
+    o.userData.realMaterial = copy;
+    if (o.material === real) o.material = copy;
+  }
+  return [o.userData.planMaterial ?? o.material, o.userData.realMaterial]
+    .filter(Boolean);
+}
+
 function select(obj) {
-  if (selected) selected.material.emissive?.setHex(0x000000);
+  if (selected) ownMaterials(selected).forEach((m) => m.emissive?.setHex(0x000000));
   selected = obj;
   if (!obj) { infoEl.classList.remove("on"); return; }
-  obj.material.emissive = new THREE.Color(0x0d5c63);
-  obj.material.emissiveIntensity = 0.35;
+  for (const m of ownMaterials(obj)) {
+    if (!m.emissive) continue;
+    m.emissive.setHex(0x0d5c63);
+    m.emissiveIntensity = 0.35;
+  }
   const m = meta[obj.userData.gid];
   const rows = [
     ["Typ", m?.typ?.replace(/^Ifc/, "") ?? "unbekannt"],

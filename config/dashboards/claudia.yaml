@@ -15,6 +15,21 @@ views:
         hold_action:
           action: more-info
 
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Licht Wohnzimmer
+            icon: mdi:lightbulb-group
+          - type: tile
+            entity: light.ikea_light_03
+            name: Licht Wohnzimmer
+            tap_action:
+              action: toggle
+            features_position: bottom
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+
       - type: entities
         title: Offene Fenster
         show_header_toggle: false

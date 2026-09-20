@@ -65,14 +65,16 @@
       <select id="walkStorey" aria-label="Geschoss zum Betreten"></select>
       <button id="walk">Betreten</button>
     </div>
-    <div class="dim">WASD laufen &middot; Maus schauen &middot; Umschalt schneller
+    <div class="dim">WASD laufen &middot; Maus schauen &middot; Umschalt rennen
       &middot; Esc zurück</div>
     <label class="field">Körpergröße
       <input type="number" id="bodyHeight" min="1.20" max="2.20" step="0.01"
              value="1.87"> m</label>
     <label class="field">Blickwinkel
-      <input type="range" id="fov" min="40" max="90" step="1" value="60">
-      <span id="fovValue">60°</span></label>
+      <input type="range" id="fov" min="60" max="110" step="1" value="90">
+      <span id="fovValue">90°</span></label>
+    <label class="row"><input type="checkbox" id="realistic" checked>
+      <span>Realistisch (Licht, Schatten, Oberflächen)</span></label>
     <label class="row"><input type="checkbox" id="labels" checked>
       <span>Wände beschriften</span></label>
     <label class="row"><input type="checkbox" id="roomNames" checked>
@@ -123,8 +125,9 @@
    The map is inserted before the first module load, as the spec requires. A
    module missing from MODULES fails loudly: its specifier stays unresolved. */
 (function () {
-  var MODULES = ["state", "scene", "section", "filter", "labels",
-                 "readings", "walk", "selection", "loading", "viewer"];
+  var MODULES = ["state", "scene", "section", "appearance", "filter",
+                 "labels", "readings", "walk", "selection", "loading",
+                 "viewer"];
   var q = location.search.replace(/^\?/, "");
   q = q ? "?" + q : "";
   var embedded = document.getElementById("embeddedModules");

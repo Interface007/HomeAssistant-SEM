@@ -8,6 +8,7 @@
  *   scene.js      renderer, camera, orbit control, light, clipping plane
  *   loading.js    loading and installing the model
  *   section.js    horizontal section plane
+ *   appearance.js plan colors or realistic light, materials and shading
  *   filter.js     storey and component lists, visibility
  *   labels.js     wall and room labels
  *   readings.js   readings and window states from Home Assistant
@@ -23,6 +24,7 @@ import {
   install, loadDefaultFiles, loadEmbedded, loadURL,
 } from "haus/loading.js";
 import { keys, walk, walking } from "haus/walk.js";
+import { draw } from "haus/appearance.js";
 import "haus/selection.js";
 
 // ---------------------------------------------------------------- Files
@@ -81,7 +83,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   if (walking) walk(dt);
   else controls.update();
-  renderer.render(scene, camera);
+  draw();
 });
 
 // Small hook for measuring from the outside (tests, fault finding).

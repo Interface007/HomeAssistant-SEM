@@ -224,6 +224,16 @@ IP65 box keeps water out and, just as reliably, keeps it in: a weeping
 fitting inside it turns the enclosure into a sealed bathtub around a mains
 supply. The flow sensor sits in the water line; only its cable comes in.
 
+The pump in particular is a poor tenant for the box. It is the part most
+likely to weep — at the pump head and at its two hose connections — it
+vibrates, and it gets warm. Mount it **below** the enclosure, never above,
+so a leak drips past the box rather than onto its glands. Put it on rubber
+feet on a small drip tray: a wooden shed wall resonates, and vibration
+carried into the box loosens terminals over a season. Keep it close to the
+canister with a short suction hose; self-priming copes with lift, but the
+less air it has to pull at each start, the sooner the flow sensor sees
+water and the less of the 30 s cap is spent priming.
+
 **Fit.** The box is 200 × 150 × 100 mm outside. The PSU lies along one long
 wall and the 80 × 70 mm board beside it — 43 + 70 = 113 mm across the
 150 mm width, which leaves room for the lever terminals and the cable
@@ -296,6 +306,13 @@ case the divider does not cover is an open-drain output with no pull-up at
 all — that shows up in week 2 as a sensor that never counts, and is fixed
 with a pull-up to 5 V ahead of the divider.
 
+**22k for R4 is an acceptable substitute.** At 5.0 V it gives 3.44 V instead
+of 3.33 V, and 3.54 V if the 5 V rail runs 3 % high — still inside the
+ESP32-S3's VDD + 0.3 V input limit, if with less margin. Beyond that, the
+10k upper leg limits any current into the pin's clamp diode to a fraction
+of a milliampere. If a 12k is to hand for R3, 12k/22k gives 3.24 V and
+restores the margin.
+
 Static IP: 192.168.2.52 — verify it is free before flashing; .41–.48, .50
 and .51 are taken.
 
@@ -365,6 +382,30 @@ Procedure, identical for both probes:
    in soil, with no enclosure around it, that interface is exactly where
    water creeps in. Epoxy bonds, and it doubles as the edge coating in
    step 3.
+
+   **A mould, not a dip.** Dipping the head and letting it cure hanging
+   looks like the same seal with less effort; it is not. A potting
+   compound is thin by design and keeps flowing for hours after its pot
+   life: head down, it runs onto the sensing faces; head up, it drains
+   off along the cable. What stays behind is thinnest exactly where it is
+   needed — surface tension pulls it back from the board edges, IC pins,
+   solder joints and connector latches. It bridges the gaps under the
+   connector and between the spliced cores instead of filling them, and
+   the trapped air becomes a void where moisture collects. A film of a
+   tenth of a millimetre also lets water vapour through within months in
+   permanently wet soil; several millimetres of potting make that path
+   long enough. And at the jacket, a thin film only adheres, and it cracks
+   the first time the cable flexes or freezes; a potted block encloses the
+   jacket and holds it mechanically.
+
+   Brush a thin coat into every gap first — under the connector, round the
+   joints, between the cores — so no air is trapped, then fill the mould
+   slowly from one side while the air escapes on the other. Epoxy does not
+   bond to polypropylene or polyethylene, so a cut-off disposable syringe
+   or a PP tube releases cleanly; check its inner diameter against the
+   head with the connector plugged in. Seal the bottom of the mould round
+   the board at the white line with modelling clay or tape, and let the
+   probe hang tip down while it cures.
 
    The compound in the BOM mixes **2:1 by weight**, and a wrong ratio
    leaves it tacky for good. Size the batch by measuring rather than

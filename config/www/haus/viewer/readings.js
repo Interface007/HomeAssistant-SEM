@@ -103,6 +103,8 @@ export function labelDevices() {
       // wall itself, so the viewer need not know the mounting side.
       for (const side of [1, -1]) {
         const sprite = makeLabel(lines, stale);
+        sprite.userData.gid = gid;
+        sprite.visible = mesh.visible;
         sprite.position.copy(center).setY(center.y + 0.30)
           .addScaledVector(n, side * offset);
         deviceLabels.add(sprite);

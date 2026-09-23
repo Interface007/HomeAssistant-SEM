@@ -63,6 +63,7 @@ export function labelWalls() {
       const sprite = makeLabel(name);
       sprite.position.copy(center).setY(y).addScaledVector(n, side * offset);
       sprite.userData.geschoss = mesh.userData.geschoss;
+      sprite.userData.gid = gid;
       wallLabels.add(sprite);
     }
   }

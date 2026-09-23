@@ -26,6 +26,7 @@ import {
 import { keys, walk, walking } from "haus/walk.js";
 import { draw } from "haus/appearance.js";
 import "haus/selection.js";
+import "haus/measurements.js";
 
 // ---------------------------------------------------------------- Files
 ["dragenter", "dragover"].forEach((t) =>

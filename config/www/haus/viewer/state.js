@@ -39,6 +39,7 @@ export const deviceLabels = new THREE.Group();  // readings on devices
 export const readings = new Map();   // entity_id -> {value, unit, age}
 export const hiddenTypes = new Set();
 export const hiddenStoreys = new Set();
+export const hiddenElements = new Set();
 
 export const push = (map, key, value) => {
   if (!map.has(key)) map.set(key, []);

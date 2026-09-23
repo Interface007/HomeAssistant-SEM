@@ -5,6 +5,16 @@
   --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Menlo,monospace;
 }
 *{box-sizing:border-box}
+.tree-actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tree-row{display:flex;align-items:center;gap:3px;min-height:30px}
+.tree-label{display:flex;align-items:center;gap:6px;flex:1;min-width:0;font-size:12px;cursor:pointer}
+.tree-label span{overflow-wrap:anywhere}
+.tree-label input{flex-shrink:0;accent-color:var(--stamp)}
+.tree-toggle{width:20px;min-width:20px;padding:0;border:0;background:transparent;font-size:16px;cursor:pointer}
+.tree-children{margin-left:9px;padding-left:4px;border-left:1px solid var(--hairline)}
+.tree-children[hidden]{display:none}
+.tree-row:hover{background:var(--stamp-soft)}
+.tree-toggle:focus-visible,.tree-label input:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
 html,body{height:100%;margin:0}
 body{
   background:var(--linen); color:var(--ink); font-family:var(--ui);
@@ -37,6 +47,8 @@ label.row input{accent-color:var(--stamp);margin:0}
   padding:3px 5px;border:1px solid var(--hairline);background:none;color:var(--ink)}
 .field input[type=range]{flex:1}
 .field span{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+.measure-output{font-family:var(--mono);font-size:11px;line-height:1.45;
+  color:var(--ink-soft);margin:7px 0}
 .warn{
   font-family:var(--mono); font-size:11px; line-height:1.45; margin:8px 0 0;
   padding:7px 9px; border:1px solid #9a5b2a; color:#7a4620; background:#9a5b2a14;
@@ -70,7 +82,7 @@ body.sidebar-closed{grid-template-columns:0 1fr}
 body.sidebar-closed aside{
   width:0; padding:0; border-right:0; overflow:hidden; visibility:hidden;
 }
-main{position:relative}
+main{position:relative;min-width:0;min-height:0}
 #sidebar{
   position:absolute; top:14px; left:14px; z-index:5;
   font-family:var(--ui); font-size:13px; font-weight:500;
@@ -114,7 +126,7 @@ canvas{display:block;touch-action:none}
   body{position:relative; grid-template-columns:1fr; grid-template-rows:1fr}
   body.sidebar-closed{grid-template-columns:1fr; grid-template-rows:1fr}
   aside{
-    position:absolute; inset:0; z-index:10; width:auto; padding:20px 18px;
+    position:absolute; inset:0; z-index:10; width:auto; padding:60px 18px 20px;
     border-right:0; border-bottom:0;
   }
   body.sidebar-closed aside{visibility:hidden; padding:0}

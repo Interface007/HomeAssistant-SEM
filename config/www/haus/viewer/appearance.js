@@ -79,6 +79,7 @@ function surfaceOf(m) {
     case "IfcCovering": return "eps";
     case "IfcFurniture": return "wood";
     case "IfcSanitaryTerminal": return "ceramic";
+    case "IfcSpaceHeater": case "IfcUnitaryControlElement": return "device";
     case "IfcSolarDevice": return "solar";
     case "IfcPipeSegment": case "IfcValve": return "metal";
     case "IfcCableSegment": case "IfcCableCarrierSegment": return "cable";
@@ -143,6 +144,12 @@ function paintByNormal(mesh, [top, bottom, edge]) {
 }
 
 function realMaterialFor(mesh, m) {
+  if (mesh.userData.surfaceColor) {
+    return new THREE.MeshStandardMaterial({
+      color: mesh.userData.surfaceColor, roughness: 0.7,
+      clippingPlanes: [clipPlane], side: THREE.DoubleSide,
+    });
+  }
   const type = m?.typ ?? "";
   const glazed = type === "IfcWindow" || /glas/i.test(m?.material ?? "");
   if (type === "IfcOpeningElement" || type === "IfcSpace") return hidden;

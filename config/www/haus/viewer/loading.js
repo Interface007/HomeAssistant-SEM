@@ -9,7 +9,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
   bbox, byGid, byStorey, byType, collidables, groupColor, hiddenStoreys,
-  hiddenTypes, meta, model, PALETTE, push, setBbox, setMeta, setModel,
+  hiddenTypes, hiddenElements, meta, model, PALETTE, push, setBbox, setMeta, setModel,
 } from "haus/state.js";
 import { camera, clipPlane, controls, dropEl, fit, scene } from "haus/scene.js";
 import { clipInput, setupClip } from "haus/section.js";
@@ -18,6 +18,7 @@ import { labelRooms, labelWalls } from "haus/labels.js";
 import { announceEntities, colorWindows, labelDevices } from "haus/readings.js";
 import { leave, walkStoreySel } from "haus/walk.js";
 import { prepare } from "haus/appearance.js";
+import { refreshMeasurements } from "haus/measurements.js";
 
 const loader = new GLTFLoader();
 
@@ -112,6 +113,7 @@ async function reloadDefaultFiles() {
 function snapshotViewState() {
   const state = {
     hiddenTypes: new Set(hiddenTypes),
+    hiddenElements: new Set(hiddenElements),
     hiddenStoreys: new Set(hiddenStoreys),
     walkStorey: walkStoreySel.value,
   };
@@ -132,6 +134,8 @@ export function install(root, label, state = snapshotViewState()) {
   collidables.length = 0;
   hiddenTypes.clear();
   hiddenStoreys.clear();
+  hiddenElements.clear();
+  state.hiddenElements?.forEach(k => hiddenElements.add(k));
   state.hiddenTypes?.forEach((k) => hiddenTypes.add(k));
   state.hiddenStoreys?.forEach((k) => hiddenStoreys.add(k));
 
@@ -155,6 +159,9 @@ export function install(root, label, state = snapshotViewState()) {
     o.userData.gid = gid;
     o.userData.gruppe = group;
     o.userData.geschoss = storey;
+    if (m?.psets?.Pset_Schreibtisch && o.material?.color) {
+      o.userData.surfaceColor = o.material.color.clone();
+    }
     o.material = new THREE.MeshLambertMaterial({
       color,
       clippingPlanes: [clipPlane],
@@ -188,6 +195,7 @@ export function install(root, label, state = snapshotViewState()) {
     controls.update();
   }
   setupClip(state.clip);
+  refreshMeasurements();
   renderLists(state.walkStorey);
   applyVisibility();
   dropEl.classList.add("hide");

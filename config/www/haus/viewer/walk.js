@@ -81,7 +81,8 @@ realisticEl.addEventListener("change", () => {
 });
 
 addEventListener("keydown", (e) => {
-  if (walking && [" ", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+  if (walking && [" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
+    .includes(e.key)) e.preventDefault();
   if (walking && e.code === "Escape") { leave(); return; }
   keys.add(e.code);
 });
@@ -143,6 +144,7 @@ export function enter() {
   try { walkControls.lock(); } catch { /* fallback takes over */ }
   infoEl.innerHTML = `<div class="title">${name}</div>`
     + `<dl><dt>Begehen</dt><dd>WASD laufen</dd>`
+    + `<dt></dt><dd>Pfeile drehen / schieben</dd>`
     + `<dt></dt><dd>Maus schauen</dd>`
     + `<dt></dt><dd>Umschalt rennen</dd>`
     + `<dt></dt><dd>Esc zurueck</dd></dl>`;
@@ -316,15 +318,31 @@ function fadeNearby(reset = false) {
 }
 
 export function walk(dt) {
-  const run = keys.has("ShiftLeft") || keys.has("ShiftRight");
+  const shift = keys.has("ShiftLeft") || keys.has("ShiftRight");
+  const arrowRight = keys.has("ArrowRight");
+  const arrowLeft = keys.has("ArrowLeft");
+  const arrowSide = arrowRight || arrowLeft;
+  const run = shift && !arrowSide;
   const forward = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
   const sideways = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
 
   let f = 0, s = 0;
   if (keys.has("KeyW") || keys.has("ArrowUp")) f += 1;
   if (keys.has("KeyS") || keys.has("ArrowDown")) f -= 1;
-  if (keys.has("KeyD") || keys.has("ArrowRight")) s += 1;
-  if (keys.has("KeyA") || keys.has("ArrowLeft")) s -= 1;
+  if (keys.has("KeyD")) s += 1;
+  if (keys.has("KeyA")) s -= 1;
+
+  if (shift && arrowSide) {
+    if (arrowRight) s += 1;
+    if (arrowLeft) s -= 1;
+  } else if (arrowSide) {
+    const direction = arrowRight ? 1 : -1;
+    if (walkControls.isLocked) {
+      walkControls.getObject().rotation.y -= direction * 1.8 * dt;
+    } else {
+      camera.rotateY(-direction * 1.8 * dt);
+    }
+  }
 
   const wish = forward.multiplyScalar(f).addScaledVector(sideways, s);
   if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(SPEED * (run ? RUN : 1));

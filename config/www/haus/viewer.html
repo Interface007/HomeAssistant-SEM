@@ -41,12 +41,12 @@
   </section>
 
   <section>
-    <h2>Geschosse</h2>
-    <div id="storeys"></div>
-  </section>
-
-  <section>
     <h2>Bauteile</h2>
+    <div class="tree-actions">
+      <button id="showEG" type="button">Ins EG blicken</button>
+      <button id="showAll" type="button">Alles zeigen</button>
+    </div>
+    <p class="dim">Geschoss → Gruppe → Bauteil. Decken gehören hier zum darüberliegenden Geschoss.</p>
     <div id="types"></div>
   </section>
 
@@ -57,6 +57,22 @@
       <button id="top">Draufsicht</button>
       <button id="reload">Neu laden</button>
     </div>
+  </section>
+
+  <section>
+    <h2>Koordinaten &amp; Maß</h2>
+    <label class="row"><input type="checkbox" id="coordinateGrid">
+      <span>Koordinatenraster einblenden</span></label>
+    <label class="row"><input type="checkbox" id="measureMode">
+      <span>Messpunkte auf Flächen wählen</span></label>
+    <div id="measurePoints" class="measure-output"></div>
+    <div id="measureDistance" class="measure-output">Zwei Punkte auf Flächen wählen</div>
+    <label class="field">Plan-Maß
+      <input type="number" id="measurePlan" min="0" step="0.001" placeholder="m"> m</label>
+    <label class="field">Ist-Maß
+      <input type="number" id="measureActual" min="0" step="0.001" placeholder="m"> m</label>
+    <div id="measureCorrection" class="measure-output">Plan- und Ist-Maß eingeben</div>
+    <button id="clearMeasure" type="button">Messung löschen</button>
   </section>
 
   <section>
@@ -125,9 +141,9 @@
    The map is inserted before the first module load, as the spec requires. A
    module missing from MODULES fails loudly: its specifier stays unresolved. */
 (function () {
-  var MODULES = ["state", "scene", "section", "appearance", "filter",
+  var MODULES = ["state", "scene", "section", "appearance", "tree", "filter",
                  "labels", "readings", "walk", "selection", "loading",
-                 "viewer"];
+                 "measurements", "viewer"];
   var q = location.search.replace(/^\?/, "");
   q = q ? "?" + q : "";
   var embedded = document.getElementById("embeddedModules");

@@ -19,6 +19,7 @@ import { announceEntities, colorWindows, labelDevices } from "haus/readings.js";
 import { leave, walkStoreySel } from "haus/walk.js";
 import { prepare } from "haus/appearance.js";
 import { refreshMeasurements } from "haus/measurements.js";
+import { mitRaster, refreshRaster } from "haus/raster.js";
 
 const loader = new GLTFLoader();
 
@@ -162,13 +163,13 @@ export function install(root, label, state = snapshotViewState()) {
     if (m?.psets?.Pset_Schreibtisch && o.material?.color) {
       o.userData.surfaceColor = o.material.color.clone();
     }
-    o.material = new THREE.MeshLambertMaterial({
+    o.material = mitRaster(new THREE.MeshLambertMaterial({
       color,
       clippingPlanes: [clipPlane],
       transparent: glazed,
       opacity: glazed ? 0.45 : 1,
       side: THREE.DoubleSide,
-    });
+    }));
     // Legend always in the type color, otherwise a glass door dyes the whole
     // "Door" group blue.
     if (!groupColor.has(group)) groupColor.set(group, typeColor);
@@ -196,6 +197,7 @@ export function install(root, label, state = snapshotViewState()) {
   }
   setupClip(state.clip);
   refreshMeasurements();
+  refreshRaster();
   renderLists(state.walkStorey);
   applyVisibility();
   dropEl.classList.add("hide");

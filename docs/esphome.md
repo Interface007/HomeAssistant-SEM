@@ -18,6 +18,7 @@ source, this page is the index.
 | [`ble-proxy-upstairs-01`](../config/esphome/ble-proxy-upstairs-01.yaml) | .50 | ESP32-C6 | Bluetooth proxy for Shelly BLU sensors |
 | [`camera-garden-01`](../config/esphome/camera-garden-01.yaml) | .51 | ESP32-CAM | garden camera |
 | [`irrigation-garden-01`](../config/esphome/irrigation-garden-01.yaml) | .52 | ESP32 D1 Mini | raised-bed irrigation — **not built yet**, sensors only |
+| [`co2-sensor-01`](../config/esphome/co2-sensor-01.yaml) | .53 | ESP32-S3-Zero-M | room CO2 / T / RH (SCD41), onboard LED as traffic light — **not built yet**; [wiring](projects/co2-sensor-01-wiring.svg) |
 
 All use static IPs. `irrigation-garden-01` is the eleventh entry and is in
 its measurement phase: it has no pump control and its address has not been

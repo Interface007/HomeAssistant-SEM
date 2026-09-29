@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import { meta, model } from "haus/state.js";
 import { camera, infoEl, renderer } from "haus/scene.js";
+import { mitRaster } from "haus/raster.js";
 import { walking } from "haus/walk.js";
 
 const ray = new THREE.Raycaster();
@@ -31,7 +32,9 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 function ownMaterials(o) {
   const real = o.userData.realMaterial;
   if (real && real.userData.own === false) {
-    const copy = real.clone();
+    // clone() nimmt onBeforeCompile nicht mit - sonst verliert genau das
+    // angeklickte Bauteil sein Raster.
+    const copy = mitRaster(real.clone());
     copy.userData = {};
     o.userData.realMaterial = copy;
     if (o.material === real) o.material = copy;

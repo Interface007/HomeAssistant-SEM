@@ -1,3 +1,8 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "files.associations": {
+        "**/esphome/**/*.yaml": "esphome"
+    },
+    "esphome.validator": "dashboard",
+    "esphome.dashboardUri": "http://homeassistant.local:6052"
 }

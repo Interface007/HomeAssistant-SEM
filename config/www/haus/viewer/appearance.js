@@ -23,6 +23,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { meta } from "haus/state.js";
+import { mitRaster } from "haus/raster.js";
 import {
   camera, clipPlane, main, planLights, renderer, scene,
 } from "haus/scene.js";
@@ -93,30 +94,30 @@ function surfaceOf(m) {
 const shared = new Map();
 function standard(key) {
   if (!shared.has(key)) {
-    shared.set(key, new THREE.MeshStandardMaterial({
+    shared.set(key, mitRaster(new THREE.MeshStandardMaterial({
       metalness: 0, ...SURFACE[key], clippingPlanes: [clipPlane],
       side: THREE.DoubleSide,
-    }));
+    })));
     shared.get(key).userData.own = false;
   }
   return shared.get(key);
 }
 
-const vertexColored = new THREE.MeshStandardMaterial({
+const vertexColored = mitRaster(new THREE.MeshStandardMaterial({
   vertexColors: true, roughness: 0.8, metalness: 0,
   clippingPlanes: [clipPlane], side: THREE.DoubleSide,
-});
+}));
 
-const glass = () => new THREE.MeshStandardMaterial({
+const glass = () => mitRaster(new THREE.MeshStandardMaterial({
   color: 0xcfe3ec, roughness: 0.05, metalness: 0, transparent: true,
   opacity: 0.18, depthWrite: false, clippingPlanes: [clipPlane],
   side: THREE.DoubleSide,
-});
+}));
 
-const lamp = new THREE.MeshStandardMaterial({
+const lamp = mitRaster(new THREE.MeshStandardMaterial({
   color: 0xfff3dc, emissive: 0xffe2b8, emissiveIntensity: 2.5,
   clippingPlanes: [clipPlane],
-});
+}));
 
 const hidden = new THREE.MeshBasicMaterial({ visible: false });
 

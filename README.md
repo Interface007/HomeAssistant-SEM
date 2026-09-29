@@ -64,6 +64,26 @@ Running it:
 | [Operations](docs/operations.md) | how this repo relates to the live system, applying changes, recovery |
 | [Tooling](docs/tooling.md) | entity export and rename, the PCB chain, the 3D generator |
 
+## VS Code
+
+For working with the ESPHome YAML files in VS Code, install these extensions:
+
+- `esphome.esphome-vscode`
+- `espcompose.espcompose-vscode`
+
+Add the following configuration to `.vscode/settings.json` so VS Code fully
+understands the YAML syntax used by ESPHome:
+
+```json
+{
+	"files.associations": {
+		"**/esphome/**/*.yaml": "esphome"
+	},
+	"esphome.validator": "dashboard",
+	"esphome.dashboardUri": "http://homeassistant.local:6052"
+}
+```
+
 Projects:
 
 | Page | Contents |

@@ -61,12 +61,25 @@
 
   <section>
     <h2>Koordinaten &amp; Maß</h2>
-    <label class="row"><input type="checkbox" id="coordinateGrid">
-      <span>Koordinatenraster einblenden</span></label>
+    <div class="dim">Angaben in Modellkoordinaten: X Osten, Y Norden,
+      Z Höhe über OK Fertigfußboden EG.</div>
+    <label class="row"><input type="checkbox" id="surfaceGrid">
+      <span>Raster auf den Flächen</span></label>
+    <label class="field">Rasterweite
+      <select id="gridSpacing">
+        <option value="0.05">5 cm</option>
+        <option value="0.1" selected>10 cm</option>
+        <option value="0.25">25 cm</option>
+        <option value="0.5">50 cm</option>
+      </select></label>
     <label class="row"><input type="checkbox" id="measureMode">
       <span>Messpunkte auf Flächen wählen</span></label>
+    <div id="measureHover" class="measure-output">Messen ausgeschaltet</div>
     <div id="measurePoints" class="measure-output"></div>
     <div id="measureDistance" class="measure-output">Zwei Punkte auf Flächen wählen</div>
+    <label class="field">Bezug
+      <select id="measureRef"><option value="">— Modellkoordinaten —</option></select></label>
+    <div id="measureRefOut" class="measure-output">Punkt wählen</div>
     <label class="field">Plan-Maß
       <input type="number" id="measurePlan" min="0" step="0.001" placeholder="m"> m</label>
     <label class="field">Ist-Maß
@@ -141,9 +154,9 @@
    The map is inserted before the first module load, as the spec requires. A
    module missing from MODULES fails loudly: its specifier stays unresolved. */
 (function () {
-  var MODULES = ["state", "scene", "section", "appearance", "tree", "filter",
-                 "labels", "readings", "walk", "selection", "loading",
-                 "measurements", "viewer"];
+  var MODULES = ["state", "scene", "section", "raster", "appearance", "tree",
+                 "filter", "labels", "readings", "walk", "selection",
+                 "loading", "measurements", "viewer"];
   var q = location.search.replace(/^\?/, "");
   q = q ? "?" + q : "";
   var embedded = document.getElementById("embeddedModules");

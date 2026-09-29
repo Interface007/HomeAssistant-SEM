@@ -25,6 +25,7 @@ import {
 } from "haus/loading.js";
 import { keys, walk, walking } from "haus/walk.js";
 import { draw } from "haus/appearance.js";
+import { fadeLabels } from "haus/labels.js";
 import "haus/selection.js";
 import "haus/measurements.js";
 
@@ -82,8 +83,12 @@ sidebarBtn.addEventListener("click", () =>
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
-  if (walking) walk(dt);
-  else controls.update();
+  if (walking) {
+    walk(dt);
+  } else {
+    controls.update();
+    fadeLabels(camera);
+  }
   draw();
 });
 

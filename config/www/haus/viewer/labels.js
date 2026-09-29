@@ -105,3 +105,24 @@ document.getElementById("labels").onchange = (e) => {
 document.getElementById("roomNames").onchange = (e) => {
   roomLabels.visible = e.target.checked;
 };
+
+// Schilder aus der Naehe nicht wachsen lassen. Ein Wandschild ist 14 cm hoch
+// und waechst beim Heranzoomen mit - aus einem halben Meter fuellt es das
+// halbe Bild und verdeckt genau die Flaeche, die man gerade abliest.
+// Ausblenden waere schade, denn der Name ist ja die Information. Deshalb
+// wird es unterhalb eines Abstands mitverkleinert: auf dem Bildschirm bleibt
+// es dann gleich gross, statt weiter aufzugehen. Im Begehen-Modus blendet
+// walk.js zusaetzlich aus, dort steht man den Waenden noch naeher.
+const abstandHilfe = new THREE.Vector3();
+export function fadeLabels(camera) {
+  for (const [group, nah] of [[roomLabels, 6.0], [wallLabels, 2.5]]) {
+    if (!group.visible) continue;
+    for (const sprite of group.children) {
+      const basis = sprite.userData.basisScale
+        ??= sprite.scale.clone();
+      const d = abstandHilfe.copy(sprite.position).distanceTo(camera.position);
+      const faktor = Math.min(1, d / nah);
+      sprite.scale.set(basis.x * faktor, basis.y * faktor, 1);
+    }
+  }
+}

@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720" font-family="Segoe UI, DejaVu Sans, Arial, sans-serif">
+  <style>
+    text { fill:#24292f; font-size:13px; }
+    .ttl { font-size:20px; font-weight:600; }
+    .sub { font-size:12.5px; fill:#57606a; }
+    .pin { font-size:12px; font-family:Consolas, DejaVu Sans Mono, monospace; }
+    .pinb{ font-size:12px; font-family:Consolas, DejaVu Sans Mono, monospace; font-weight:700; }
+    .lbl { font-size:12px; font-weight:600; }
+    .note{ font-size:12.5px; }
+    .h   { font-size:14px; font-weight:600; }
+    .dim { fill:#8c959f; }
+  </style>
+  <rect width="1100" height="720" fill="#ffffff"/>
+
+  <text class="ttl" x="40" y="42">co2-sensor-01 · Verkabelung</text>
+  <text class="sub" x="40" y="62">Waveshare ESP32-S3-Zero-M + Sensirion SCD41 (I²C) · 4 Adern, keine Zusatzbauteile</text>
+
+  <!-- ============ SCD41 breakout (purple board, 5-pin header) ============ -->
+  <rect x="60" y="150" width="200" height="230" rx="14" fill="#5b2a86" stroke="#3b1a5a" stroke-width="2"/>
+  <rect x="95" y="195" width="90" height="90" rx="6" fill="#d0d7de" stroke="#57606a"/>
+  <rect x="112" y="212" width="56" height="56" rx="4" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="140" y="305" text-anchor="middle" style="fill:#ffffff;font-weight:600">SCD41</text>
+  <text x="140" y="322" text-anchor="middle" style="fill:#e9d5ff;font-size:11px">LDO · Pegelwandler</text>
+  <text x="140" y="337" text-anchor="middle" style="fill:#e9d5ff;font-size:11px">10k Pull-ups</text>
+  <rect x="100" y="152" width="44" height="14" rx="2" fill="#f6f8fa" stroke="#8c959f"/>
+  <rect x="100" y="364" width="44" height="14" rx="2" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="76" y="176" style="fill:#e9d5ff;font-size:9px">JST-SH</text>
+  <g>
+    <circle cx="245" cy="190" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="245" cy="225" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="245" cy="260" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="245" cy="295" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="245" cy="330" r="7" fill="#e3b341" stroke="#9a6700"/>
+  </g>
+  <text class="pinb" x="232" y="194" text-anchor="end" style="fill:#ffffff">VIN</text>
+  <text class="pinb" x="232" y="229" text-anchor="end" style="fill:#c4b5fd">3V3</text>
+  <text class="pinb" x="232" y="264" text-anchor="end" style="fill:#ffffff">GND</text>
+  <text class="pinb" x="232" y="299" text-anchor="end" style="fill:#ffffff">SCL</text>
+  <text class="pinb" x="232" y="334" text-anchor="end" style="fill:#ffffff">SDA</text>
+  <text class="sub" x="60" y="400">Stiftleiste von oben nach unten:</text>
+  <text class="sub" x="60" y="416">VIN · 3V3 · GND · SCL · SDA</text>
+  <text class="sub" x="60" y="432">Modul-Pin 3V3 bleibt frei (LDO-Ausgang).</text>
+
+  <!-- ============ ESP32-S3-Zero module (top view, USB up) ============ -->
+  <!-- pad rows: left x=720, right x=880; pitch 32 starting y=190 -->
+  <rect x="700" y="130" width="200" height="330" rx="8" fill="#2d333b" stroke="#1c2128" stroke-width="2"/>
+  <rect x="770" y="112" width="60" height="30" rx="6" fill="#adbac7" stroke="#57606a"/>
+  <text x="800" y="132" text-anchor="middle" style="font-size:11px;font-weight:600">USB-C</text>
+  <rect x="755" y="250" width="90" height="90" rx="3" fill="#768390"/>
+  <text x="800" y="290" text-anchor="middle" style="fill:#ffffff;font-size:11px;font-weight:600">ESP32-S3</text>
+  <text x="800" y="305" text-anchor="middle" style="fill:#ffffff;font-size:11px">FH4R2</text>
+  <circle cx="800" cy="185" r="9" fill="#ffffff" stroke="#adbac7"/>
+  <circle cx="800" cy="185" r="4" fill="#3fb950"/>
+  <text x="800" y="215" text-anchor="middle" style="fill:#adbac7;font-size:10px">RGB-LED GP21</text>
+  <text x="800" y="230" text-anchor="middle" style="fill:#adbac7;font-size:10px">= CO2-Ampel</text>
+  <text x="800" y="440" text-anchor="middle" style="fill:#adbac7;font-size:11px">Draufsicht, Bauteilseite</text>
+
+  <!-- left row pads -->
+  <g>
+    <circle cx="720" cy="170" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="202" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="234" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="266" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="298" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="330" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="362" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="394" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="720" cy="426" r="7" fill="#e3b341" stroke="#9a6700"/>
+  </g>
+  <!-- left row labels, outside the module -->
+  <text class="pin dim"  x="690" y="162" text-anchor="end">5V</text>
+  <text class="pinb"     x="690" y="194" text-anchor="end">GND</text>
+  <text class="pinb"     x="690" y="226" text-anchor="end">3V3</text>
+  <text class="pinb"     x="690" y="258" text-anchor="end">GP1</text>
+  <text class="pinb"     x="690" y="290" text-anchor="end">GP2</text>
+  <text class="pin dim"  x="690" y="322" text-anchor="end">GP3</text>
+  <text class="pin dim"  x="690" y="354" text-anchor="end">GP4</text>
+  <text class="pin dim"  x="690" y="386" text-anchor="end">GP5</text>
+  <text class="pin dim"  x="690" y="418" text-anchor="end">GP6</text>
+
+  <!-- right row pads -->
+  <g>
+    <circle cx="880" cy="170" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="202" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="234" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="266" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="298" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="330" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="362" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="394" r="7" fill="#e3b341" stroke="#9a6700"/>
+    <circle cx="880" cy="426" r="7" fill="#e3b341" stroke="#9a6700"/>
+  </g>
+  <g class="pin dim">
+    <text x="910" y="174">TX</text>
+    <text x="910" y="206">RX</text>
+    <text x="910" y="238">GP13</text>
+    <text x="910" y="270">GP12</text>
+    <text x="910" y="302">GP11</text>
+    <text x="910" y="334">GP10</text>
+    <text x="910" y="366">GP9</text>
+    <text x="910" y="398">GP8</text>
+    <text x="910" y="430">GP7</text>
+  </g>
+
+  <!-- ============ Wires ============ -->
+  <!-- VIN -> 3V3 (red) -->
+  <path d="M252 190 H400 C460 190 460 234 520 234 H713" fill="none" stroke="#cf222e" stroke-width="4" stroke-linecap="round"/>
+  <!-- module 3V3: not connected -->
+  <path d="M252 225 H275" fill="none" stroke="#8c959f" stroke-width="2"/>
+  <path d="M271 219 L283 231 M283 219 L271 231" stroke="#8c959f" stroke-width="2"/>
+  <text x="290" y="229" class="sub">frei</text>
+  <!-- GND -> GND (black) -->
+  <path d="M252 260 H420 C480 260 480 202 540 202 H713" fill="none" stroke="#24292f" stroke-width="4" stroke-linecap="round"/>
+  <!-- SCL -> GP1 (yellow) -->
+  <path d="M252 295 H440 C490 295 490 266 540 266 H713" fill="none" stroke="#d4a72c" stroke-width="4" stroke-linecap="round"/>
+  <!-- SDA -> GP2 (blue) -->
+  <path d="M252 330 H460 C510 330 510 298 560 298 H713" fill="none" stroke="#0969da" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- wire tags -->
+  <g class="lbl">
+    <text x="320" y="182" style="fill:#cf222e">3,3 V</text>
+    <text x="320" y="252">GND</text>
+    <text x="320" y="287" style="fill:#9a6700">SCL</text>
+    <text x="320" y="322" style="fill:#0969da">SDA</text>
+  </g>
+
+  <!-- cable length marker -->
+  <path d="M290 355 H600" stroke="#8c959f" stroke-width="1.2" stroke-dasharray="5 4" fill="none"/>
+  <path d="M290 349 V361 M600 349 V361" stroke="#8c959f" stroke-width="1.2"/>
+  <text x="445" y="378" text-anchor="middle" class="sub">Kabel 10–20 cm (max. ~30 cm): Sensor weg von der ESP-Abwärme</text>
+
+  <!-- ============ Connection table ============ -->
+  <g transform="translate(40,490)">
+    <text class="h" x="0" y="0">Verbindungen</text>
+    <rect x="0" y="12" width="470" height="150" fill="#f6f8fa" stroke="#d0d7de" rx="6"/>
+    <text class="lbl" x="16" y="36">SCD41</text>
+    <text class="lbl" x="110" y="36">S3-Zero</text>
+    <text class="lbl" x="210" y="36">Hinweis</text>
+    <line x1="10" y1="44" x2="460" y2="44" stroke="#d0d7de"/>
+    <rect x="16" y="54" width="10" height="10" fill="#cf222e"/><text class="pin" x="32" y="64">VIN</text><text class="pin" x="110" y="64">3V3</text><text class="note" x="210" y="64">Modul-Pin 3V3 frei lassen</text>
+    <rect x="16" y="82" width="10" height="10" fill="#24292f"/><text class="pin" x="32" y="92">GND</text><text class="pin" x="110" y="92">GND</text>
+    <rect x="16" y="110" width="10" height="10" fill="#d4a72c"/><text class="pin" x="32" y="120">SCL</text><text class="pin" x="110" y="120">GP1</text><text class="note" x="210" y="120">I²C Takt, 100 kHz</text>
+    <rect x="16" y="138" width="10" height="10" fill="#0969da"/><text class="pin" x="32" y="148">SDA</text><text class="pin" x="110" y="148">GP2</text><text class="note" x="210" y="148">I²C Daten</text>
+  </g>
+
+  <!-- ============ Notes ============ -->
+  <g transform="translate(540,490)">
+    <text class="h" x="0" y="0">Worauf es ankommt</text>
+    <rect x="0" y="12" width="520" height="190" fill="#fff8c5" stroke="#d4a72c" rx="6"/>
+    <text class="note" x="16" y="38">• Strom nur über USB-C – der 5V-Pin hängt ohne Diode an VBUS.</text>
+    <text class="note" x="16" y="62">• Sensor unter/neben den ESP, nie darüber; Gehäuse mit Lüftungsschlitzen.</text>
+    <text class="note" x="16" y="86">• VIN, nicht 5V: Die Pull-ups hängen an VIN – bei 5 V läge 5 V am ESP.</text>
+    <text class="note" x="16" y="110">• Power-LED stört im Schlafzimmer? Lötjumper neben der LED auftrennen.</text>
+    <text class="note" x="16" y="134">• Nach 24 h Temperatur-Offset gegen Referenz-Thermometer abgleichen.</text>
+    <text class="note" x="16" y="158">• Raum wird nie gelüftet? ASC aus, Kalibrierung per Button</text>
+    <text class="note" x="28" y="178">nach ≥ 3 min an der frischen Luft (420 ppm).</text>
+  </g>
+</svg>

@@ -1,0 +1,205 @@
+# =====================================================================
+# co2-sensor-01 - Room CO2 / temperature / humidity sensor.
+#
+# Hardware:
+#   Waveshare ESP32-S3-Zero-M (S3-Zero with soldered pin headers),
+#     ESP32-S3FH4R2, 4 MB flash
+#   Sensirion SCD41 on a purple 5-pin breakout (VIN, 3V3, GND, SCL,
+#     SDA; two JST-SH/Qwiic sockets, SOT-23 LDO, SOT-23-6 I2C level
+#     shifter, 10k resistor array "103" as pull-ups, power LED with a
+#     solder jumper)
+#   Onboard WS2812 on GPIO21 used as a CO2 traffic light
+#
+# Wiring - four adjacent pads on the module's left row, no extra parts:
+#   3V3  -> SCD41 VIN
+#   GND  -> SCD41 GND
+#   GP1  -> SCD41 SCL
+#   GP2  -> SCD41 SDA
+#   SCD41 pin 3V3 stays unconnected (it is the LDO output)
+#
+# SCL on GP1 and SDA on GP2 rather than the other way round: the breakout
+# has SCL above SDA, so this order keeps the two data wires from crossing.
+# Any S3 GPIO can carry I2C.
+#
+# Why VIN is fed with 3V3 and not 5 V: on this breakout the host-side
+# pull-ups of the level shifter go to VIN. At 5 V they would drive 5 V
+# into the S3's pins, which are not 5 V tolerant. At 3.3 V in, the LDO
+# drops a few hundred mV during the 205 mA measurement peak; the SCD41
+# runs from 2.4 V, so that is harmless, and the S3-Zero's 500 mA LDO
+# has ample headroom. Feeding the module's 3V3 pin instead would bypass
+# the LDO but back-feed its output - not worth it.
+#
+# The board's power LED sits right next to the sensor. In a bedroom its
+# light may bother; opening the solder jumper beside it disables it.
+#
+# Measurement quality - what actually matters:
+#   * Self-heating: the ESP32 warms its surroundings by 2..5 K. Mount the
+#     SCD41 on a 10..20 cm cable, below or beside the ESP, never above
+#     it, and give the case vent slots. The CO2 reading is internally
+#     temperature-compensated, so a wrong temperature also skews CO2
+#     slightly. low_power_periodic mode (one measurement per 30 s)
+#     roughly halves the sensor's own heating compared to periodic.
+#   * temperature_offset: started at the Sensirion default of 4 C and was
+#     corrected against a reference thermometer, see temp_offset. The
+#     offset is written to the sensor and also corrects RH.
+#   * Altitude: the NDIR reading depends on air pressure. There is no
+#     barometer in HA, so the fixed altitude compensation is used.
+#     100 m error ~ 1.2 % pressure ~ 1 % CO2 error.
+#   * Calibration: ASC (automatic self-calibration) is on. It assumes the
+#     sensor sees fresh air (~420 ppm) at least once every 7 days, which
+#     regular airing provides. A room that is never aired (cellar,
+#     permanently closed bedroom) must disable ASC and use the forced
+#     recalibration button instead: sensor outdoors or at an open window
+#     for >= 3 minutes, then press "CO2 Kalibrieren 420 ppm".
+#
+# S3-Zero board traps (see docs/esphome.md):
+#   no USB-serial chip -> logger needs hardware_uart: USB_SERIAL_JTAG
+#   the 5V pin is tied to USB VBUS with no diode -> power via USB only
+# =====================================================================
+substitutions:
+  name: co2-sensor-01
+  friendly_name: CO2 Sensor 01
+  # NOTE: verify this address is still free before flashing.
+  # .41-.48 and .50-.52 are taken.
+  static_ip: 192.168.2.53
+
+  pin_scl: GPIO1
+  pin_sda: GPIO2
+  pin_rgb_led: GPIO21
+
+  # Height of the installation site above sea level. Set this to the
+  # real value before flashing.
+  altitude_m: "50"
+  # Calibrated 2026-09-29 against the Sonoff TH (sensor.bedroom_temperature)
+  # placed right next to it: with the Sensirion default of 4.0 the SCD41
+  # read 2.6 K low on average over 8 h (14:00-21:00, stable room). The
+  # low_power_periodic mode and the cable-mounted sensor self-heat far
+  # less than the 4 K the default assumes. tado TRV and Xiaomi purifier
+  # in the same room confirm the direction (+1.3 K / +1.9 K).
+  temp_offset: "1.5"
+
+  # Traffic light thresholds in ppm. Green below warn, yellow between,
+  # red from alarm upwards. 1000 ppm is the German UBA "hygienically
+  # harmless" limit; 800 gives an earlier nudge to open a window.
+  co2_warn: "800"
+  co2_alarm: "1200"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.10.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+# No USB-serial chip on the S3-Zero -> logs run via USB-Serial-JTAG.
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+api: !include ./includes/api.yaml
+ota: !include ./includes/ota.yaml
+wifi: !include ./includes/wifi_common.yaml
+web_server: !include ./includes/web.yaml
+
+i2c:
+  sda: ${pin_sda}
+  scl: ${pin_scl}
+  frequency: 100kHz
+  scan: true
+
+###########################################################
+#  SCD41
+###########################################################
+sensor:
+  - platform: scd4x
+    id: scd41
+    measurement_mode: low_power_periodic
+    update_interval: 60s
+    automatic_self_calibration: true
+    altitude_compensation: ${altitude_m}m
+    temperature_offset: ${temp_offset}°C
+    co2:
+      id: co2
+      name: CO2
+      accuracy_decimals: 0
+      on_value:
+        - script.execute: update_led
+    temperature:
+      name: Temperatur
+      accuracy_decimals: 1
+    humidity:
+      name: Luftfeuchtigkeit
+      accuracy_decimals: 0
+
+  - platform: wifi_signal
+    name: WLAN Signal
+    update_interval: 300s
+    entity_category: diagnostic
+
+  - platform: uptime
+    name: Laufzeit
+    entity_category: diagnostic
+
+###########################################################
+#  Forced recalibration
+###########################################################
+button:
+  # Only valid after >= 3 minutes in fresh outdoor air. Pressing it
+  # indoors teaches the sensor that stale air is 420 ppm and shifts
+  # every later reading downwards until ASC corrects it over days.
+  - platform: template
+    name: CO2 Kalibrieren 420 ppm
+    entity_category: config
+    icon: mdi:target
+    on_press:
+      - scd4x.perform_forced_calibration:
+          value: 420
+          id: scd41
+
+  - platform: restart
+    name: Neustart
+    entity_category: config
+
+###########################################################
+#  Onboard RGB LED as CO2 traffic light
+###########################################################
+light:
+  # Exposed to HA so it can be switched off at night; its colour is
+  # always driven by the CO2 value, not by the HA colour picker.
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: CO2 Ampel
+    pin: ${pin_rgb_led}
+    num_leds: 1
+    chipset: WS2812
+    # The S3-Zero's LED is wired RGB, not the usual GRB. If green and
+    # red come out swapped, change this to GRB.
+    rgb_order: RGB
+    default_transition_length: 1s
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - script.execute: update_led
+
+script:
+  - id: update_led
+    mode: restart
+    then:
+      - if:
+          condition:
+            - light.is_on: status_led
+            - lambda: return !isnan(id(co2).state);
+          then:
+            - light.turn_on:
+                id: status_led
+                brightness: 25%
+                red: !lambda |-
+                  return id(co2).state >= ${co2_warn} ? 1.0 : 0.0;
+                green: !lambda |-
+                  return id(co2).state < ${co2_alarm} ? 1.0 : 0.0;
+                blue: 0%

@@ -40,7 +40,7 @@ views:
             name: Licht Anna 1
           - entity: light.ikea_light_02
             name: Licht Anna 2
-          - entity: light.ikea_light_03
+          - entity: light.ikea_light_04
             name: Licht Wohnzimmer
 
       - type: entities

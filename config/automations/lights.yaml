@@ -9,7 +9,7 @@
 # =====================================================================
 - id: aqaraopple_switch_01_button_actions
   alias: "Aqara Opple switch 01 button actions"
-  description: "Button 1 toggles Shelly Mini G3, button 2 toggles light.ikea_light_03."
+  description: "Button 1 toggles Shelly Mini G3, button 2 toggles light.ikea_light_04."
   mode: single
   triggers:
     - trigger: mqtt
@@ -48,7 +48,7 @@
           sequence:
             - action: light.toggle
               target:
-                entity_id: light.ikea_light_03
+                entity_id: light.ikea_light_04
 
 - id: enforce_ikea_lights_power_on_behavior_on
   alias: "Enforce IKEA lights power-on behavior ON"
@@ -79,7 +79,7 @@
         for_each:
           - select.ikea_light_01_power_on_behavior
           - select.ikea_light_02_power_on_behavior
-          - select.ikea_light_03_power_on_behavior
+          - select.ikea_light_04_power_on_behavior
         sequence:
           # if/then rather than condition: a bare condition would abort
           # the whole repeat loop, not just this one iteration.

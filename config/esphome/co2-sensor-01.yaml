@@ -82,7 +82,7 @@ substitutions:
   # red from alarm upwards. 1000 ppm is the German UBA "hygienically
   # harmless" limit; 800 gives an earlier nudge to open a window.
   co2_warn: "800"
-  co2_alarm: "1200"
+  co2_alarm: "2000"
 
 esphome:
   name: ${name}
@@ -180,7 +180,7 @@ light:
     chipset: WS2812
     # The S3-Zero's LED is wired RGB, not the usual GRB. If green and
     # red come out swapped, change this to GRB.
-    rgb_order: RGB
+    channel_colors: RGB
     default_transition_length: 1s
     restore_mode: RESTORE_DEFAULT_ON
     on_turn_on:

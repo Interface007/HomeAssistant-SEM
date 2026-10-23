@@ -21,7 +21,7 @@ views:
             heading: Licht Wohnzimmer
             icon: mdi:lightbulb-group
           - type: tile
-            entity: light.ikea_light_03
+            entity: light.ikea_light_04
             name: Licht Wohnzimmer
             tap_action:
               action: toggle

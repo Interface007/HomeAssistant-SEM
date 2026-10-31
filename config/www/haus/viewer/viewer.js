@@ -8,7 +8,9 @@
  *   scene.js      renderer, camera, orbit control, light, clipping plane
  *   loading.js    loading and installing the model
  *   section.js    horizontal section plane
- *   appearance.js plan colors or realistic light, materials and shading
+ *   appearance.js plan colors, realistic light or neon: materials and shading
+ *   neon.js       neon materials, glowing edges, room floors, bloom
+ *   hud.js        neon controls: storeys, rooms, floating cards
  *   filter.js     storey and component lists, visibility
  *   labels.js     wall and room labels
  *   readings.js   readings and window states from Home Assistant
@@ -25,6 +27,7 @@ import {
 } from "haus/loading.js";
 import { keys, walk, walking } from "haus/walk.js";
 import { draw } from "haus/appearance.js";
+import { startHud, updateHud } from "haus/hud.js";
 import { fadeLabels } from "haus/labels.js";
 import "haus/selection.js";
 import "haus/measurements.js";
@@ -88,9 +91,12 @@ renderer.setAnimationLoop(() => {
   } else {
     controls.update();
     fadeLabels(camera);
+    updateHud(dt);
   }
   draw();
 });
+
+startHud();
 
 // Small hook for measuring from the outside (tests, fault finding).
 window.houseModel = {

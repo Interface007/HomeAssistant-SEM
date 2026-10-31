@@ -134,4 +134,89 @@ canvas{display:block;touch-action:none}
      again. */
   #sidebar{z-index:11}
 }
+/* ---- Neon view: same page, other tokens, plus the HUD over the model ---- */
+#neonToggle{
+  position:absolute; top:14px; left:128px; z-index:5;
+  font-family:var(--ui); font-size:13px; font-weight:500;
+  letter-spacing:0; text-transform:none; padding:7px 12px;
+  border:1px solid var(--hairline); border-radius:2px;
+  background:rgba(228,231,226,.94); color:var(--ink);
+}
+body.neon{
+  --linen:#0b1324; --linen-deep:#070d1a; --ink:#dcedf6; --ink-soft:#86a3b6;
+  --hairline:#25405a; --stamp:#39e6ff; --stamp-soft:#39e6ff1c;
+  --glass:rgba(10,20,38,.74); --edge:rgba(57,230,255,.34); --glow:#39e6ff;
+}
+body.neon #sidebar,body.neon #neonToggle{
+  background:var(--glass); border-color:var(--edge); border-radius:999px;
+  color:var(--ink); backdrop-filter:blur(10px);
+}
+body.neon #info{
+  top:auto; bottom:64px; max-height:44%; overflow-y:auto; border-color:var(--edge);
+  border-radius:12px; background:var(--glass); backdrop-filter:blur(10px); z-index:4;
+}
+body.neon.walking #hud,body.walking #neonToggle{display:none}
+#hud{position:absolute; inset:0; pointer-events:none; z-index:3;
+  color:var(--ink); font-family:var(--ui)}
+#hud[hidden]{display:none}
+.hud-top{position:absolute; top:54px; left:14px; right:14px;
+  display:flex; flex-direction:column; align-items:flex-start; gap:8px}
+.hud-brand{position:fixed; width:0; height:0; overflow:hidden}
+.hud-pills{display:flex; gap:6px; max-width:100%; overflow-x:auto;
+  scrollbar-width:none; pointer-events:auto}
+.hud-pills[hidden]{display:none}
+.hud-pills::-webkit-scrollbar{display:none}
+.hud-pill{
+  flex:none; font-family:var(--ui); font-size:13px; font-weight:500;
+  letter-spacing:0; text-transform:none; color:var(--ink); padding:7px 14px;
+  background:var(--glass); border:1px solid rgba(120,170,210,.22);
+  border-radius:999px; backdrop-filter:blur(10px); pointer-events:auto;
+}
+.hud-pill:hover{color:var(--glow); border-color:var(--edge)}
+.hud-pill[aria-pressed=true]{background:#27d4f5; border-color:#27d4f5; color:#04212c;
+  box-shadow:0 0 16px rgba(39,212,245,.45)}
+#hudLayers .hud-pill[aria-pressed=false]{opacity:.55}
+.hud-bottom{position:absolute; left:14px; right:14px; bottom:14px;
+  display:flex; justify-content:space-between; align-items:center; gap:8px}
+.hud-bottom .hud-pills{min-width:0}
+#hudLines{position:absolute; inset:0; width:100%; height:100%}
+#hudLines line{stroke:var(--glow); stroke-width:1; opacity:.7}
+#hudCards{position:absolute; inset:0; overflow:hidden}
+.hud-card,.hud-chip{
+  position:absolute; left:0; top:0; display:flex; flex-direction:column; gap:2px;
+  text-align:left; font-family:var(--ui); letter-spacing:0; text-transform:none;
+  color:var(--ink); pointer-events:auto; backdrop-filter:blur(8px);
+  will-change:transform;
+}
+.hud-card{
+  padding:9px 14px; border-radius:12px; background:rgba(39,212,245,.92);
+  border:0; color:#04212c; box-shadow:0 0 22px rgba(39,212,245,.35);
+}
+.hud-card:hover{color:#04212c; background:#6be6ff}
+.hud-card strong{font-size:15px; font-weight:600}
+.hud-card span{font-family:var(--mono); font-size:11px}
+.hud-chip{
+  padding:4px 9px; border-radius:9px; background:var(--glass);
+  border:1px solid var(--edge); align-items:center; white-space:nowrap;
+}
+.hud-chip strong{font-size:12px; font-weight:600}
+.hud-chip span{font-family:var(--mono); font-size:10px; color:var(--glow)}
+.hud-glass{
+  background:var(--glass); border:1px solid var(--edge); border-radius:14px;
+  backdrop-filter:blur(12px); box-shadow:0 0 26px rgba(57,230,255,.14);
+}
+#hudRoom{position:absolute; right:14px; top:54px; width:236px;
+  padding:14px 16px; pointer-events:auto}
+#hudRoom[hidden]{display:none}
+#hudRoom h3{margin:0; font-size:16px; font-weight:600}
+#hudRoom p{margin:1px 0 10px; font-family:var(--mono); font-size:11px; color:var(--glow)}
+#hudRoom dl{display:grid; grid-template-columns:1fr auto; gap:5px 12px; margin:0}
+#hudRoom dt{font-size:12px; color:var(--ink-soft)}
+#hudRoom dd{margin:0; font-family:var(--mono); font-size:12px; text-align:right}
+@media (max-width:760px){
+  #hudRoom{top:auto; bottom:62px; left:14px; right:14px; width:auto}
+  #hudRoom dl{grid-template-columns:1fr auto 1fr auto}
+  body.neon #info{left:14px; right:14px; width:auto}
+  .hud-chip span{display:none}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

@@ -148,7 +148,7 @@ function treffer(event) {
     -((event.clientY - rect.top) / rect.height) * 2 + 1,
   );
   ray.setFromCamera(cursor, camera);
-  return ray.intersectObject(model, true).find((entry) => entry.object.visible)
+  return ray.intersectObject(model, true).find((entry) => entry.object.visible && entry.object.material.visible)
     ?? null;
 }
 

@@ -21,30 +21,39 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
         ((e.clientX - r.left) / r.width) * 2 - 1,
         -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(pos, camera);
-  const hit = ray.intersectObject(model, true).find((h) => h.object.visible);
+  const hit = ray.intersectObject(model, true)
+    .find((h) => h.object.visible && h.object.material.visible);
   select(hit ? hit.object : null);
 });
 
-// Both materials of a mesh (plan and realistic, see appearance.js), so the
-// highlight survives entering and leaving the walk. The realistic materials
+// All materials of a mesh (plan, realistic, neon, see appearance.js), so the
+// highlight survives switching between them. The realistic and neon materials
 // are shared between components of a kind; a picked one gets its own copy
 // first, otherwise every wall would light up with it.
 function ownMaterials(o) {
-  const real = o.userData.realMaterial;
-  if (real && real.userData.own === false) {
+  for (const key of ["realMaterial", "neonMaterial"]) {
+    const shared = o.userData[key];
+    if (!shared || shared.userData.own !== false) continue;
     // clone() nimmt onBeforeCompile nicht mit - sonst verliert genau das
     // angeklickte Bauteil sein Raster.
-    const copy = mitRaster(real.clone());
-    copy.userData = {};
-    o.userData.realMaterial = copy;
-    if (o.material === real) o.material = copy;
+    const copy = mitRaster(shared.clone());
+    copy.userData = { glow: shared.userData.glow };
+    o.userData[key] = copy;
+    if (o.material === shared) o.material = copy;
   }
-  return [o.userData.planMaterial ?? o.material, o.userData.realMaterial]
-    .filter(Boolean);
+  return [o.userData.planMaterial ?? o.material, o.userData.realMaterial,
+          o.userData.neonMaterial].filter(Boolean);
+}
+
+// Neon devices glow by themselves; deselecting must bring that glow back
+// instead of leaving them black.
+function restore(m) {
+  m.emissive?.setHex(m.userData.glow?.color ?? 0x000000);
+  if (m.userData.glow) m.emissiveIntensity = m.userData.glow.intensity;
 }
 
 function select(obj) {
-  if (selected) ownMaterials(selected).forEach((m) => m.emissive?.setHex(0x000000));
+  if (selected) ownMaterials(selected).forEach(restore);
   selected = obj;
   if (!obj) { infoEl.classList.remove("on"); return; }
   for (const m of ownMaterials(obj)) {

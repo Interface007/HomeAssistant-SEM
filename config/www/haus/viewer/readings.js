@@ -33,7 +33,7 @@ function germanNumber(s) {
   return /^-?\d+([.,]\d+)?$/.test(s) ? s.replace(".", ",") : s;
 }
 
-function entitiesOf(gid) {
+export function entitiesOf(gid) {
   const pset = meta[gid]?.psets?.Pset_HomeAssistant;
   if (!pset) return [];
   const rank = (k) => {
@@ -119,22 +119,27 @@ function readsOpen(value) {
   return /^(on|open|offen|true|geoeffnet)$/i.test(String(value ?? ""));
 }
 
+// null: the window has no contact in the model. `closed` is also what a known
+// contact without a value yet reads as - the plan view has always shown it so.
+export function windowState(gid) {
+  const roles = Object.fromEntries(entitiesOf(gid));
+  if (!roles.Kontakt && !roles.Neigung) return null;
+  const contact = readings.get(roles.Kontakt);
+  const tilt = readings.get(roles.Neigung);
+  const angle = tilt ? parseFloat(String(tilt.value).replace(",", ".")) : NaN;
+  // Tilted beats open: a tilted window usually reports both, and the tilt
+  // state is the sharper statement.
+  if (Number.isFinite(angle) && angle > TILT_THRESHOLD) return "tilted";
+  return contact && readsOpen(contact.value) ? "open" : "closed";
+}
+
 export function colorWindows() {
   let found = false;
   for (const [gid, meshes] of byGid) {
-    const roles = Object.fromEntries(entitiesOf(gid));
-    if (!roles.Kontakt && !roles.Neigung) continue;
+    const state = windowState(gid);
+    if (!state) continue;
     found = true;
-
-    const contact = readings.get(roles.Kontakt);
-    const tilt = readings.get(roles.Neigung);
-    const angle = tilt ? parseFloat(String(tilt.value).replace(",", ".")) : NaN;
-
-    // Tilted beats open: a tilted window usually reports both, and the tilt
-    // state is the sharper statement.
-    let color = WINDOW.closed;
-    if (Number.isFinite(angle) && angle > TILT_THRESHOLD) color = WINDOW.tilted;
-    else if (contact && readsOpen(contact.value)) color = WINDOW.open;
+    const color = WINDOW[state];
 
     // Plan material only: in the realistic view a window stays glass.
     for (const mesh of meshes) {

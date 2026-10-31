@@ -20,6 +20,7 @@ import { leave, walkStoreySel } from "haus/walk.js";
 import { prepare } from "haus/appearance.js";
 import { refreshMeasurements } from "haus/measurements.js";
 import { mitRaster, refreshRaster } from "haus/raster.js";
+import { refreshHud } from "haus/hud.js";
 
 const loader = new GLTFLoader();
 
@@ -200,6 +201,7 @@ export function install(root, label, state = snapshotViewState()) {
   refreshRaster();
   renderLists(state.walkStorey);
   applyVisibility();
+  refreshHud();
   dropEl.classList.add("hide");
   document.getElementById("source").textContent = label;
   // Without metadata every component falls into "ohne Zuordnung" - that is the

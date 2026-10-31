@@ -124,6 +124,21 @@
   <button id="sidebar" type="button" aria-expanded="false" aria-controls="sidebarPanel">
     <span class="glyph" aria-hidden="true">&#9776;</span><span id="sidebarText">Bauteile</span>
   </button>
+  <button id="neonToggle" type="button">Neon</button>
+  <div id="hud" hidden>
+    <header class="hud-top">
+      <div class="hud-brand">Birkenweg 21</div>
+      <nav class="hud-pills" id="hudStoreys" aria-label="Geschosse"></nav>
+      <nav class="hud-pills" id="hudRooms" aria-label="Räume"></nav>
+    </header>
+    <svg id="hudLines" aria-hidden="true"></svg>
+    <div id="hudCards"></div>
+    <section id="hudRoom" class="hud-glass" hidden aria-live="polite"></section>
+    <footer class="hud-bottom">
+      <div class="hud-pills" id="hudLayers" aria-label="Ebenen"></div>
+      <button id="hudWalk" type="button" class="hud-pill">Begehen</button>
+    </footer>
+  </div>
   <div id="drop">
     <div><strong>haus.glb</strong> und <strong>haus.meta.json</strong>
       zusammen hierher ziehen</div>
@@ -155,8 +170,8 @@
    module missing from MODULES fails loudly: its specifier stays unresolved. */
 (function () {
   var MODULES = ["state", "scene", "section", "raster", "appearance", "tree",
-                 "filter", "labels", "readings", "walk", "selection",
-                 "loading", "measurements", "viewer"];
+                 "filter", "labels", "readings", "neon", "walk", "hud",
+                 "selection", "loading", "measurements", "viewer"];
   var q = location.search.replace(/^\?/, "");
   q = q ? "?" + q : "";
   var embedded = document.getElementById("embeddedModules");

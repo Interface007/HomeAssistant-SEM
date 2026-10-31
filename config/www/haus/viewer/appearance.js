@@ -1,5 +1,5 @@
 /*
- * Two ways of drawing the same model.
+ * Three ways of drawing the same model.
  *
  * "Plan" is the CAD look of the overview: one flat color per IFC class, even
  * light from everywhere, nothing that distracts from reading the building.
@@ -16,6 +16,10 @@
  * assumptions, not survey data: the model knows "Aussenwand 30 cm", not the
  * paint. They are chosen to look like an ordinary plastered house with wooden
  * floors and are meant as a backdrop, not as a finish schedule.
+ *
+ * "Neon" is the dark overview with glowing edges; its materials, stage and
+ * bloom live in neon.js. Realistic wins over neon: walking from the neon view
+ * shows the rooms in daylight and hands back to neon on leaving.
  */
 import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
@@ -24,11 +28,13 @@ import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { meta } from "haus/state.js";
 import { mitRaster } from "haus/raster.js";
+import { drawNeon, ensureNeon, resetNeon, showNeonStage } from "haus/neon.js";
 import {
   camera, clipPlane, main, planLights, renderer, scene,
 } from "haus/scene.js";
 
 export let realistic = false;
+export let neon = false;
 
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -254,6 +260,7 @@ export function prepare(root, bbox) {
   cam.far = sphere.radius * 3.5;
   cam.updateProjectionMatrix();
 
+  resetNeon(root, bbox);
   apply(root);
 }
 
@@ -265,14 +272,19 @@ let current = null;
 function apply(root = current) {
   current = root;
   if (!root) return;
+  const glowing = neon && !realistic;
+  if (glowing) ensureNeon();
   root.traverse((o) => {
     if (!o.isMesh || !o.userData.planMaterial) return;
-    o.material = realistic ? o.userData.realMaterial : o.userData.planMaterial;
+    o.material = realistic ? o.userData.realMaterial
+      : glowing ? o.userData.neonMaterial : o.userData.planMaterial;
   });
-  scene.background = realistic ? skyTexture : PLAN_BACKGROUND;
+  const neonBackground = showNeonStage(glowing);
+  scene.background = realistic ? skyTexture
+    : glowing ? neonBackground : PLAN_BACKGROUND;
   scene.environment = realistic ? skyTexture : null;
   scene.environmentIntensity = 0.55;
-  planLights.visible = !realistic;
+  planLights.visible = !realistic && !glowing;
   realLights.visible = realistic;
   renderer.toneMapping = realistic ? THREE.ACESFilmicToneMapping
                                    : THREE.NoToneMapping;
@@ -282,6 +294,12 @@ function apply(root = current) {
 export function setRealistic(on) {
   if (on === realistic) return;
   realistic = on;
+  apply();
+}
+
+export function setNeon(on) {
+  if (on === neon) return;
+  neon = on;
   apply();
 }
 
@@ -318,5 +336,6 @@ resizeComposer();
 
 export function draw() {
   if (realistic) composer.render();
+  else if (neon) drawNeon();
   else renderer.render(scene, camera);
 }

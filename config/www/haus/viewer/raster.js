@@ -164,7 +164,7 @@ function beschrifte() {
   // Punkt in der Bildmitte: er bestimmt, welcher Ausschnitt beschriftet wird.
   strahl.setFromCamera(new THREE.Vector2(0, 0), camera);
   const treffer = strahl.intersectObject(model, true)
-    .find((t) => t.object.visible && t.face);
+    .find((t) => t.object.visible && t.object.material.visible && t.face);
   if (!treffer) return;
 
   const punkt = treffer.point;

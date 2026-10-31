@@ -56,5 +56,8 @@ export function applyVisibility(){
   for(const group of [wallLabels,roomLabels,deviceLabels])for(const sprite of group.children){sprite.visible=sprite.userData.gid?!hiddenElements.has(sprite.userData.gid):visibleStoreys.has(sprite.userData.geschoss);}
   syncChecks();
 }
+// Neon storey view: everything above the given storey goes, the tree shows it.
+const STOREY_RANK={Kellergeschoss:0,Erdgeschoss:1,Dachgeschoss:2};
+export function showUpTo(storey){hiddenElements.clear();if(storey)for(const e of elements.values())if((STOREY_RANK[displayStorey(e.meta)]??0)>STOREY_RANK[storey])hiddenElements.add(e.key);applyVisibility();}
 document.getElementById('showAll').onclick=()=>{hiddenElements.clear();applyVisibility();};
 document.getElementById('showEG').onclick=()=>{hiddenElements.clear();for(const e of elements.values())if(displayStorey(e.meta)==='Dachgeschoss')hiddenElements.add(e.key);applyVisibility();document.getElementById('top').click();};

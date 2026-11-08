@@ -21,6 +21,7 @@ import { prepare } from "haus/appearance.js";
 import { refreshMeasurements } from "haus/measurements.js";
 import { mitRaster, refreshRaster } from "haus/raster.js";
 import { refreshHud } from "haus/hud.js";
+import { resetWlan } from "haus/wlan.js";
 
 const loader = new GLTFLoader();
 
@@ -202,6 +203,7 @@ export function install(root, label, state = snapshotViewState()) {
   renderLists(state.walkStorey);
   applyVisibility();
   refreshHud();
+  resetWlan();
   dropEl.classList.add("hide");
   document.getElementById("source").textContent = label;
   // Without metadata every component falls into "ohne Zuordnung" - that is the

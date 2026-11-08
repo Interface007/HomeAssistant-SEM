@@ -41,26 +41,31 @@
   </section>
 
   <section>
-    <h2>Bauteile</h2>
+    <details class="fold" open>
+    <summary><h2>Bauteile</h2></summary>
     <div class="tree-actions">
       <button id="showEG" type="button">Ins EG blicken</button>
       <button id="showAll" type="button">Alles zeigen</button>
     </div>
     <p class="dim">Geschoss → Gruppe → Bauteil. Decken gehören hier zum darüberliegenden Geschoss.</p>
     <div id="types"></div>
+    </details>
   </section>
 
   <section>
-    <h2>Ansicht</h2>
+    <details class="fold" open>
+    <summary><h2>Ansicht</h2></summary>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button id="fit">Einpassen</button>
       <button id="top">Draufsicht</button>
       <button id="reload">Neu laden</button>
     </div>
+    </details>
   </section>
 
   <section>
-    <h2>Koordinaten &amp; Maß</h2>
+    <details class="fold">
+    <summary><h2>Koordinaten &amp; Maß</h2></summary>
     <div class="dim">Angaben in Modellkoordinaten: X Osten, Y Norden,
       Z Höhe über OK Fertigfußboden EG.</div>
     <label class="row"><input type="checkbox" id="surfaceGrid">
@@ -86,10 +91,12 @@
       <input type="number" id="measureActual" min="0" step="0.001" placeholder="m"> m</label>
     <div id="measureCorrection" class="measure-output">Plan- und Ist-Maß eingeben</div>
     <button id="clearMeasure" type="button">Messung löschen</button>
+    </details>
   </section>
 
   <section>
-    <h2>Begehen</h2>
+    <details class="fold" open>
+    <summary><h2>Begehen</h2></summary>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <select id="walkStorey" aria-label="Geschoss zum Betreten"></select>
       <button id="walk">Betreten</button>
@@ -110,13 +117,42 @@
       <span>Raumnamen anzeigen</span></label>
     <label class="row"><input type="checkbox" id="readings" checked>
       <span>Messwerte anzeigen</span></label>
+    </details>
+  </section>
+
+  <section>
+    <details class="fold" open>
+    <summary><h2>WLAN-Ausleuchtung</h2></summary>
+    <div class="measure-output">Gerechneter Empfangspegel des jeweils besten Access
+      Points, aus EIRP, Abstand und den Baustoffen auf dem direkten Weg.
+      Ohne Reflexion – eher zu pessimistisch.</div>
+    <label class="row"><input type="checkbox" id="wlan24">
+      <span><i class="wlan-dot" style="background:#ffd400"></i>2,4 GHz</span></label>
+    <label class="row"><input type="checkbox" id="wlan5">
+      <span><i class="wlan-dot" style="background:#18b84a"></i>5 GHz</span></label>
+    <div class="measure-output">Access Points – abgeschaltete versorgen
+      keinen Punkt mehr:</div>
+    <div id="wlanAps"></div>
+    <label class="field">Punktabstand
+      <select id="wlanSpacing">
+        <option value="0.6">60 cm</option>
+        <option value="0.4" selected>40 cm</option>
+        <option value="0.25">25 cm</option>
+      </select></label>
+    <div class="measure-output">groß und kräftig ≈ −35 dBm · klein und blass ≈ −90 dBm ·
+      darunter kein Punkt</div>
+    <div id="wlanStatus" class="measure-output">Aus – Häkchen setzen zum Rechnen</div>
+    <div id="wlanRooms"></div>
+    </details>
   </section>
 
   <section id="windowLegend" hidden>
-    <h2>Fensterzustand</h2>
+    <details class="fold">
+    <summary><h2>Fensterzustand</h2></summary>
     <div class="legend"><i style="background:#3f7d9c"></i>geschlossen</div>
     <div class="legend"><i style="background:#e0a615"></i>offen</div>
     <div class="legend"><i style="background:#c0392b"></i>gekippt</div>
+    </details>
   </section>
 </aside>
 
@@ -170,7 +206,7 @@
    module missing from MODULES fails loudly: its specifier stays unresolved. */
 (function () {
   var MODULES = ["state", "scene", "section", "raster", "appearance", "tree",
-                 "filter", "labels", "readings", "neon", "walk", "hud",
+                 "wlan", "filter", "labels", "readings", "neon", "walk", "hud",
                  "selection", "loading", "measurements", "viewer"];
   var q = location.search.replace(/^\?/, "");
   q = q ? "?" + q : "";

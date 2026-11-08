@@ -67,16 +67,34 @@ substitutions:
   pin_sda: GPIO2
   pin_rgb_led: GPIO21
 
-  # Height of the installation site above sea level. Set this to the
-  # real value before flashing.
-  altitude_m: "50"
+  # Height of the installation site above sea level.
+  # 227.80 m from a phone compass app at the house (2026-11-08), rounded
+  # to 228. Phone altitudes are good to roughly +-10 m; 10 m ~ 0.12 %
+  # pressure ~ 0.1 % CO2, so that is irrelevant here.
+  # The building plan's "+8.10 ueber NN" for the cellar slab cannot be
+  # sea level - it is a local datum, see home/modell/haus.yaml. A brief
+  # 11 m taken from it was wrong by ~217 m ~ 2.6 % pressure ~ 2.5 % CO2.
+  # Was 50 (placeholder) before that.
+  altitude_m: "228"
   # Calibrated 2026-09-29 against the Sonoff TH (sensor.bedroom_temperature)
   # placed right next to it: with the Sensirion default of 4.0 the SCD41
   # read 2.6 K low on average over 8 h (14:00-21:00, stable room). The
   # low_power_periodic mode and the cable-mounted sensor self-heat far
   # less than the 4 K the default assumes. tado TRV and Xiaomi purifier
   # in the same room confirm the direction (+1.3 K / +1.9 K).
+  # Confirmed 2026-11-08 over 10 days (29.10.-08.11., 188 h without
+  # window airing) beside the same Sonoff: median SCD41 - Sonoff
+  # +0.07 K, std 0.20 K, daily medians -0.03..+0.24 K. That is inside the
+  # Sonoff's own +-0.2 K, so the offset stays. Mornings (08-12 h) read
+  # +0.3..0.4 K - a local, short-lived effect no fixed offset can remove.
   temp_offset: "1.5"
+
+  # Humidity offset in % RH, applied as a filter after the sensor.
+  # Same 10-day comparison: SCD41 reads +1.5 % RH above the Sonoff on
+  # average (daily +1.2..+2.0, std 0.7), dew point +0.47 K (std 0.17).
+  # Since the temperatures agree, this is the RH element's own offset
+  # (SCD41 spec +-6 % RH, Sonoff SNZB-02P +-2 % RH), not self-heating.
+  hum_offset: "-1.5"
 
   # Traffic light thresholds in ppm. Green below warn, yellow between,
   # red from alarm upwards. 1000 ppm is the German UBA "hygienically
@@ -136,6 +154,8 @@ sensor:
     humidity:
       name: Luftfeuchtigkeit
       accuracy_decimals: 0
+      filters:
+        - offset: ${hum_offset}
 
   - platform: wifi_signal
     name: WLAN Signal

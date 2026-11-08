@@ -1,6 +1,7 @@
 import {byStorey, hiddenElements, hiddenStoreys, hiddenTypes, model, meta, roomLabels, wallLabels, deviceLabels} from 'haus/state.js';
 import {walkStoreySel} from 'haus/walk.js';
 import {buildTree, checkboxState, displayStorey} from 'haus/tree.js';
+import {setWlanStoreys} from 'haus/wlan.js';
 let elements = new Map();
 const controls = [];
 const expanded = new Set(['Haus','Haus/Erdgeschoss']);
@@ -54,6 +55,7 @@ export function applyVisibility(){
   const visibleStoreys=new Set();
   for(const e of elements.values()){const visible=!hiddenElements.has(e.key);for(const mesh of e.meshes)mesh.visible=visible;if(visible)visibleStoreys.add(displayStorey(e.meta));}
   for(const group of [wallLabels,roomLabels,deviceLabels])for(const sprite of group.children){sprite.visible=sprite.userData.gid?!hiddenElements.has(sprite.userData.gid):visibleStoreys.has(sprite.userData.geschoss);}
+  setWlanStoreys(visibleStoreys);
   syncChecks();
 }
 // Neon storey view: everything above the given storey goes, the tree shows it.
